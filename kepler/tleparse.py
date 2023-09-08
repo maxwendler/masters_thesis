@@ -43,7 +43,11 @@ def read(path: str) -> list[TLE]:
     tles = []
     for i in range(0, len(content_lines), 3):
         tle_lines = content_lines[i:i+3]
-        tles.append(TLE.from_lines(*tle_lines))
+        try:
+            tles.append(TLE.from_lines(*tle_lines))
+        except Exception as ex:
+            print(ex.args)
+            raise ValueError("Incorrect format of TLEs file: Does not consist of line triples, each representing a TLE.")
 
     return tles
 
