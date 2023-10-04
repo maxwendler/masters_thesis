@@ -6,6 +6,9 @@ from poliastro.twobody import Orbit
 from poliastro.twobody.sampling import EpochsArray
 from poliastro.util import time_range
 import astropy.coordinates as coords
+from timeit import default_timer as timer
+
+start_t = timer()
 
 TRACE_CSV_SEPARATOR = ";"
 
@@ -25,6 +28,7 @@ periods = int(timelimit / updateInterval)
 # create inputs for poliastro Kepler model from tles in file at given path
 inputs = parse(args.tlespath)
 
+# create and write traces
 with open(args.outputpath, "w") as traces_file:
     
     for kepler_inputs in inputs:
@@ -49,3 +53,6 @@ with open(args.outputpath, "w") as traces_file:
         traces_file.write(trace_str + "\n")
 
 print(f"Successfully wrote traces to {args.outputpath}!")
+
+end_t = timer()
+print(f"Execution of the script with the provided arguments took {end_t - start_t} seconds.")
