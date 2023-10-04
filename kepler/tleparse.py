@@ -2,15 +2,6 @@ from enum import Enum
 from tletools import TLE
 from keplerinputs import KeplerInputs
 
-class CelestrakPaths(Enum):
-    """ paths of TLEs used in thesis """
-
-    CUBESAT = "./tles/Cubesat 05.09.2023 12.32.txt"
-    IRIDIUM_NEXT = "./tles/IridiumNEXT 31.08.2023 10.34.txt"
-    ONE_WEB = "./tles/OneWeb 31.08.2023 10.57.txt"
-    SATNOGS = "./tles/SATNOGs 31.08.2023 11.32.txt"
-    STARLINK = "./tles/Starlink 31.08.2023 11.36.txt"
-
 def remove_empty_startend_lines(orig_lines: list[str]) -> list[str]:
     """ removes empty lines at start and end of TLE file, which are allowed but must be removed """
 
