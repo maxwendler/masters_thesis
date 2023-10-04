@@ -60,4 +60,6 @@ def parse(path: str) -> list[KeplerInputs]:
     see `kepler.keplerinputs.KeplerInputs`
     """
     tles = read(path)
-    return list(map(TLE_TO_KI, tles))
+    results = list(map(TLE_TO_KI, tles))
+    print(f"parsed {len(results)} TLEs")
+    return results
