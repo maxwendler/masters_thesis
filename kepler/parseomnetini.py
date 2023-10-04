@@ -41,12 +41,13 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
 
     # find config section with given name, where 'Config' part of name is optional
     # see https://doc.omnetpp.org/omnetpp/manual/#sec:config-sim:named-configurations
-    config_name = config.replace("Config ","")
     config_section = None
-    for s in config_parser.sections():
-        if config_name == s.replace("Config ", ""):
-            config_section = s
-            break
+    if config:
+        config_name = config.replace("Config ","")
+        for s in config_parser.sections():
+            if config_name == s.replace("Config ", ""):
+                config_section = s
+                break
     
     # default: no sim-time-limit, hence needs to be set in omnetpp.ini, hence exception at end of function
     timelimit = None
@@ -83,8 +84,9 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
             timelimit = parse_time_val(config_parser[config_section]["sim-time-limit"])
         if "*.leo*[*].mobility.updateInterval" in config_parser[config_section]:
             updateinterval = parse_time_val(config_parser[config_section]["*.leo*[*].mobility.updateInterval"])
-    else: 
-        print(f"The given configuration {config} does not exist. Only using values from 'General' section.")
+    else:
+        if config:
+            print(f"The given configuration {config} does not exist. Only using values from 'General' section.")
 
     if timelimit is None:
         raise LookupError("omnetpp.ini must set 'sim-time-limit'")
