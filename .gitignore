@@ -24,7 +24,6 @@ LICENSES/LicenseRef-ReuseIgnoreFileLicense.txt
 
 .venv
 .reuse
-.vscode
 .cache
 __pycache__
 
