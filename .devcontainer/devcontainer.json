@@ -29,7 +29,7 @@
 
 {
 	// name of the container
-	"name": "space_Veins dependencies Ubuntu 22",
+	"name": "space_Veins dependencies Ubuntu 22 new",
 
 	// build from Dockerfile
 	"build": {

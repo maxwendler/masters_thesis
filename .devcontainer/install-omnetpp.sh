@@ -87,7 +87,7 @@ apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install --
     xdg-utils \
     zlib1g-dev \
     ;
- 
+
 # ensure xdg-utils is happy with the system
 mkdir -p /usr/share/desktop-directories/
 
