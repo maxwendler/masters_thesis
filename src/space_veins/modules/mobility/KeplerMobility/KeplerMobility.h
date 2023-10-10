@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fstream>
+#include <iostream>
+
 #include <proj.h>
 
 #include "inet/mobility/base/MovingMobilityBase.h"
@@ -18,7 +21,8 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         // proj context
         PJ_CONTEXT* pj_ctx;
         // one or multiple projections for wgs84 to topodetic
-        PJ* itrf2008_to_wgs84_projection;
+        PJ* wgs84_to_wgs84cartesian_projection;
+        PJ* wgs84cartesian_to_topocentric_projection;
 
         // SOP pointer
         SatelliteObservationPoint* sop;
@@ -36,6 +40,9 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         /* Statistics */
         VehicleStatistics* vehicleStatistics;
 
+        // file stream from which coordinates will be continiously read
+        std::ifstream* traceFile;
+
     public:
         KeplerMobility()
             : MovingMobilityBase(),
@@ -46,8 +53,8 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         {
         }
 
-        // only MIGHT be necessary
-        void preInitialize();
+        // Sets ifstream to read trace coordinates.
+        void preInitialize(std::ifstream* pTraceFile);
         
         // from SGP4Mobility
         void updateSatellitePosition();
