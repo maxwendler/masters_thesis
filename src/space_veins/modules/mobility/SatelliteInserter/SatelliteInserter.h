@@ -22,7 +22,9 @@
 
 #pragma once
 
+#include <fstream>
 #include <string>
+#include "dirent.h"
 
 #include "space_veins/space_veins.h"
 #include "space_veins/modules/mobility/SGP4Mobility/TLE.h"
@@ -31,6 +33,11 @@ namespace space_veins {
 
 class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
 {
+    enum class MobilityType {
+        SGP4,
+        Kepler
+    };
+
     protected:
         virtual void initialize(int) override;
 
@@ -42,15 +49,23 @@ class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
         virtual void finish() override;
 
         void parseTleFile(std::string path);
+        
+        void openTraceFiles(char* path);
 
         std::pair<std::string, unsigned int> getConstellationAndSatNum(TLE tle);
 
         void createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation);
+        void createSatellite(std::ifstream* traceFile, unsigned int satNum, unsigned int vectorSize, std::string constellation);
 
         void instantiateSatellite(TLE tle);
+        void instantiateSatellite(std::ifstream* traceFile);
+
+        unsigned int determineVectorSize(std::string constellation, unsigned int satNum);
 
     private:
+        std::string mobilityType;
         std::string pathToTleFile;
+        std::string pathToTracesDir;
         std::string satelliteModuleType;
         std::string satelliteModuleDefaultName;
         std::string satelliteConstellationsModuleName;

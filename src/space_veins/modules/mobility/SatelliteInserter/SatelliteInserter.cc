@@ -21,10 +21,13 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <string>
 
+#include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"
 #include "space_veins/modules/mobility/SGP4Mobility/SGP4Mobility.h"
 
@@ -38,14 +41,25 @@ void SatelliteInserter::initialize(int stage)
     switch (stage)
     {
         case 0:
-            pathToTleFile = par("pathToTleFile").stringValue();
+            mobilityType = par("mobilityType").stringValue();
+            ASSERT(mobilityType != "None");
+            if (mobilityType == "SGP4") pathToTleFile = par("pathToTleFile").stringValue();
+            if (mobilityType == "Kepler") pathToTracesDir = par("pathToTracesDir").stringValue();
+
             satelliteModuleType = par("satelliteModuleType").stringValue();
             satelliteModuleDefaultName = par("satelliteModuleDefaultName").stringValue();
             wall_clock_sim_start_time_utc = par("wall_clock_sim_start_time_utc").stringValue();
             ignoreUnknownSatellites = par("ignoreUnknownSatellites").boolValue();
             break;
+
         case 98:
-            parseTleFile(pathToTleFile);
+            if (mobilityType == "SGP4") parseTleFile(pathToTleFile);
+            if (mobilityType == "Kepler")
+            {
+                char* path_cstr;
+                std::strcpy(path_cstr, pathToTracesDir.c_str());
+                openTraceFiles(path_cstr);
+            } 
             break;
     }
 }
@@ -82,6 +96,27 @@ void SatelliteInserter::parseTleFile(std::string path)
     if (tleLineNumber != 0) {
         throw cRuntimeError("Incomplete satellite TLE");
     }
+}
+
+void SatelliteInserter::openTraceFiles(char* path)
+{
+    DIR *dir;
+    struct dirent *ent;
+    dir = opendir(path);
+    ASSERT(dir != nullptr);
+
+    // instantiate satellites with opened ifstreams for all .trace files in dir
+    while ((ent = readdir (dir)) != NULL) {
+        std::string fname = ent->d_name;
+        fname.find(".trace");
+        if (fname.find(".trace") != std::string::npos){
+            std::ifstream istream = std::ifstream(std::string(path) + ent->d_name);
+            EV_DEBUG << "Initializing satellite: " << std::endl << ent->d_name << std::endl;
+            instantiateSatellite(&istream);
+        }
+    }
+    
+    closedir(dir);
 }
 
 std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNum(TLE tle)
@@ -124,7 +159,7 @@ std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNu
     return std::pair<std::string, unsigned int>(constellation, satNum);
 }
 
-void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation) {
+void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation) {    
     cModule* parentmod = getParentModule();
     if (!parentmod) throw cRuntimeError("Parent Module not found");
 
@@ -149,11 +184,78 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
     mod->callInitialize();
 }
 
+void SatelliteInserter::createSatellite(std::ifstream* traceFile, unsigned int satNum, unsigned int vectorSize, std::string constellation) {
+    cModule* parentmod = getParentModule();
+    if (!parentmod) throw cRuntimeError("Parent Module not found");
+
+    cModuleType* satType = cModuleType::get(satelliteModuleType.c_str());
+    if (!satType) throw cRuntimeError("Module Type \"%s\" not found", satelliteModuleType.c_str());
+
+    #if OMNETPP_BUILDNUM >= 1525
+        parentmod->setSubmoduleVectorSize(("leo" + constellation).c_str(), vectorSize);
+        cModule* mod = satType->create(("leo" + constellation).c_str(), parentmod, satNum);
+    #else
+        // TODO: this trashes the vectsize member of the cModule, although nobody seems to use it
+        cModule* mod = satType->create(("leo" + constellation).c_str(), parentmod, vectorSize, satNum);
+    #endif
+
+    mod->finalizeParameters();
+    mod->buildInside();
+    auto keplerMobility = veins::getSubmodulesOfType<KeplerMobility>(mod);
+    for (auto km : keplerMobility) {
+        km->preInitialize(traceFile);
+    }
+    mod->scheduleStart(simTime());
+    mod->callInitialize();
+}
+
+unsigned int SatelliteInserter::determineVectorSize(std::string constellation, unsigned int satNum) {
+    
+    if (constellation == "STARLINK") {
+        starlinkVectorSize = std::max(starlinkVectorSize, satNum + 1);
+        return starlinkVectorSize - 1;
+    }
+    if (constellation == "IRIDIUM") {
+        iridiumVectorSize = std::max(iridiumVectorSize, satNum + 1);
+        return iridiumVectorSize - 1;
+    }
+    if (constellation == "ORBCOMM") {
+        orbcommVectorSize = std::max(orbcommVectorSize, satNum + 1);
+        return orbcommVectorSize - 1;
+    }
+    if (constellation == "SPACEBEE") {
+        spacebeeVectorSize = std::max(spacebeeVectorSize, satNum + 1);
+        return spacebeeVectorSize - 1;
+    }
+    if (constellation == "SPACEBEENZ") {
+        spacebeenzVectorSize = std::max(spacebeenzVectorSize, satNum + 1);
+        return spacebeenzVectorSize - 1;
+    }
+    if (constellation == "ONEWEB") {
+        onewebVectorSize = std::max(onewebVectorSize, satNum + 1);
+        return onewebVectorSize - 1;
+    }
+    if (constellation == "GLOBALSTAR") {
+        globalstarVectorSize = std::max(globalstarVectorSize, satNum + 1);
+        return globalstarVectorSize - 1;
+    }
+    if (ignoreUnknownSatellites) {
+        // Satellites whose name does not start with a constellation name will be discarded.
+        return -1;
+    }
+    // Use catalog number for satellites that could not be assign to a constellation
+    satelliteVectorSize = std::max(satelliteVectorSize, satNum);
+    return satelliteVectorSize - 1;    
+}
+
 void SatelliteInserter::instantiateSatellite(TLE tle)
 {
     // Determine satellite constellation
     std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(tle);
+    unsigned int vectorSize = determineVectorSize(satellite.first, satellite.second);
+    createSatellite(tle, satellite.second, vectorSize , satellite.first);
 
+    /*
     // Create satellite
     if (satellite.first == "STARLINK") {
         starlinkVectorSize = std::max(starlinkVectorSize, satellite.second + 1);
@@ -197,6 +299,23 @@ void SatelliteInserter::instantiateSatellite(TLE tle)
     // Use catalog number for satellites that could not be assign to a constellation
     satelliteVectorSize = std::max(satelliteVectorSize, (unsigned int)std::stoul(tle.get_tle_line1().substr(2, 5)) + 1);
     createSatellite(tle, std::stoul(tle.get_tle_line1().substr(2, 5)), satelliteVectorSize, satelliteModuleDefaultName);
+    
+    */
+}
+
+void SatelliteInserter::instantiateSatellite(std::ifstream* traceFile)
+{
+    std::string firstLineStr; 
+    std::getline(*traceFile, firstLineStr);
+    char* firstLineCStr;
+    strcpy(firstLineCStr, firstLineStr.c_str());
+
+    std::string constellation = std::strtok(firstLineCStr, " ");        
+    char* satNumStr = std::strtok(NULL, " ");
+    unsigned int satNum = std::stoi(satNumStr);
+    
+    unsigned int vectorSize = determineVectorSize(constellation, satNum);
+    createSatellite(traceFile, satNum, vectorSize, constellation);        
 }
 
 void SatelliteInserter::finish()
