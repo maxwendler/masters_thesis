@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(prog="TLEs to traces", description="Creates a .
 
 parser.add_argument('omnetinipath', help="Path of omnetpp.ini that has settings for 'sim-time-limit' and '*.leo*[*].mobility.updateInterval'")
 parser.add_argument('tlespath', help="Path of .txt with list of TLEs for which to create traces.")
-parser.add_argument('outputdir', help="Path of directory where .txt files with satellite traces will be written to; one file per satellite.")
+parser.add_argument('outputdir', help="Path of directory where .trace files (.txt-like contents) with satellite traces will be written to; one file per satellite.")
 parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.ini of which values shall overwrite general settings for "sim-time-limit" and "*.leo*[*].mobility.updateInterval"')
 
 args = parser.parse_args()
@@ -36,7 +36,7 @@ print(f"Time for creating kepler inputs: {kepler_inputs_t - omnetparse_t} second
 
 # create and write traces; one file per satellite
 for kepler_inputs in inputs:
-    output_path = args.outputdir + kepler_inputs.name + ".txt"
+    output_path = args.outputdir + kepler_inputs.name + ".trace"
     
     orb = Orbit.from_classical(
             Earth, 

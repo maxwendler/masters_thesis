@@ -58,3 +58,10 @@ RUN ./install-misc.sh && rm ./install-misc.sh
 
 COPY install-snakemake.sh .
 RUN ./install-snakemake.sh && rm ./install-snakemake.sh
+
+WORKDIR /
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+  && pip install --no-cache-dir -r requirements.txt
+
+RUN pip install --force-reinstall -v "numpy==1.22"
