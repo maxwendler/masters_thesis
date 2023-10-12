@@ -108,7 +108,6 @@ void SatelliteInserter::openTraceFiles(char* path)
     // instantiate satellites with opened ifstreams for all .trace files in dir
     while ((ent = readdir (dir)) != NULL) {
         std::string fname = ent->d_name;
-        fname.find(".trace");
         if (fname.find(".trace") != std::string::npos){
             std::ifstream istream = std::ifstream(std::string(path) + ent->d_name);
             EV_DEBUG << "Initializing satellite: " << std::endl << ent->d_name << std::endl;

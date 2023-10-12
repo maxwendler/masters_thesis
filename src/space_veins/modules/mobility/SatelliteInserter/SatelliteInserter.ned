@@ -34,5 +34,5 @@ simple SatelliteInserter
         // for SGP4 model
         string pathToTleFile = default("satellite_tle.txt");
         // for Kepler model
-        string pathToTracesDir = default("./traces");
+        string pathToTracesDir = default("./traces/");
 }

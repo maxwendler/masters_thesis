@@ -33,10 +33,6 @@ namespace space_veins {
 
 class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
 {
-    enum class MobilityType {
-        SGP4,
-        Kepler
-    };
 
     protected:
         virtual void initialize(int) override;
