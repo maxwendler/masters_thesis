@@ -10,7 +10,7 @@ from timeit import default_timer as timer
 
 start_t = timer()
 
-parser = argparse.ArgumentParser(prog="TLEs to traces", description="Creates a .txt file with a satellite movement trace for each TLE in the given file; written to the given output directory.")
+parser = argparse.ArgumentParser(prog="create_traces.py", description="Creates a .txt file with a satellite movement trace for each TLE in the given file; written to the given output directory.")
 
 parser.add_argument('omnetinipath', help="Path of omnetpp.ini that has settings for 'sim-time-limit' and '*.leo*[*].mobility.updateInterval'")
 parser.add_argument('tlespath', help="Path of .txt with list of TLEs for which to create traces.")

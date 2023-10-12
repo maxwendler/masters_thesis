@@ -212,39 +212,39 @@ unsigned int SatelliteInserter::determineVectorSize(std::string constellation, u
     
     if (constellation == "STARLINK") {
         starlinkVectorSize = std::max(starlinkVectorSize, satNum + 1);
-        return starlinkVectorSize - 1;
+        return starlinkVectorSize;
     }
     if (constellation == "IRIDIUM") {
         iridiumVectorSize = std::max(iridiumVectorSize, satNum + 1);
-        return iridiumVectorSize - 1;
+        return iridiumVectorSize;
     }
     if (constellation == "ORBCOMM") {
         orbcommVectorSize = std::max(orbcommVectorSize, satNum + 1);
-        return orbcommVectorSize - 1;
+        return orbcommVectorSize;
     }
     if (constellation == "SPACEBEE") {
         spacebeeVectorSize = std::max(spacebeeVectorSize, satNum + 1);
-        return spacebeeVectorSize - 1;
+        return spacebeeVectorSize;
     }
     if (constellation == "SPACEBEENZ") {
         spacebeenzVectorSize = std::max(spacebeenzVectorSize, satNum + 1);
-        return spacebeenzVectorSize - 1;
+        return spacebeenzVectorSize;
     }
     if (constellation == "ONEWEB") {
         onewebVectorSize = std::max(onewebVectorSize, satNum + 1);
-        return onewebVectorSize - 1;
+        return onewebVectorSize;
     }
     if (constellation == "GLOBALSTAR") {
         globalstarVectorSize = std::max(globalstarVectorSize, satNum + 1);
-        return globalstarVectorSize - 1;
+        return globalstarVectorSize;
     }
     if (ignoreUnknownSatellites) {
         // Satellites whose name does not start with a constellation name will be discarded.
         return -1;
     }
     // Use catalog number for satellites that could not be assign to a constellation
-    satelliteVectorSize = std::max(satelliteVectorSize, satNum);
-    return satelliteVectorSize - 1;    
+    satelliteVectorSize = std::max(satelliteVectorSize, satNum + 1);
+    return satelliteVectorSize;    
 }
 
 void SatelliteInserter::instantiateSatellite(TLE tle)

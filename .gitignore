@@ -112,3 +112,4 @@ subprojects/veins_testsims/opp_tests/**/work
 compile_commands.json 
 keplertraces/__pycache__
 keplertraces/results
+**.trace
