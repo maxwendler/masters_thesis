@@ -21,6 +21,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -55,10 +56,8 @@ void SatelliteInserter::initialize(int stage)
         case 98:
             if (mobilityType == "SGP4") parseTleFile(pathToTleFile);
             if (mobilityType == "Kepler")
-            {
-                char* path_cstr;
-                std::strcpy(path_cstr, pathToTracesDir.c_str());
-                openTraceFiles(path_cstr);
+            {           
+                openTraceFiles(pathToTracesDir);
             } 
             break;
     }
@@ -98,20 +97,19 @@ void SatelliteInserter::parseTleFile(std::string path)
     }
 }
 
-void SatelliteInserter::openTraceFiles(char* path)
+void SatelliteInserter::openTraceFiles(std::string path)
 {
     DIR *dir;
     struct dirent *ent;
-    dir = opendir(path);
+    dir = opendir(path.c_str());
     ASSERT(dir != nullptr);
 
     // instantiate satellites with opened ifstreams for all .trace files in dir
     while ((ent = readdir (dir)) != NULL) {
         std::string fname = ent->d_name;
         if (fname.find(".trace") != std::string::npos){
-            std::ifstream istream = std::ifstream(std::string(path) + ent->d_name);
             EV_DEBUG << "Initializing satellite: " << std::endl << ent->d_name << std::endl;
-            instantiateSatellite(&istream);
+            instantiateSatellite(std::string(path) + ent->d_name);
         }
     }
     
@@ -183,7 +181,8 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
     mod->callInitialize();
 }
 
-void SatelliteInserter::createSatellite(std::ifstream* traceFile, unsigned int satNum, unsigned int vectorSize, std::string constellation) {
+void SatelliteInserter::createSatellite(std::string traceFilePath, unsigned int satNum, unsigned int vectorSize, std::string constellation)
+{
     cModule* parentmod = getParentModule();
     if (!parentmod) throw cRuntimeError("Parent Module not found");
 
@@ -202,7 +201,7 @@ void SatelliteInserter::createSatellite(std::ifstream* traceFile, unsigned int s
     mod->buildInside();
     auto keplerMobility = veins::getSubmodulesOfType<KeplerMobility>(mod);
     for (auto km : keplerMobility) {
-        km->preInitialize(traceFile);
+        km->preInitialize(traceFilePath);
     }
     mod->scheduleStart(simTime());
     mod->callInitialize();
@@ -302,19 +301,24 @@ void SatelliteInserter::instantiateSatellite(TLE tle)
     */
 }
 
-void SatelliteInserter::instantiateSatellite(std::ifstream* traceFile)
+void SatelliteInserter::instantiateSatellite(std::string traceFilePath)
 {
+    std::ifstream traceFile = std::ifstream(traceFilePath);
+
     std::string firstLineStr; 
-    std::getline(*traceFile, firstLineStr);
-    char* firstLineCStr;
+    std::getline(traceFile, firstLineStr);
+    traceFile.close();
+    char* firstLineCStr = new char[firstLineStr.length() + 1];
     strcpy(firstLineCStr, firstLineStr.c_str());
 
-    std::string constellation = std::strtok(firstLineCStr, " ");        
-    char* satNumStr = std::strtok(NULL, " ");
+    std::string constellation = std::strtok(firstLineCStr , " ");        
+    std::string satNumStr = std::strtok(NULL, " ");
     unsigned int satNum = std::stoi(satNumStr);
     
+    delete[] firstLineCStr;
+
     unsigned int vectorSize = determineVectorSize(constellation, satNum);
-    createSatellite(traceFile, satNum, vectorSize, constellation);        
+    createSatellite(traceFilePath, satNum, vectorSize, constellation); 
 }
 
 void SatelliteInserter::finish()

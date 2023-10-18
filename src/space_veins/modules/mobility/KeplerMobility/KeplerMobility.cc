@@ -1,6 +1,7 @@
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <proj.h>
 #include <string>
 
@@ -23,13 +24,11 @@ void KeplerMobility::initializePosition()
     MovingMobilityBase::initializePosition();
 }
 
-
-void KeplerMobility::preInitialize(std::ifstream* pTraceFile)
+void KeplerMobility::preInitialize(std::string traceFilePath)
 {
-    EV_DEBUG << "KeplerMobility preInitialize()" << std::endl;
-    // Ensure that ifstream has a file ready to read.
-    ASSERT(pTraceFile->is_open());
-    traceFile = pTraceFile;
+    traceFile = std::ifstream(traceFilePath);
+    // skip first line with satellite constellation and number
+    traceFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     isPreInitialized = true;
 }
 
@@ -73,17 +72,20 @@ void KeplerMobility::updateSatellitePosition()
 {   
     // read next trace line
     std::string sat_pos_wgs84_str; 
-    std::getline(*traceFile, sat_pos_wgs84_str);
-    char* sat_pos_wgs84_c_str;
+    // ASSERT(traceFile->is_open());
+    std::getline(traceFile, sat_pos_wgs84_str);
+    char* sat_pos_wgs84_c_str = new char[sat_pos_wgs84_str.length() + 1];
     strcpy(sat_pos_wgs84_c_str, sat_pos_wgs84_str.c_str());
     
     // parse WGS84 coordinate from trace line
-    char* coord = std::strtok(sat_pos_wgs84_c_str, ",");        
-    double wgs84lon = strtod(coord, NULL);
+    std::string coord = std::strtok(sat_pos_wgs84_c_str, ",");        
+    double wgs84lon = std::stod(coord, NULL);
     coord = std::strtok(NULL, ","); 
-    double wgs84lat = strtod(coord, NULL);
+    double wgs84lat = std::stod(coord, NULL);
     coord = std::strtok(NULL, ",");
-    double wgs84alt =  strtod(coord, NULL);
+    double wgs84alt =  std::stod(coord, NULL);
+
+    delete[] sat_pos_wgs84_c_str;
 
     // Transform satellite's WGS84 coordinate from geodetic to cartesian representation, proj needs Radians for an unknown reason
     // see https://proj.org/operations/conversions/cart.html
@@ -128,5 +130,5 @@ void KeplerMobility::move()
 void KeplerMobility::finish()
 {
     MovingMobilityBase::finish();
-    traceFile->close();
+    traceFile.close();
 }

@@ -45,16 +45,15 @@ class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
         virtual void finish() override;
 
         void parseTleFile(std::string path);
-        
-        void openTraceFiles(char* path);
+        void openTraceFiles(std::string dirPath);
 
         std::pair<std::string, unsigned int> getConstellationAndSatNum(TLE tle);
 
         void createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation);
-        void createSatellite(std::ifstream* traceFile, unsigned int satNum, unsigned int vectorSize, std::string constellation);
+        void createSatellite(std::string traceFilePath, unsigned int satNum, unsigned int vectorSize, std::string constellation);
 
         void instantiateSatellite(TLE tle);
-        void instantiateSatellite(std::ifstream* traceFile);
+        void instantiateSatellite(std::string traceFilePath);
 
         unsigned int determineVectorSize(std::string constellation, unsigned int satNum);
 

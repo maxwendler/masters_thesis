@@ -41,7 +41,8 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         VehicleStatistics* vehicleStatistics;
 
         // file stream from which coordinates will be continiously read
-        std::ifstream* traceFile;
+        std::ifstream* traceFilePtr;
+        std::ifstream traceFile;
 
     public:
         KeplerMobility()
@@ -55,6 +56,7 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
 
         // Sets ifstream to read trace coordinates.
         void preInitialize(std::ifstream* pTraceFile);
+        void preInitialize(std::string traceFilePath);
         
         // from SGP4Mobility
         void updateSatellitePosition();
