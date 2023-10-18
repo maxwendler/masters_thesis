@@ -27,6 +27,7 @@
 #include <sstream>
 #include <regex>
 #include <string>
+#include <vector>
 
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"
@@ -173,7 +174,10 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
 
     mod->finalizeParameters();
     mod->buildInside();
-    auto sgp4Mobility = veins::getSubmodulesOfType<SGP4Mobility>(mod);
+    std::vector<SGP4Mobility*> sgp4Mobility = veins::getSubmodulesOfType<SGP4Mobility>(mod);
+    if (sgp4Mobility.size() == 0){
+        throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to SGP4Mobility?");
+    }
     for (auto sm : sgp4Mobility) {
         sm->preInitialize(tle, wall_clock_sim_start_time_utc);
     }
@@ -199,7 +203,10 @@ void SatelliteInserter::createSatellite(std::string traceFilePath, unsigned int 
 
     mod->finalizeParameters();
     mod->buildInside();
-    auto keplerMobility = veins::getSubmodulesOfType<KeplerMobility>(mod);
+    std::vector<KeplerMobility*> keplerMobility = veins::getSubmodulesOfType<KeplerMobility>(mod);
+    if (keplerMobility.size() == 0){
+        throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to KeplerMobility?");
+    }
     for (auto km : keplerMobility) {
         km->preInitialize(traceFilePath);
     }
