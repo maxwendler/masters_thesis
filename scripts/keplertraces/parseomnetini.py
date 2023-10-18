@@ -68,9 +68,10 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
     if config_section:
         # read parameters of parent configurations of the configuration specified by 'config' param
         # if both set the same attributes, the conflict is simply resolved by overwriting the values set by 
-        # previous parents, i.e. the ones that come earlier in the list of the "extends" setting 
+        # previous parents, i.e. the ones that come later in the list of the "extends" setting 
         if "extends" in config_parser[config_section]:
             extended_configs = list(map(lambda x: x.strip(), config_parser[config_section]["extends"].split(",")))
+            extended_configs.reverse()
             for c in extended_configs:
                 section = None
                 # Deal with fact that 'Config' keywords is not required in name of a configuration, but might occur
