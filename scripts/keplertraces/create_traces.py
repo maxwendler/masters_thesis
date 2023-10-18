@@ -12,18 +12,20 @@ start_t = timer()
 
 parser = argparse.ArgumentParser(prog="create_traces.py", description="Creates a .txt file with a satellite movement trace for each TLE in the given file; written to the given output directory.")
 
-parser.add_argument('omnetinipath', help="Path of omnetpp.ini that has settings for 'sim-time-limit' and '*.leo*[*].mobility.updateInterval'")
+parser.add_argument('omnetinipath', help="Path of omnetpp.ini that has settings for 'sim-time-limit', '*.leo*[*].mobility.updateInterval' and '*.satelliteInserter.wall_clock_sim_start_time_utc'.")
 parser.add_argument('tlespath', help="Path of .txt with list of TLEs for which to create traces.")
 parser.add_argument('outputdir', help="Path of directory where .trace files (.txt-like contents) with satellite traces will be written to; one file per satellite.")
-parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.ini of which values shall overwrite general settings for "sim-time-limit" and "*.leo*[*].mobility.updateInterval"')
+parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.ini of which values shall overwrite general settings.')
 
 args = parser.parse_args()
 if not str(args.outputdir).endswith("/"):
     args.outputdir += "/"
 
 # get trace parameters (duration = sim-time-limit, spacing = updateInterval) from omnetpp.ini at given path
-timelimit, updateInterval = parseomnetini(args.omnetinipath, args.config)
+timelimit, updateInterval, startTime = parseomnetini(args.omnetinipath, args.config)
 periods = int(timelimit / updateInterval)
+
+print(f"startTime {startTime}")
 
 omnetparse_t = timer()
 print(f"Time for parsing omnetpp.ini: {omnetparse_t-start_t} seconds")
@@ -47,7 +49,7 @@ for kepler_inputs in inputs:
             argp=kepler_inputs.argp, 
             nu=kepler_inputs.true_anom, 
             epoch=kepler_inputs.epoch)
-    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(kepler_inputs.epoch, spacing=updateInterval, periods=periods)))
+    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(startTime, spacing=updateInterval, periods=periods)))
     cartesian_trace = ephem.sample(ephem.epochs)
     WGS84_trace = list(map(lambda cart_rep: coords.WGS84GeodeticRepresentation.from_cartesian(cart_rep) , cartesian_trace))
     

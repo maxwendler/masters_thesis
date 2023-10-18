@@ -1,6 +1,8 @@
 import re
 import astropy.units as u
+from astropy.time import Time
 import configparser
+from datetime import datetime
 
 def parse_time_val(val_str: str) -> u.Quantity:
     """
@@ -27,10 +29,10 @@ def parse_time_val(val_str: str) -> u.Quantity:
 
     return (number << unit)
 
-def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantity]:
+def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantity, Time]:
     """
-    Parses values of 'sim-time-limit' and '*.leo*[*].mobility.updateInterval' from omnetpp.ini at given path,
-    where values of the configuration given by 'config' param overwrite values of the 'General' section.
+    Parses values of 'sim-time-limit', '*.leo*[*].mobility.updateInterval' and "*.satelliteInserter.wall_clock_sim_start_time_utc" 
+    from omnetpp.ini at given path, where values of the configuration given by 'config' param overwrite values of the 'General' section.
     Returns sim-time-limit, updateInterval as astropy.units.Quantity instances with units of time.
 
     Requires the values to have one of the following units: milliseconds(ms), seconds(s), minutes(m/min), hours(h).
@@ -49,17 +51,19 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
                 config_section = s
                 break
     
-    # default: no sim-time-limit, hence needs to be set in omnetpp.ini, hence exception at end of function
+    # default: no defaults, hence needs to be set in omnetpp.ini, hence exception at end of function
     timelimit = None
+    wall_clock_str = None
     # default value as specified by INET: https://doc.omnetpp.org/inet/api-current/neddoc/inet.mobility.base.MovingMobilityBase.html
     updateinterval = (0.1 << u.s)
-    
+
     # read general parameters, which might be overwritten by the ones of a specific configuration specified by 'config' param
     if "sim-time-limit" in config_parser["General"]:
         timelimit = parse_time_val(config_parser["General"]["sim-time-limit"])
     if "*.leo*[*].mobility.updateInterval" in config_parser["General"]:
         updateinterval = parse_time_val(config_parser["General"]["*.leo*[*].mobility.updateInterval"])
-
+    if "*.satelliteInserter.wall_clock_sim_start_time_utc" in config_parser["General"]:
+        wall_clock_str = config_parser["General"]["*.satelliteInserter.wall_clock_sim_start_time_utc"]
 
     if config_section:
         # read parameters of parent configurations of the configuration specified by 'config' param
@@ -78,19 +82,30 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
                     timelimit = parse_time_val(section["sim-time-limit"])
                 if "*.leo*[*].mobility.updateInterval" in section:
                     updateinterval = parse_time_val(section["*.leo*[*].mobility.updateInterval"])
+                if "*.satelliteInserter.wall_clock_sim_start_time_utc" in section:
+                    wall_clock_str = section["*.satelliteInserter.wall_clock_sim_start_time_utc"]
 
         # read parameters of the configuration specified by 'config' param, overwriting all previously set values
         if "sim-time-limit" in config_parser[config_section]:
             timelimit = parse_time_val(config_parser[config_section]["sim-time-limit"])
         if "*.leo*[*].mobility.updateInterval" in config_parser[config_section]:
             updateinterval = parse_time_val(config_parser[config_section]["*.leo*[*].mobility.updateInterval"])
+        if "*.satelliteInserter.wall_clock_sim_start_time_utc" in config_parser[config_section]:
+            wall_clock_str = config_parser[config_section]["*.satelliteInserter.wall_clock_sim_start_time_utc"]
+
     else:
         if config:
             print(f"The given configuration {config} does not exist. Only using values from 'General' section.")
 
     if timelimit is None:
         raise LookupError("omnetpp.ini must set 'sim-time-limit'")
+    if wall_clock_str is None:
+        raise LookupError("omnetpp.ini must set 'wall_clock_sim_start_time_utc'")
+
+    wall_clock_datetime = datetime.strptime(wall_clock_str, '"%Y-%m-%d-%H-%M-%S"')
+    wall_clock_time = Time(wall_clock_datetime, format='datetime', scale='utc')
 
     print(f"parsed sim-time-limit: {timelimit}")
     print(f"parsed updateInterval: {updateinterval}")
-    return timelimit, updateinterval
+    print(f"parsed wall_clock_sim_start_time_utc: {wall_clock_time}")
+    return timelimit, updateinterval, wall_clock_time
