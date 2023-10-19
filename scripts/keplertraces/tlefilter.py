@@ -64,5 +64,5 @@ if __name__ == "__main__":
         tles_f.writelines(satnogs_leo_lines)
 
     print("filtered", int(len(eccentric_lines) / 3), "eccentric LEO satellites overall")
-    with open(tles_dir_path + "eccentric_tles.txt", "w") as tles_f:
+    with open(tles_dir_path + "eccentric_tles_satnogs_cubesat.txt", "w") as tles_f:
         tles_f.writelines(eccentric_lines)

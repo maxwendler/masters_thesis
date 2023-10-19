@@ -62,6 +62,6 @@ RUN ./install-snakemake.sh && rm ./install-snakemake.sh
 WORKDIR /
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
-  && pip install --no-cache-dir -r requirements.txt
+  && pip install --no-cache-dir -r py-requirements.txt
 
 RUN pip install --force-reinstall -v "numpy==1.22"
