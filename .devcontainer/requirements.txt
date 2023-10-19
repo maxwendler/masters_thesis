@@ -2,3 +2,4 @@ astropy
 poliastro
 TLE-tools
 httpx
+sgp4

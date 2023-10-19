@@ -89,7 +89,7 @@ def load_gp_from_celestrak(
         fname = name
     elif group:
         fname = group
-    fname += "_" + datetime_of_request_str
+    fname += "_" + datetime_of_request_str + ".txt"
 
     # create ./tles dir if it does not exist
     try:
