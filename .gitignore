@@ -110,7 +110,7 @@ subprojects/veins_testsims/sim/**/valgrind.out
 subprojects/veins_testsims/opp_tests/**/work
 
 compile_commands.json 
-keplertraces/__pycache__
-keplertraces/tles
-!keplertraces/tles/examples
+scripts/keplertraces/__pycache__
+scripts/keplertraces/tles/
+!scripts/keplertraces/tles/examples
 **.trace
