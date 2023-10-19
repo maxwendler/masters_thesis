@@ -29,6 +29,11 @@ import pytz
 import os
 
 def _generate_url(catalog_number, international_designator, name, group):
+    """
+    Generates URLs like 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium&FORMAT=tle'
+    (requests TLE list from Iridium group).
+    You must specify exactly one of the parameters!
+    """
     params = {
         "GROUP": group,
         "CATNR": catalog_number,
@@ -91,25 +96,26 @@ def load_gp_from_celestrak(
         fname = group
     fname += "_" + datetime_of_request_str + ".txt"
 
-    # create ./tles dir if it does not exist
+    # create dir at [dirpath] if it does not exist
     try:
         os.makedirs(dirpath)
     except FileExistsError:
         pass
 
-    # write to ./tles dir
+    # write TLE list .txt to [dirpath+fName]
     path = dirpath + fname
     with open(path, 'w') as tle_f:
         tle_f.write(response.text)
         print("Wrote TLE list to", path)
     
-    return response.text, datetime_of_request_str
-
-
-def print_sat(sat, name):
-    return 0
+    return response.text
 
 def fetch_current_default_tles():
+    """
+    Fetches recent Iridium-NEXT, Starlink, Oneweb, SATNOGs and CubeSat TLEs and 
+    writes them to a new directory named after the datetime of the first request
+    in ./tles/.
+    """
     # utc string as used in omnetpp.ini
     datetime_str_of_first_request = datetime.now(pytz.timezone('UTC')).strftime("%Y-%m-%d-%H-%M-%S")
     dir_path = f'./tles/requested at {datetime_str_of_first_request}/'
