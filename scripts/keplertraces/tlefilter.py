@@ -5,6 +5,7 @@ from poliastro.util import time_range
 from datetime import datetime
 from math import pi
 from typing import Tuple
+import os
 
 def filter_tles_leo_ecc(tle_lines: list[str]) -> Tuple[list[str], list[str]]:
     """
@@ -63,26 +64,62 @@ if __name__ == "__main__":
     
     org_lines = []
     tles_dir_path = "/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples/"
-    satnogs_tles_path = tles_dir_path + "satnogs_2023-10-19-13-20-16.txt"
-    cubesat_tles_path = tles_dir_path + "cubesat_2023-10-19-13-20-20.txt"
-    print("filtering", satnogs_tles_path, "...\n")
     
-    # get satnogs leo list, eccentric list
+    print("filtering TLE lists from ", tles_dir_path, "...\n")
+    
+    tles_fnames = os.listdir(tles_dir_path)
+    
+    # find cubesat and satnogs tle list to get walltime from filename
+    try:
+        satnogs_fname = [match for match in tles_fnames if match.startswith("satnogs_")][0]
+    except: 
+        IndexError("No SATNOGs constellation file starting with 'satnogs_' found.")
+    
+    try:
+        cubesat_fname = [match for match in tles_fnames if match.startswith("cubesat_")][0]
+    except:
+        IndexError("No Cubesat constellation file starting with 'cubesat_' found.")
+
+    satnogs_tles_path = tles_dir_path + satnogs_fname
+    satnogs_walltime = satnogs_fname.split("_")[-1]
+    try:
+        datetime().strptime(satnogs_walltime, "%Y-%m-%d-%H-%M-%S")
+    except:
+        NameError("SATNOGs TLE file doesn't end in date of format %Y-%m-%d-%H-%M-%S")
+    
+    cubesat_tles_path = tles_dir_path + cubesat_fname
+    cubesat_walltime = cubesat_fname.split("_")[-1]
+    try:
+        datetime().strptime(satnogs_walltime, "%Y-%m-%d-%H-%M-%S")
+    except:
+        NameError("Cubesat TLE file doesn't end in date of format %Y-%m-%d-%H-%M-%S")
+    
+    # get satnogs leo list, satnogs leo eccentric list
     with open(satnogs_tles_path, "r") as tles_f:
         org_lines = tles_f.readlines()
-    satnogs_leo_lines, eccentric_lines = filter_tles_leo_ecc(org_lines)
+    satnogs_leo_lines, satnogs_eccentric_lines = filter_tles_leo_ecc(org_lines)
     
-    # append eccentric list, cubesat_leo_lines won't be used
+    # get cubesat eccentric lines, cubesat_leo_lines won't be used
     with open(cubesat_tles_path, "r") as tles_f:
         org_lines = tles_f.readlines()
     cubesat_leo_lines, cubesat_eccentric_lines = filter_tles_leo_ecc(org_lines)
-    eccentric_lines += cubesat_eccentric_lines
+
+    # flag old satnogs and cubesat tles list as invalid by adding "_" as name prefix
+    os.rename(satnogs_tles_path, satnogs_tles_path.removesuffix(satnogs_fname) + "_" + satnogs_fname)
+    os.rename(cubesat_tles_path, cubesat_tles_path.removesuffix(cubesat_fname) + "_" + cubesat_fname)
 
     # write satnogs leo file
-    with open(satnogs_tles_path.removesuffix(".txt") + "_leo.txt", "w") as tles_f:
+    with open(tles_dir_path + "satnogs_leo_" + satnogs_walltime, "w") as tles_f:
         tles_f.writelines(satnogs_leo_lines)
+    
+    print("filtered",
+          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) / 3) ),
+          "eccentric LEO satellites overall")
 
-    # write eccentric file
-    print("filtered", int(len(eccentric_lines) / 3), "eccentric LEO satellites overall")
-    with open(tles_dir_path + "eccentric_tles_satnogs_cubesat.txt", "w") as tles_f:
-        tles_f.writelines(eccentric_lines)
+    # write satnogs eccentric file    
+    with open(tles_dir_path + "satnogsEccentric_" + satnogs_walltime, "w") as tles_f:
+        tles_f.writelines(satnogs_eccentric_lines)
+    
+    # write cubesat eccentric file
+    with open(tles_dir_path + "cubesatEccentric.txt_" + cubesat_walltime, "w") as tles_f:
+        tles_f.writelines(cubesat_eccentric_lines)
