@@ -118,18 +118,9 @@ if __name__ == "__main__":
     print("filtered",
           int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) + len(starlink_eccentric_lines)) / 3 ),
           "eccentric LEO satellites overall")
-
-    satnogs_ecc_avg_walltime = get_avg_epoch_str(satnogs_eccentric_lines)
-    # write satnogs eccentric file    
-    with open(tles_dir_path + "satnogsEccentric_" + satnogs_ecc_avg_walltime + ".txt", "w") as tles_f:
-        tles_f.writelines(satnogs_eccentric_lines)
     
-    cubesat_ecc_avg_walltime = get_avg_epoch_str(cubesat_eccentric_lines)
-    # write cubesat eccentric file
-    with open(tles_dir_path + "cubesatEccentric_" + cubesat_ecc_avg_walltime + ".txt", "w") as tles_f:
-        tles_f.writelines(cubesat_eccentric_lines)
-
-    starlink_ecc_avg_walltime = get_avg_epoch_str(starlink_eccentric_lines)
-    # write starlink eccentric file
-    with open(tles_dir_path + "starlinkEccentric_" + starlink_ecc_avg_walltime + ".txt", "w") as tles_f:
-        tles_f.writelines(starlink_eccentric_lines)
+    # Compile eccentric TLEs into one 'constellation' of TLEs. 
+    eccentric_lines = [] + cubesat_eccentric_lines + satnogs_eccentric_lines + starlink_eccentric_lines
+    eccentric_avg_walltime = get_avg_epoch_str(eccentric_lines)
+    with open(tles_dir_path + "eccentric_" + eccentric_avg_walltime + ".txt", "w") as tles_f:
+        tles_f.writelines(eccentric_lines)
