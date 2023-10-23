@@ -101,9 +101,9 @@ if __name__ == "__main__":
     cubesat_leo_lines, cubesat_eccentric_lines = filter_tles_leo_ecc(org_lines)
 
     # get starlink eccentric lines, starlink_leo_lines won't be used
-    with open(starlink_tles_path, "r") as tles_f:
-        org_lines = tles_f.readlines()
-    starlink_leo_lines, starlink_eccentric_lines = filter_tles_leo_ecc(org_lines)
+    # with open(starlink_tles_path, "r") as tles_f:
+    #     org_lines = tles_f.readlines()
+    # starlink_leo_lines, starlink_eccentric_lines = filter_tles_leo_ecc(org_lines)
 
     # flag old satnogs and cubesat tles list as invalid by adding "_" as name prefix
     os.rename(satnogs_tles_path, satnogs_tles_path.removesuffix(satnogs_fname) + "_" + satnogs_fname)
@@ -116,11 +116,11 @@ if __name__ == "__main__":
         tles_f.writelines(satnogs_leo_lines)
     
     print("filtered",
-          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) + len(starlink_eccentric_lines)) / 3 ),
+          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines)) / 3 ),
           "eccentric LEO satellites overall")
     
     # Compile eccentric TLEs into one 'constellation' of TLEs. 
-    eccentric_lines = [] + cubesat_eccentric_lines + satnogs_eccentric_lines + starlink_eccentric_lines
+    eccentric_lines = [] + cubesat_eccentric_lines + satnogs_eccentric_lines # + starlink_eccentric_lines
     eccentric_avg_walltime = get_avg_epoch_str(eccentric_lines)
     with open(tles_dir_path + "eccentric_" + eccentric_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(eccentric_lines)
