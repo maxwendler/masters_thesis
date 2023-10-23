@@ -6,6 +6,7 @@ from datetime import datetime
 from math import pi
 from typing import Tuple
 import os
+from tleparse import get_avg_epoch_str
 
 def filter_tles_leo_ecc(tle_lines: list[str]) -> Tuple[list[str], list[str]]:
     """
@@ -63,7 +64,7 @@ def filter_tles_leo_ecc(tle_lines: list[str]) -> Tuple[list[str], list[str]]:
 if __name__ == "__main__":
     
     org_lines = []
-    tles_dir_path = "/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples/"
+    tles_dir_path = '/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples (requested at 2023-10-23-11-06-08)/'
     
     print("filtering TLE lists from ", tles_dir_path, "...\n")
     
@@ -81,18 +82,7 @@ if __name__ == "__main__":
         IndexError("No Cubesat constellation file starting with 'cubesat_' found.")
 
     satnogs_tles_path = tles_dir_path + satnogs_fname
-    satnogs_walltime = satnogs_fname.split("_")[-1]
-    try:
-        datetime().strptime(satnogs_walltime, "%Y-%m-%d-%H-%M-%S")
-    except:
-        NameError("SATNOGs TLE file doesn't end in date of format %Y-%m-%d-%H-%M-%S")
-    
     cubesat_tles_path = tles_dir_path + cubesat_fname
-    cubesat_walltime = cubesat_fname.split("_")[-1]
-    try:
-        datetime().strptime(satnogs_walltime, "%Y-%m-%d-%H-%M-%S")
-    except:
-        NameError("Cubesat TLE file doesn't end in date of format %Y-%m-%d-%H-%M-%S")
     
     # get satnogs leo list, satnogs leo eccentric list
     with open(satnogs_tles_path, "r") as tles_f:
@@ -108,18 +98,22 @@ if __name__ == "__main__":
     os.rename(satnogs_tles_path, satnogs_tles_path.removesuffix(satnogs_fname) + "_" + satnogs_fname)
     os.rename(cubesat_tles_path, cubesat_tles_path.removesuffix(cubesat_fname) + "_" + cubesat_fname)
 
+    # get wall time of average TLE epoch string for remaining satnogs satellites
+    satnogs_avg_walltime = get_avg_epoch_str(satnogs_leo_lines)
     # write satnogs leo file
-    with open(tles_dir_path + "satnogs_leo_" + satnogs_walltime, "w") as tles_f:
+    with open(tles_dir_path + "satnogs_leo_" + satnogs_avg_walltime, "w") as tles_f:
         tles_f.writelines(satnogs_leo_lines)
     
     print("filtered",
           int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) / 3) ),
           "eccentric LEO satellites overall")
 
+    satnogs_ecc_avg_walltime = get_avg_epoch_str(satnogs_eccentric_lines)
     # write satnogs eccentric file    
-    with open(tles_dir_path + "satnogsEccentric_" + satnogs_walltime, "w") as tles_f:
+    with open(tles_dir_path + "satnogsEccentric_" + satnogs_ecc_avg_walltime, "w") as tles_f:
         tles_f.writelines(satnogs_eccentric_lines)
     
+    cubesat_ecc_avg_walltime = get_avg_epoch_str(cubesat_eccentric_lines)
     # write cubesat eccentric file
-    with open(tles_dir_path + "cubesatEccentric.txt_" + cubesat_walltime, "w") as tles_f:
+    with open(tles_dir_path + "cubesatEccentric.txt_" + cubesat_ecc_avg_walltime, "w") as tles_f:
         tles_f.writelines(cubesat_eccentric_lines)
