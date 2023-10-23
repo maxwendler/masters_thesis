@@ -81,8 +81,14 @@ if __name__ == "__main__":
     except:
         IndexError("No Cubesat constellation file starting with 'cubesat_' found.")
 
+    try:
+        starlink_fname = [match for match in tles_fnames if match.startswith("starlink_")][0]
+    except:
+        IndexError("No Cubesat constellation file starting with 'starlink_' found.")
+
     satnogs_tles_path = tles_dir_path + satnogs_fname
     cubesat_tles_path = tles_dir_path + cubesat_fname
+    starlink_tles_path = tles_dir_path + starlink_fname
     
     # get satnogs leo list, satnogs leo eccentric list
     with open(satnogs_tles_path, "r") as tles_f:
@@ -93,6 +99,11 @@ if __name__ == "__main__":
     with open(cubesat_tles_path, "r") as tles_f:
         org_lines = tles_f.readlines()
     cubesat_leo_lines, cubesat_eccentric_lines = filter_tles_leo_ecc(org_lines)
+
+    # get starlink eccentric lines, starlink_leo_lines won't be used
+    with open(starlink_tles_path, "r") as tles_f:
+        org_lines = tles_f.readlines()
+    starlink_leo_lines, starlink_eccentric_lines = filter_tles_leo_ecc(org_lines)
 
     # flag old satnogs and cubesat tles list as invalid by adding "_" as name prefix
     os.rename(satnogs_tles_path, satnogs_tles_path.removesuffix(satnogs_fname) + "_" + satnogs_fname)
@@ -105,7 +116,7 @@ if __name__ == "__main__":
         tles_f.writelines(satnogs_leo_lines)
     
     print("filtered",
-          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) / 3) ),
+          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines) + len(starlink_eccentric_lines)) / 3 ),
           "eccentric LEO satellites overall")
 
     satnogs_ecc_avg_walltime = get_avg_epoch_str(satnogs_eccentric_lines)
@@ -117,3 +128,8 @@ if __name__ == "__main__":
     # write cubesat eccentric file
     with open(tles_dir_path + "cubesatEccentric_" + cubesat_ecc_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(cubesat_eccentric_lines)
+
+    starlink_ecc_avg_walltime = get_avg_epoch_str(starlink_eccentric_lines)
+    # write starlink eccentric file
+    with open(tles_dir_path + "starlinkEccentric_" + starlink_ecc_avg_walltime + ".txt", "w") as tles_f:
+        tles_f.writelines(starlink_eccentric_lines)

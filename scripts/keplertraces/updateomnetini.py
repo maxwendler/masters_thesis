@@ -59,7 +59,7 @@ def update(ini_path: str, tles_dir_path: str, tles_fnames: list[str], traces_dir
         new_ini_f.writelines(new_lines)
 
 if __name__ == "__main__":
-    tles_fname_prefixes = ["iridium-NEXT", "oneweb", "satnogs", "starlink", "cubesatEccentric", "satnogsEccentric"]
+    tles_fname_prefixes = ["iridium-NEXT", "oneweb", "satnogs", "starlink", "cubesatEccentric", "satnogsEccentric", "starlinkEccentric"]
     tles_fnames = []
     tles_dir = "/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples (requested at 2023-10-23-11-06-08)/"
     
