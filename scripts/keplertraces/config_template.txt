@@ -1,0 +1,11 @@
+[Config $CONSTELLATION$]
+##########################################################
+#                  SatelliteInserter                     #
+##########################################################
+*.satelliteInserter.mobilityType = $MOBILITY_TYPE$
+*.satelliteInserter.wall_clock_sim_start_time_utc = $WALL_START_TIME$
+*.satelliteInserter.pathToTleFile = $TLE_PATH$
+*.satelliteInserter.pathToTracesDir = $TRACES_PATH$
+
+[Config Debug$CONSTELLATION$]
+extends = Debug, $CONSTELLATION$
