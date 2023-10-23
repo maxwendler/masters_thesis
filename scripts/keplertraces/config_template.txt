@@ -7,5 +7,12 @@
 *.satelliteInserter.pathToTleFile = $TLE_PATH$
 *.satelliteInserter.pathToTracesDir = $TRACES_PATH$
 
-[Config Debug$CONSTELLATION$]
+##########################################################
+#                       Satellite                        #
+##########################################################
+# MOBILITY
+*.leo*[*].mobility.typename = $MOBILITY_CLASS$
+
+[Config Debug-$CONSTELLATION$]
 extends = Debug, $CONSTELLATION$
+

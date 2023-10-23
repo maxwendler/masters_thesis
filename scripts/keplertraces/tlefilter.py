@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # get wall time of average TLE epoch string for remaining satnogs satellites
     satnogs_avg_walltime = get_avg_epoch_str(satnogs_leo_lines)
     # write satnogs leo file
-    with open(tles_dir_path + "satnogs_leo_" + satnogs_avg_walltime, "w") as tles_f:
+    with open(tles_dir_path + "satnogs_leo_" + satnogs_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(satnogs_leo_lines)
     
     print("filtered",
@@ -110,10 +110,10 @@ if __name__ == "__main__":
 
     satnogs_ecc_avg_walltime = get_avg_epoch_str(satnogs_eccentric_lines)
     # write satnogs eccentric file    
-    with open(tles_dir_path + "satnogsEccentric_" + satnogs_ecc_avg_walltime, "w") as tles_f:
+    with open(tles_dir_path + "satnogsEccentric_" + satnogs_ecc_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(satnogs_eccentric_lines)
     
     cubesat_ecc_avg_walltime = get_avg_epoch_str(cubesat_eccentric_lines)
     # write cubesat eccentric file
-    with open(tles_dir_path + "cubesatEccentric.txt_" + cubesat_ecc_avg_walltime, "w") as tles_f:
+    with open(tles_dir_path + "cubesatEccentric_" + cubesat_ecc_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(cubesat_eccentric_lines)

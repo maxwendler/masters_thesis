@@ -7,6 +7,7 @@ from poliastro.twobody.sampling import EpochsArray
 from poliastro.util import time_range
 import astropy.coordinates as coords
 from timeit import default_timer as timer
+import os
 
 start_t = timer()
 
@@ -20,6 +21,13 @@ parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.in
 args = parser.parse_args()
 if not str(args.outputdir).endswith("/"):
     args.outputdir += "/"
+args.outputdir += args.tlespath.split("/")[-1].removesuffix(".txt") + "/"
+
+# create outputdir if it does not exist
+try:
+    os.makedirs(args.outputdir)
+except:
+    pass
 
 # get trace parameters (duration = sim-time-limit, spacing = updateInterval) from omnetpp.ini at given path
 timelimit, updateInterval, startTime = parseomnetini(args.omnetinipath, args.config)
