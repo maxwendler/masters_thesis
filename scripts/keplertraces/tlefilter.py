@@ -95,6 +95,12 @@ if __name__ == "__main__":
         org_lines = tles_f.readlines()
     satnogs_leo_lines, satnogs_eccentric_lines = filter_tles_leo_ecc(org_lines)
     
+    # filter Iridium and Starlink satellites from satnogs list to avoid doubles
+    satnogs_leo_lines_filtered = []
+    for i in range(0, len(satnogs_leo_lines), 3):
+        if "IRIDIUM" not in satnogs_leo_lines[i] and "STARLINK" not in satnogs_leo_lines[i]:
+            satnogs_leo_lines_filtered += satnogs_leo_lines[i:i+3]
+
     # get cubesat eccentric lines, cubesat_leo_lines won't be used
     with open(cubesat_tles_path, "r") as tles_f:
         org_lines = tles_f.readlines()
@@ -110,10 +116,10 @@ if __name__ == "__main__":
     os.rename(cubesat_tles_path, cubesat_tles_path.removesuffix(cubesat_fname) + "_" + cubesat_fname)
 
     # get wall time of average TLE epoch string for remaining satnogs satellites
-    satnogs_avg_walltime = get_avg_epoch_str(satnogs_leo_lines)
+    satnogs_avg_walltime = get_avg_epoch_str(satnogs_leo_lines_filtered)
     # write satnogs leo file
     with open(tles_dir_path + "satnogs_leo_" + satnogs_avg_walltime + ".txt", "w") as tles_f:
-        tles_f.writelines(satnogs_leo_lines)
+        tles_f.writelines(satnogs_leo_lines_filtered)
     
     print("filtered",
           int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines)) / 3 ),
