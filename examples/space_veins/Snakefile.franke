@@ -1,0 +1,204 @@
+# SPDX-FileCopyrightText: 2023 Mario Franke <research@m-franke.net>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+configfile: "smk.config.yaml"
+
+rule buildContainer:
+    input:
+        "../../singularity/singularity-space_veins.def"
+    output:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
+    shell:
+        """
+        singularity build --fakeroot {output} {input}
+        """
+
+rule shell:
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        bash
+        """
+
+rule buildSpaceVeins:
+    input:
+        "../../Makefile"
+    output:
+        "../../bin/space_veins_run"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
+    shell:
+        """
+        make makefiles
+        ucc make -j{threads} all
+        make bin/space_veins_run
+        """
+
+rule cleanSpaceVeins:
+    input:
+        "../../Makefile"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        1
+    shell:
+        """
+        make cleanall
+        """
+
+rule createRunmakerFiles:
+    input:
+        expand("{oppConfig}_runs.log", oppConfig=config["oppConfig"]),
+        expand("{oppConfig}_runs.txt", oppConfig=config["oppConfig"]),
+
+rule createRunmakerLogFile:
+    output:
+        "{oppConfig}_runs.log"
+    shell:
+        "touch {output}"
+
+rule createRunFile:
+    input:
+        "omnetpp.ini"
+    output:
+        "{oppConfig}_runs.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins && perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}
+        """
+
+rule runAll:
+    input:
+        expand("{oppConfig}_done.txt", oppConfig=config["oppConfig"])
+    # resources:
+    #     tasks=len(input.runs),
+
+# create a dummy output file such that snakemake's dependency management works
+rule run:
+    input:
+        logFile="{oppConfig}_runs.log",
+        runFile="{oppConfig}_runs.txt"
+    output:
+        "{oppConfig}_done.txt"
+    threads:
+        config["numJobsPerConfig"]
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins/ && python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} && touch {output}
+        """
+
+rule debugRun:
+    threads:
+        1
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins/ && ./run --debug --tool {config[tool]} -- -u {config[env]} -c {config[oppDebugConfig]} -r {config[debugRunNumber]}
+        """
+
+def formatScaCsvFileNames():
+    files = list()
+    f = ""
+    for c in config["oppConfig"]:
+        for s in config["scalars"]:
+            f = "csv/scalars/" + c + "-"
+            oppModule = ".".join(s.split(".")[:-1])
+            f += oppModule + "-"
+            scalar = s.split(".")[-1]
+            f += scalar + ".csv"
+            files.append(f)
+    return files
+
+rule sca2csvAll:
+    input:
+        formatScaCsvFileNames()
+    threads:
+        workflow.cores
+
+def formatItervars(wildcards):
+    i = ""
+    for s in config["itervars"]:
+        i += "-I " + s + " "
+    return i
+
+def formatScalar(wildcards):
+    s = wildcards.scalar.split(".")[-1]
+    flags = "-F " + s + "=" + s.replace(":", "_")
+    return flags
+
+def formatModuleRegex(wildcards):
+    regex = ".".join(wildcards.module.split(".")[:-1])
+    regex = regex.replace(".", "\.")
+    regex = regex.replace("[", "\[")
+    regex = regex.replace("]", "\]")
+    regex = regex.replace("*", "(?<module>[0-9]+)")
+    regex = "\'^" + regex + "\'"
+    return regex
+
+rule sca2csv:
+    output:
+        "csv/scalars/{oppConfig}-{module}-{scalar}.csv"
+    params:
+        itervars=formatItervars,
+        scalar=formatScalar,
+        moduleRegex=formatModuleRegex
+    threads:
+        1
+    shell:
+        """
+        perl ../../lib/veins_scripts/eval/opp_sca2csv.pl -v -M {params.moduleRegex} {params.scalar} -A repetition {params.itervars} results/{wildcards.oppConfig}*.sca > {output}
+        """
+
+def formatVecCsvFileNames():
+    files = list()
+    f = ""
+    for c in config["oppConfig"]:
+        for v in config["vectors"]:
+            oppModule = ".".join(v.split(".")[:-1])
+            vec = v.split(".")[-1]
+            f = "csv/vectors/" + c + "-" + oppModule + "-" + vec + ".csv"
+            files.append(f)
+    return files
+
+rule vec2csvAll:
+    input:
+        formatVecCsvFileNames()
+    output:
+        "vec2csvAll_done.txt"
+    threads:
+        workflow.cores
+    shell:
+        """
+        touch {output}
+        """
+
+def formatVector(wildcards):
+    v = wildcards.vector.split(".")[-1]
+    return "-F " + v + "=" + v.replace(":", "_")
+
+rule vec2csv:
+    input:
+        "{oppConfig}_done.txt"
+    output:
+        "csv/vectors/{oppConfig}-{module}-{vector}.csv"
+    params:
+        itervars=formatItervars,
+        vector=formatVector,
+        moduleRegex=formatModuleRegex
+    threads:
+        1
+    shell:
+        """
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -M {params.moduleRegex} {params.vector} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
+        """

@@ -124,7 +124,7 @@ def fetch_current_default_tles():
     """
     # utc string as used in omnetpp.ini
     datetime_str_of_first_request = datetime.now(pytz.timezone('UTC')).strftime("%Y-%m-%d-%H-%M-%S")
-    dir_path = f'./tles/requested at {datetime_str_of_first_request}/'
+    dir_path = f'./tles/requested_at_{datetime_str_of_first_request}/'
     load_gp_from_celestrak(group='iridium-NEXT', dirpath=dir_path)
     load_gp_from_celestrak(group='starlink', dirpath=dir_path)
     load_gp_from_celestrak(group='oneweb', dirpath=dir_path)

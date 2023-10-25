@@ -1,6 +1,0 @@
-configfile: "smk.config.yaml"
-
-rule updateOmnetiniWalltime:
-    input:
-        "{groundScenarioPath}/omnetpp.ini"
-    shell:
