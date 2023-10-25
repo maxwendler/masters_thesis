@@ -112,5 +112,5 @@ subprojects/veins_testsims/opp_tests/**/work
 compile_commands.json 
 scripts/keplertraces/__pycache__
 scripts/keplertraces/tles/*
-!scripts/keplertraces/tles/examples_(requested_at_2023-10-23-11-06-08)
+!scripts/keplertraces/tles/examples_requested_at_2023-10-23-11-06-08
 **.trace
