@@ -130,7 +130,7 @@ rule createRunFile:
     #    "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        echo './run -u Cmdenv -c {wildcards.oppConfig} -r 0' > {output}
+        echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 0' > {output}
         """
 
 rule createRunmakerFiles:
@@ -147,3 +147,29 @@ rule createRunmakerFiles:
         temp("runmaker.done")
     shell:
         "touch runmaker.done"
+
+rule run:
+    input:
+        logFile="{oppConfig}_runs.log",
+        runFile="{oppConfig}_runs.txt"
+    output:
+        "{oppConfig}_done.txt"
+    threads:
+        1
+    #container:
+    #    "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} && touch {output}
+        """
+
+rule runAll:
+    input:
+        expand("{optional_Debug}{constellation}-{mobility}_done.txt", 
+                optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                constellation=config["tles_prefixes"],
+                mobility=config["mobilities"])
+    output:
+        "runall.done"
+    shell:
+        "touch runall.done"

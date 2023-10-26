@@ -1,4 +1,4 @@
-tles_dir: "/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples_requested_at_2023-10-23-11-06-08"
+tles_dir: "tles/"
 tles_prefixes: ["iridium-NEXT", "oneweb", "satnogs", "starlink", "eccentric"]
 traces_dir: "./traces/"
 
