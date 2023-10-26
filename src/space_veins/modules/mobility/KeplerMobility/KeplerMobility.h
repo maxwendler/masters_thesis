@@ -27,16 +27,6 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         // SOP pointer
         SatelliteObservationPoint* sop;
 
-        /* Time management - REQUIRED???
-        date_time_t tle_epoch;                      // date_time_t of the TLE's epoch
-        std::chrono::system_clock::time_point ep;
-        std::string wall_clock_sim_start_time_utc;  // wall clock start time of the simulation's begin
-        date_time_t wall_clock_start_time;          // wall clock start time of the simulation's begin as date_time_t object
-        std::chrono::system_clock::time_point wct;  // current wall clock time
-        std::chrono::duration<double, std::chrono::minutes::period> wall_clock_since_tle_epoch_min;  // elapsed minutes since tle epoch considering configured wall clock start time in UTC and elapsed simulation time
-        date_time_t current_date_time;
-        */
-
         /* Statistics */
         VehicleStatistics* vehicleStatistics;
 

@@ -255,57 +255,9 @@ unsigned int SatelliteInserter::determineVectorSize(std::string constellation, u
 
 void SatelliteInserter::instantiateSatellite(TLE tle)
 {
-    // Determine satellite constellation
     std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(tle);
     unsigned int vectorSize = determineVectorSize(satellite.first, satellite.second);
     createSatellite(tle, satellite.second, vectorSize , satellite.first);
-
-    /*
-    // Create satellite
-    if (satellite.first == "STARLINK") {
-        starlinkVectorSize = std::max(starlinkVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, starlinkVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "IRIDIUM") {
-        iridiumVectorSize = std::max(iridiumVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, iridiumVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "ORBCOMM") {
-        orbcommVectorSize = std::max(orbcommVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, orbcommVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "SPACEBEE") {
-        spacebeeVectorSize = std::max(spacebeeVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, spacebeeVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "SPACEBEENZ") {
-        spacebeenzVectorSize = std::max(spacebeenzVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, spacebeenzVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "ONEWEB") {
-        onewebVectorSize = std::max(onewebVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, onewebVectorSize, satellite.first);
-        return;
-    }
-    if (satellite.first == "GLOBALSTAR") {
-        globalstarVectorSize = std::max(globalstarVectorSize, satellite.second + 1);
-        createSatellite(tle, satellite.second, globalstarVectorSize, satellite.first);
-        return;
-    }
-    if (ignoreUnknownSatellites) {
-        // Satellites whose name does not start with a constellation name will be discarded.
-        return;
-    }
-    // Use catalog number for satellites that could not be assign to a constellation
-    satelliteVectorSize = std::max(satelliteVectorSize, (unsigned int)std::stoul(tle.get_tle_line1().substr(2, 5)) + 1);
-    createSatellite(tle, std::stoul(tle.get_tle_line1().substr(2, 5)), satelliteVectorSize, satelliteModuleDefaultName);
-    
-    */
 }
 
 void SatelliteInserter::instantiateSatellite(std::string traceFilePath)
