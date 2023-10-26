@@ -2,7 +2,7 @@ import os
 
 configfile: "smk.config.yaml"
 
-def get_tles_paths(wildcards):
+def get_tles_paths():
     tles_fname_prefixes = config["tles_prefixes"]
     tles_fpaths = []
     tles_dir = config["tles_dir"]
@@ -15,17 +15,37 @@ def get_tles_paths(wildcards):
     
     return tles_fpaths
 
-def quote_strs(input):
-    return [str('"' + tle_path + '"') for tle_path in input.tles_paths]
+def quote_strs(tles_paths: list[str]):
+    return [str('"' + tle_path + '"') for tle_path in tles_paths]
 
-rule updateOmnetini:
+rule update_omnetini:
     input:
-        ini_path="omnetpp.ini.template",
-        tles_paths=get_tles_paths
+        ini_template="omnetpp.ini.template",
+        tles_paths=get_tles_paths()
     params:
         # as snakemake won't accept filepath strings containing quotes as input
-        quoted_tles_paths= lambda wildcards, input: quote_strs(input)
+        # but updateomnetini.pp requires them
+        quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths)
     output:
         "omnetpp.ini"
     shell:
-        "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_path} ./traces/ {params.quoted_tles_paths}"
+        "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} {config[traces_dir]} {params.quoted_tles_paths}"
+
+rule create_traces:
+    input:
+        ini_path="omnetpp.ini",
+        tles_paths=lambda wildcards: sorted(get_tles_paths())
+    output:
+        "traces/.done"
+    params:
+        confignames = sorted(expand("{optional_Debug}{constellation}-kepler", 
+                             optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                             constellation=config["tles_prefixes"])) 
+    run:
+        print(params.confignames)
+        shell_commands = []
+        for i in range(len(input.tles_paths)):
+            command = f"python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_paths[i]} {config['traces_dir']} -c {params.confignames[i]}"
+            shell_commands.append(command)
+        shell_commands.append(f"touch {output}")
+        shell(" && ".join(shell_commands))

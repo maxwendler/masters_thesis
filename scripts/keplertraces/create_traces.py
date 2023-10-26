@@ -46,7 +46,8 @@ print(f"Time for creating kepler inputs: {kepler_inputs_t - omnetparse_t} second
 
 # create and write traces; one file per satellite
 for kepler_inputs in inputs:
-    output_path = args.outputdir + kepler_inputs.name + ".trace"
+    # satellites will be renamed if name contains "/", to not mess up resulting paths
+    output_path = args.outputdir + kepler_inputs.name.replace("/","-") + ".trace"
     
     orb = Orbit.from_classical(
             Earth, 
