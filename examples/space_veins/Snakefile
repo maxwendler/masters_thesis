@@ -49,3 +49,68 @@ rule create_traces:
             shell_commands.append(command)
         shell_commands.append(f"touch {output}")
         shell(" && ".join(shell_commands))
+
+rule make_makefiles:
+    input:
+        "../../Makefile"
+    output:
+        "../../src/Makefile"
+    shell:
+        "cd ../../ && make makefiles"
+
+rule build_space_veins_devcontainer:
+    input:
+        "../../Makefile",
+        "cleanall.done"
+    output:
+        "../../bin/space_veins_run",
+        temp("build_devcontainer.done")
+    #container:
+    #    "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
+    shell:
+        """
+        cd ../../
+        make makefiles
+        bear --append -- make all -j{threads}
+        cd examples/space_veins
+        touch "build_devcontainer.done"
+        """
+
+rule build_space_veins_singularity:
+    input:
+        "../../Makefile",
+        "cleanall.done"
+    output:
+        "../../bin/space_veins_run",
+        temp("build_singularity.done")
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
+    shell:
+        """
+        make makefiles
+        ucc make -j{threads} all
+        make bin/space_veins_run
+        touch "cleanall.done"
+        """
+
+rule cleanSpaceVeins:
+    input:
+        "../../Makefile",
+        "../../src/Makefile"
+    output:
+        temp("cleanall.done")
+    #container:
+    #    "../../singularity/singularity-space_veins.sif"
+    threads:
+        1
+    shell:
+        """
+        cd ../../ &&
+        make cleanall &&
+        cd examples/space_veins &&
+        touch "cleanall.done" 
+        """
