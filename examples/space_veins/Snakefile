@@ -114,3 +114,36 @@ rule cleanSpaceVeins:
         cd examples/space_veins &&
         touch "cleanall.done" 
         """
+
+rule createRunmakerLogFile:
+    output:
+        "{oppConfig}_runs.log"
+    shell:
+        "touch {output}"
+
+rule createRunFile:
+    input:
+        "omnetpp.ini"
+    output:
+        "{oppConfig}_runs.txt"
+    # container:
+    #    "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        echo './run -u Cmdenv -c {wildcards.oppConfig} -r 0' > {output}
+        """
+
+rule createRunmakerFiles:
+    input:
+        expand("{optional_Debug}{constellation}-{mobility}_runs.log", 
+                optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                constellation=config["tles_prefixes"],
+                mobility=config["mobilities"]),
+        expand("{optional_Debug}{constellation}-{mobility}_runs.txt", 
+                optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                constellation=config["tles_prefixes"],
+                mobility=config["mobilities"]),
+    output:
+        temp("runmaker.done")
+    shell:
+        "touch runmaker.done"
