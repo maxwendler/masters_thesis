@@ -48,6 +48,7 @@ class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
         void openTraceFiles(std::string dirPath);
 
         std::pair<std::string, unsigned int> getConstellationAndSatNum(TLE tle);
+        std::pair<std::string, unsigned int> getConstellationAndSatNum(std::string tleName);
 
         void createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation);
         void createSatellite(std::string traceFilePath, unsigned int satNum, unsigned int vectorSize, std::string constellation);

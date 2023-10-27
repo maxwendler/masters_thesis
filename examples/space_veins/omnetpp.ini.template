@@ -91,6 +91,11 @@ network = SatelliteExampleScenario
 *.satelliteRadioMedium.mediumLimitCache.minElevationAngle = 0deg
 
 ##########################################################
+#                  SatelliteInserter                     #
+##########################################################
+*.satelliteInserter.ignoreUnknownSatellites = false
+
+##########################################################
 #                       Satellite                        #
 ##########################################################
 # MOBILITY

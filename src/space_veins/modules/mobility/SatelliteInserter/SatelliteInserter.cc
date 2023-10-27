@@ -22,12 +22,16 @@
 //
 
 #include <algorithm>
+#include <cctype>
+#include <cstddef>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
+#include <boost/algorithm/string/trim.hpp>
 
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"
@@ -157,6 +161,62 @@ std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNu
     return std::pair<std::string, unsigned int>(constellation, satNum);
 }
 
+std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNum(std::string tleName)
+{   
+    // 'STARLINK-1045' or 'STARLINK-1045 *' 
+    std::regex format1(R"(\w+-\d+(?:\s.*)*)");
+    // 'STARLINK 1045' or 'STARLINK 1045 *'
+    std::regex format2(R"(\w+\s\d+(?:\s.*)*)");
+    // one or more (word + whitespaces), i.e. no number
+    std::regex format3(R"(\w+([\s,-].*\D+.*)*)");
+
+    boost::algorithm::trim(tleName);
+
+    // replace special characters [., /]
+    for (int i=0; i < tleName.size(); i++){
+        if (/*tleName[i] == '/' ||*/ tleName[i] == '.'){
+            tleName.replace(i, 1, "-");
+        }
+    }
+
+    if (std::regex_match(tleName, format1))
+    {
+        int delimiterPos1 = tleName.find("-");
+        int delimiterPos2 = tleName.find(" ");
+        std::string satName = tleName.substr(0, delimiterPos1);
+        // condition can only hold if there's more after whitespace as tleName was trimmed
+        if (delimiterPos2 != std::string::npos) satName += tleName.substr(delimiterPos2 + 1, std::string::npos);
+        return std::pair<std::string, unsigned int>(
+            satName,
+            std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2))
+        );
+    }
+    else if (std::regex_match(tleName, format2))
+    {
+        int delimiterPos1 = tleName.find(" ");
+        int delimiterPos2 = delimiterPos1 + 1 + tleName.substr(delimiterPos1 + 1, std::string::npos).find(" ");
+        std::string satName = tleName.substr(0, delimiterPos1);
+        // condition can only hold if there's more after whitespace as tleName was trimmed
+        if (delimiterPos2 > delimiterPos1 && delimiterPos2 != std::string::npos) satName += tleName.substr(delimiterPos2 + 1, std::string::npos);
+        return std::pair<std::string, unsigned int>(
+            satName, 
+            std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2))
+        );
+    }
+    // assume uniqueness of unnumbered satellites -> all get num 1
+    else if (std::regex_match(tleName, format3))
+    {
+        return std::pair<std::string, unsigned int>(
+            tleName, 
+            1
+        );
+    }
+    else 
+    {
+        throw cRuntimeError("Unexpected satellite name format!: \"%s\"", tleName.c_str());
+    }
+}
+
 void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation) {    
     cModule* parentmod = getParentModule();
     if (!parentmod) throw cRuntimeError("Parent Module not found");
@@ -214,8 +274,8 @@ void SatelliteInserter::createSatellite(std::string traceFilePath, unsigned int 
     mod->callInitialize();
 }
 
-unsigned int SatelliteInserter::determineVectorSize(std::string constellation, unsigned int satNum) {
-    
+unsigned int SatelliteInserter::determineVectorSize(std::string constellation, unsigned int satNum) 
+{    
     if (constellation == "STARLINK") {
         starlinkVectorSize = std::max(starlinkVectorSize, satNum + 1);
         return starlinkVectorSize;
@@ -255,7 +315,7 @@ unsigned int SatelliteInserter::determineVectorSize(std::string constellation, u
 
 void SatelliteInserter::instantiateSatellite(TLE tle)
 {
-    std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(tle);
+    std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(tle.get_satellite_name());
     unsigned int vectorSize = determineVectorSize(satellite.first, satellite.second);
     createSatellite(tle, satellite.second, vectorSize , satellite.first);
 }
@@ -267,6 +327,7 @@ void SatelliteInserter::instantiateSatellite(std::string traceFilePath)
     std::string firstLineStr; 
     std::getline(traceFile, firstLineStr);
     traceFile.close();
+    /*
     char* firstLineCStr = new char[firstLineStr.length() + 1];
     strcpy(firstLineCStr, firstLineStr.c_str());
 
@@ -274,10 +335,11 @@ void SatelliteInserter::instantiateSatellite(std::string traceFilePath)
     std::string satNumStr = std::strtok(NULL, " ");
     unsigned int satNum = std::stoi(satNumStr);
     
-    delete[] firstLineCStr;
+    delete[] firstLineCStr;*/
 
-    unsigned int vectorSize = determineVectorSize(constellation, satNum);
-    createSatellite(traceFilePath, satNum, vectorSize, constellation); 
+    std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(firstLineStr);
+    unsigned int vectorSize = determineVectorSize(satellite.first, satellite.second);
+    createSatellite(traceFilePath, satellite.second, vectorSize, satellite.first); 
 }
 
 void SatelliteInserter::finish()
