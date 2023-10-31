@@ -117,7 +117,7 @@ rule cleanSpaceVeins:
 
 rule createRunmakerLogFile:
     output:
-        "{oppConfig}_runs.log"
+        "runs/{oppConfig}_runs.log"
     shell:
         "touch {output}"
 
@@ -125,7 +125,7 @@ rule createRunFile:
     input:
         "omnetpp.ini"
     output:
-        "{oppConfig}_runs.txt"
+        "runs/{oppConfig}_runs.txt"
     # container:
     #    "../../singularity/singularity-space_veins.sif"
     shell:
@@ -135,11 +135,11 @@ rule createRunFile:
 
 rule createRunmakerFiles:
     input:
-        expand("{optional_Debug}{constellation}-{mobility}_runs.log", 
+        expand("runs/{optional_Debug}{constellation}-{mobility}_runs.log", 
                 optional_Debug="Debug-" if config["debug_mode"] else "" ,
                 constellation=config["tles_prefixes"],
                 mobility=config["mobilities"]),
-        expand("{optional_Debug}{constellation}-{mobility}_runs.txt", 
+        expand("runs/{optional_Debug}{constellation}-{mobility}_runs.txt", 
                 optional_Debug="Debug-" if config["debug_mode"] else "" ,
                 constellation=config["tles_prefixes"],
                 mobility=config["mobilities"]),
@@ -150,10 +150,11 @@ rule createRunmakerFiles:
 
 rule run:
     input:
-        logFile="{oppConfig}_runs.log",
-        runFile="{oppConfig}_runs.txt"
+        "traces/.done",
+        logFile="runs/{oppConfig}_runs.log",
+        runFile="runs/{oppConfig}_runs.txt"
     output:
-        "{oppConfig}_done.txt"
+        "runs/{oppConfig}_done.txt"
     threads:
         1
     #container:
@@ -165,11 +166,77 @@ rule run:
 
 rule runAll:
     input:
-        expand("{optional_Debug}{constellation}-{mobility}_done.txt", 
+        expand("runs/{optional_Debug}{constellation}-{mobility}_done.txt", 
                 optional_Debug="Debug-" if config["debug_mode"] else "" ,
                 constellation=config["tles_prefixes"],
                 mobility=config["mobilities"])
     output:
-        "runall.done"
+        "runs/runall.done"
     shell:
-        "touch runall.done"
+        "touch runs/runall.done"
+
+def formatModuleRegex(wildcards):
+    regex = ".".join(wildcards.module.split(".")[:-1])
+    regex = regex.replace(".", "\.")
+    regex = regex.replace("[", "\[")
+    regex = regex.replace("]", "\]")
+    regex = regex.replace("*", "(?<module>[0-9]+)")
+    regex = "\'^" + regex + "\'"
+    return regex
+
+def formatVector(wildcards):
+    v = wildcards.vector.split(".")[-1]
+    return "-F " + v + "=" + v.replace(":", "_")
+
+def formatItervars(wildcards):
+    i = ""
+    for s in config["itervars"]:
+        i += "-I " + s + " "
+    return i
+
+rule vec2csv:
+    input:
+        "runs/{oppConfig}_done.txt"
+    output:
+        "csv/vectors/{oppConfig}_{module}_{vector}.csv"
+    params:
+        itervars=formatItervars,
+        vector=formatVector,
+        moduleRegex=formatModuleRegex
+    threads:
+        1
+    shell:
+        """
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -M {params.moduleRegex} {params.vector} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
+        """
+
+def formatVecCsvFileNames():
+    files = list()
+    f = ""
+    configs = expand("{optional_Debug}{constellation}-{mobility}", 
+                optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                constellation=config["tles_prefixes"],
+                mobility=config["mobilities"])
+    #configs = ["test"]
+    for c in configs:
+        for v in config["vectors"]:
+            # without statistic suffix
+            oppModule = ".".join(v.split(".")[:-1])
+            # statistic
+            vec = v.split(".")[-1]
+            f = "csv/vectors/" + c + "_" + oppModule + "_" + vec + ".csv"
+            files.append(f)
+    return files
+
+rule vec2csvAll:
+    input:
+        formatVecCsvFileNames()
+        # "test.txt
+    output:
+        "vec2csvAll_done.txt"
+    threads:
+        workflow.cores
+    shell:
+        """
+        touch {output}
+        """

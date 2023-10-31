@@ -4,3 +4,7 @@ traces_dir: "./traces/"
 
 debug_mode: true
 mobilities: ["sgp4", "kepler"]
+itervars: ["warmupPeriod", "simTimeLimit", "nodeXPos"]
+vectors: ["SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordX:vector",
+          "SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordY:vector",
+          "SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordZ:vector"]
