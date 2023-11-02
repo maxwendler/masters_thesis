@@ -210,33 +210,86 @@ rule vec2csv:
         perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -M {params.moduleRegex} {params.vector} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
         """
 
-def formatVecCsvFileNames():
+def get_sat_mods_per_const():
+    sat_modules_per_constellation = {}
+    results = os.listdir("./results/")
+    debug_mode_str = "Debug-" if config["debug_mode"] else ""
+    for constellation in config["tles_prefixes"]:
+        for res_fname in results:
+            if res_fname.startswith(f"{debug_mode_str}{constellation}") and res_fname.endswith(".vec"):
+                # parse satellite module names from .vec
+
+                sat_mods = set()
+
+                with open("./results/" + res_fname, "r") as vec_file:
+
+                    for line in vec_file.readlines():
+                        if "SatelliteExampleScenario.leo" in line:
+                            sat_name = line.split(" ")[2]
+                            sat_mods.add(sat_name)
+                
+                sat_modules_per_constellation[constellation] = sat_mods
+    
+    return sat_modules_per_constellation
+
+def get_const_sat_mods(constellation: str):
+    results = os.listdir("./results/")
+    debug_mode_str = "Debug-" if config["debug_mode"] else ""
+    sat_mods = set()
+    for res_fname in results:
+        if res_fname.startswith(f"{debug_mode_str}{constellation}") and res_fname.endswith(".vec"):
+            # parse satellite module names from .vec
+
+            with open("./results/" + res_fname, "r") as vec_file:
+
+                for line in vec_file.readlines():
+                    if "SatelliteExampleScenario.leo" in line:
+                        sat_name = line.split(" ")[2]
+                        sat_mods.add(sat_name)
+    
+    return sat_mods
+
+def formatSatVecCsvFileNames():
     files = list()
     f = ""
-    configs = expand("{optional_Debug}{constellation}-{mobility}", 
-                optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                constellation=config["tles_prefixes"],
-                mobility=config["mobilities"])
-    #configs = ["test"]
-    for c in configs:
-        for v in config["vectors"]:
-            # without statistic suffix
-            oppModule = ".".join(v.split(".")[:-1])
-            # statistic
-            vec = v.split(".")[-1]
-            f = "csv/vectors/" + c + "_" + oppModule + "_" + vec + ".csv"
-            files.append(f)
+    configs_per_constellation = {}
+    for constellation in config["tles_prefixes"]:
+        configs_per_constellation[constellation] = expand("{optional_Debug}{constellation}-{mobility}", 
+                                                        optional_Debug="Debug-" if config["debug_mode"] else "" ,
+                                                        constellation=[constellation],
+                                                        mobility=config["mobilities"])
+
+    sat_mods_per_constellation = get_sat_mods_per_const()
+    
+    print(sat_mods_per_constellation)
+
+    for c in configs_per_constellation.keys():
+        sat_mods = sat_mods_per_constellation[c]
+        for mod in sat_mods:
+            for vec in config["sat_vectors"]:
+                f = "csv/vectors/" + c + "_" + mod + "_" + vec + ".csv"
+                files.append(f)
+
     return files
 
-rule vec2csvAll:
+def format_constellation_satvec_csvnames(wildcards):
+    config_name = wildcards.opp_config
+    constellation = config_name.replace("Debug-", "")
+    sat_mods = get_const_sat_mods(constellation)
+    
+    files = []
+    for mod in sat_mods:
+            for vec in config["sat_vectors"]:
+                f = "csv/vectors/" + config_name + "_" + mod + "_" + vec + ".csv"
+                files.append(f)
+    
+    return files
+    
+rule sat_vec_to_csv_constellation:
     input:
-        formatVecCsvFileNames()
-        # "test.txt
+        "runs/{opp_config}_done.txt",
+        format_constellation_satvec_csvnames
     output:
-        "vec2csvAll_done.txt"
-    threads:
-        workflow.cores
+        "csv/{opp_config}_vecs.done"
     shell:
-        """
-        touch {output}
-        """
+        "touch {output}"

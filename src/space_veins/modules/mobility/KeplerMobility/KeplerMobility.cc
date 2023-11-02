@@ -4,6 +4,7 @@
 #include <fstream>
 #include <proj.h>
 #include <string>
+#include "space_veins/modules/utility/WGS84Coord.h"
 
 using namespace space_veins;
 
@@ -86,6 +87,9 @@ void KeplerMobility::updateSatellitePosition()
     double wgs84alt =  std::stod(coord, NULL);
 
     delete[] sat_pos_wgs84_c_str;
+
+    WGS84Coord sat_pos_wgs84 = WGS84Coord(wgs84lat, wgs84lon, wgs84alt);
+    vehicleStatistics->recordWGS84Coord(sat_pos_wgs84);
 
     // Transform satellite's WGS84 coordinate from geodetic to cartesian representation, proj needs Radians for an unknown reason
     // see https://proj.org/operations/conversions/cart.html

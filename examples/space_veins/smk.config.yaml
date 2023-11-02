@@ -4,7 +4,14 @@ traces_dir: "./traces/"
 
 debug_mode: true
 mobilities: ["sgp4", "kepler"]
-itervars: ["warmupPeriod", "simTimeLimit", "nodeXPos"]
-vectors: ["SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordX:vector",
-          "SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordY:vector",
-          "SatelliteExampleScenario.leo*[*].vehicleStatistics.omnetCoordZ:vector"]
+itervars: [
+  #"warmupPeriod", 
+  #"simTimeLimit", 
+  #"nodeXPos"
+  ]
+sat_vectors: ["omnetCoordX:vector",
+              "omnetCoordY:vector",
+              "omnetCoordZ:vector",
+              "wgs84CoordLat:vector",
+              "wgs84CoordLon:vector",
+              "wgs84CoordAlt:vector"]

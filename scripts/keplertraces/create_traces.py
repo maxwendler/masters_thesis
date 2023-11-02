@@ -59,12 +59,16 @@ for kepler_inputs in inputs:
             nu=kepler_inputs.true_anom, 
             epoch=kepler_inputs.epoch)
     ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(startTime, spacing=updateInterval, periods=periods)))
+    
     cartesian_trace = ephem.sample(ephem.epochs)
-    WGS84_trace = list(map(lambda cart_rep: coords.WGS84GeodeticRepresentation.from_cartesian(cart_rep) , cartesian_trace))
+    skycoord = coords.SkyCoord(coords.TEME(cartesian_trace, obstime=ephem.epochs), frame="teme", obstime=ephem.epochs).transform_to("itrs")
+    skycoord.representation_type = coords.WGS84GeodeticRepresentation
+    print(skycoord)
+    wgs84_trace = skycoord.frame.cache["representation"][('WGS84GeodeticRepresentation', True)]
     
     with open(output_path, "w") as trace_f:
         trace_f.write(kepler_inputs.name)
-        for coord in WGS84_trace:
+        for coord in wgs84_trace:
             trace_f.write("\n" + str(coord.lon.value) + "," + str(coord.lat.value) + "," + str(coord.height.value))
 
     print("Wrote a trace...")  
