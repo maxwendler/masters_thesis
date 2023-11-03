@@ -23,6 +23,7 @@
 
 #include "space_veins/modules/mobility/SGP4Mobility/SGP4Mobility.h"
 #include "space_veins/modules/mobility/SGP4Mobility/TEME2ITRF.h"
+#include "veins/base/utils/Coord.h"
 
 using namespace space_veins;
 
@@ -224,6 +225,7 @@ void SGP4Mobility::updateSatellitePosition()
     julian_day += julian_day_frac;
     // Coordinate transformation TEME -> ITRF
     std::pair<std::vector<double>, std::vector<double>> itrf = TEME_to_ITRF(julian_day, r_TEME, v_TEME);
+    vehicleStatistics->recordItrfCoord(veins::Coord(itrf.first[0], itrf.first[1], itrf.first[2]));
     // Coordinate transformation ITRF -> WGS84
     PJ_COORD toTransfer = proj_coord(itrf.first[0] * 1000, itrf.first[1] * 1000, itrf.first[2] * 1000, 0); // conversion km -> m!
     PJ_COORD geo = proj_trans(itrf2008_to_wgs84_projection, PJ_FWD, toTransfer);

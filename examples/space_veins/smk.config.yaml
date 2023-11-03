@@ -9,9 +9,9 @@ itervars: [
   #"simTimeLimit", 
   #"nodeXPos"
   ]
-sat_vectors: ["omnetCoordX:vector",
-              "omnetCoordY:vector",
-              "omnetCoordZ:vector",
-              "wgs84CoordLat:vector",
+sat_vectors: ["wgs84CoordLat:vector",
               "wgs84CoordLon:vector",
-              "wgs84CoordAlt:vector"]
+              "wgs84CoordAlt:vector",
+              "itrfCoordX:vector",
+              "itrfCoordY:vector",
+              "itrfCoordZ:vector"]

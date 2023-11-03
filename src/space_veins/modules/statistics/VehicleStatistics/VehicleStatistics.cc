@@ -39,6 +39,10 @@ const simsignal_t VehicleStatistics::sopRelativeCoordX = registerSignal("space_v
 const simsignal_t VehicleStatistics::sopRelativeCoordY = registerSignal("space_veins_vehicleStatistics_sopRelativeCoordY");
 const simsignal_t VehicleStatistics::sopRelativeCoordZ = registerSignal("space_veins_vehicleStatistics_sopRelativeCoordZ");
 
+const simsignal_t VehicleStatistics::itrfCoordX = registerSignal("space_veins_vehicleStatistics_itrfCoordX");
+const simsignal_t VehicleStatistics::itrfCoordY = registerSignal("space_veins_vehicleStatistics_itrfCoordY");
+const simsignal_t VehicleStatistics::itrfCoordZ = registerSignal("space_veins_vehicleStatistics_itrfCoordZ");
+
 const simsignal_t VehicleStatistics::sendSatellitePackets = registerSignal("space_veins_vehicleStatistics_sendSatellitePackets");
 const simsignal_t VehicleStatistics::receivedSatellitePackets = registerSignal("space_veins_vehicleStatistics_receivedSatellitePackets");
 
@@ -104,6 +108,13 @@ void VehicleStatistics::recordSopRelativeCoord(const veins::Coord c)
     emit(sopRelativeCoordX, c.x);
     emit(sopRelativeCoordY, c.y);
     emit(sopRelativeCoordZ, c.z);
+}
+
+void VehicleStatistics::recordItrfCoord(const veins::Coord c)
+{
+    emit(itrfCoordX, c.x);
+    emit(itrfCoordY, c.y);
+    emit(itrfCoordZ, c.z);
 }
 
 void VehicleStatistics::recordSendSatellitePackets()

@@ -245,6 +245,9 @@ network = SatelliteExampleScenario
 *.leo*[*].vehicleStatistics.wgs84CoordLat:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.wgs84CoordLon:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.wgs84CoordAlt:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordX:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordY:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordZ:vector.vector-recording = true
 
 # Disable all remaining result recording
 **.scalar-recording = false
