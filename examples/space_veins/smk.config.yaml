@@ -1,6 +1,6 @@
-tles_dir: "tles/"
+# tles_dir: "tles/"
 tles_prefixes: ["iridium-NEXT", "oneweb", "satnogs", "starlink", "eccentric"]
-traces_dir: "./traces/"
+# traces_dir: "./traces/"
 
 debug_mode: true
 mobilities: ["sgp4", "kepler"]

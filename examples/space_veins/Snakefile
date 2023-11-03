@@ -1,17 +1,15 @@
 import os
+import glob
 
 configfile: "smk.config.yaml"
 
 def get_tles_paths():
     tles_fname_prefixes = config["tles_prefixes"]
-    tles_fpaths = []
-    tles_dir = config["tles_dir"]
-    if tles_dir[-1] != "/":
-        tles_dir += "/" 
+    tles_fpaths = [] 
     
-    for fname in os.listdir(tles_dir):
+    for fname in os.listdir("./tles/"):
         if fname.split("_")[0] in tles_fname_prefixes:
-            tles_fpaths.append(f'{tles_dir + fname}')
+            tles_fpaths.append(f'{"./tles/" + fname}')
     
     return tles_fpaths
 
@@ -29,8 +27,9 @@ rule update_omnetini:
     output:
         "omnetpp.ini"
     shell:
-        "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} {config[traces_dir]} {params.quoted_tles_paths}"
+        "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
 
+# TO BE REMOVED
 rule create_traces:
     input:
         ini_path="omnetpp.ini",
@@ -49,6 +48,23 @@ rule create_traces:
             shell_commands.append(command)
         shell_commands.append(f"touch {output}")
         shell(" && ".join(shell_commands))
+
+
+rule create_traces_v2:
+    input:
+        ini_path="omnetpp.ini",
+        tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
+    output:
+        "traces/{constellation}.done"
+    params:
+        configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
+                                        optional_Debug="Debug-" if config["debug_mode"] else "",
+                                        constellation=wildcards.constellation) 
+    shell:
+        """
+        touch {output}
+        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} ./traces/ -c {params.configname}
+        """
 
 rule make_makefiles:
     input:
@@ -148,9 +164,14 @@ rule createRunmakerFiles:
     shell:
         "touch runmaker.done"
 
+def get_const_from_config(wildcards):
+    config = wildcards.oppConfig.replace("Debug-","")
+    constellation = config.split("-")[0]
+    return constellation
+
 rule run:
     input:
-        "traces/.done",
+        lambda wildcards: "traces/" + get_const_from_config(wildcards) + ".done",
         logFile="runs/{oppConfig}_runs.log",
         runFile="runs/{oppConfig}_runs.txt"
     output:
