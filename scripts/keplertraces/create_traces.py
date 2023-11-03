@@ -30,10 +30,10 @@ except:
     pass
 
 # get trace parameters (duration = sim-time-limit, spacing = updateInterval) from omnetpp.ini at given path
-timelimit, updateInterval, startTime = parseomnetini(args.omnetinipath, args.config)
-periods = int(timelimit / updateInterval)
+timelimit, update_interval, start_time = parseomnetini(args.omnetinipath, args.config)
+periods = int(timelimit / update_interval)
 
-print(f"startTime {startTime}")
+print(f"startTime {start_time}")
 
 omnetparse_t = timer()
 print(f"Time for parsing omnetpp.ini: {omnetparse_t-start_t} seconds")
@@ -58,7 +58,7 @@ for kepler_inputs in inputs:
             argp=kepler_inputs.argp, 
             nu=kepler_inputs.true_anom, 
             epoch=kepler_inputs.epoch)
-    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(startTime, spacing=updateInterval, periods=periods)))
+    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(start_time, spacing=update_interval, periods=periods)))
     
     cartesian_trace = ephem.sample(ephem.epochs)
     skycoord = coords.SkyCoord(coords.TEME(cartesian_trace, obstime=ephem.epochs), frame="teme", obstime=ephem.epochs).transform_to("itrs")
