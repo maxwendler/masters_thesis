@@ -1,7 +1,7 @@
 from tletools import TLE
 from keplerinputs import KeplerInputs
 from astropy.time import Time
-from datetime import datetime
+from poliastro.twobody import Orbit
 
 def remove_empty_startend_lines(orig_lines: list[str]) -> list[str]:
     """ removes empty lines at start and end of TLE file, which are allowed but must be removed """
@@ -43,18 +43,15 @@ def read(path: str) -> list[TLE]:
 
     return tles
 
-""" lambda method that creates KeplerInputs instance from TLE-tools' TLE instance"""
-TLE_TO_KI = lambda tle: KeplerInputs(tle.name, tle.ecc, tle.inc, tle.raan, tle.argp, mean_anom=tle.M, mean_motion=tle.n, epoch=tle.epoch)
-
-def parse(path: str) -> list[KeplerInputs]:
+def parse_orbits(path: str) -> list[tuple[str,Orbit]]:
     """ 
     reads TLEs file at 'path' and parses contained TLEs to inputs for the Kepler model,
     see `kepler.keplerinputs.KeplerInputs`
     """
     tles = read(path)
-    results = list(map(TLE_TO_KI, tles))
-    print(f"parsed {len(results)} TLEs")
-    return results
+    named_orbits = [(tle.name, tle.to_orbit()) for tle in tles]
+    print(f"parsed {len(named_orbits)} TLEs to poliastro Kepler orbits")
+    return named_orbits
 
 def get_avg_epoch_str(tles_as_lines: str) -> str:
     epoch_sum = 0

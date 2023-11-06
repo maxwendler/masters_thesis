@@ -116,3 +116,4 @@ scripts/keplertraces/tles/*
 **.trace
 examples/**/dag.svg
 examples/space_veins/csv
+.conda

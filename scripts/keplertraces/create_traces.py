@@ -1,11 +1,12 @@
 import argparse
 from parseomnetini import parseomnetini
-from tleparse import parse
+from tleparse import parse_orbits
 from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
 from poliastro.twobody.sampling import EpochsArray
 from poliastro.util import time_range
 import astropy.coordinates as coords
+import astropy.units as u
 from timeit import default_timer as timer
 import os
 
@@ -39,42 +40,35 @@ omnetparse_t = timer()
 print(f"Time for parsing omnetpp.ini: {omnetparse_t-start_t} seconds")
 
 # create inputs for poliastro Kepler model from tles in file at given path
-inputs = parse(args.tlespath)
+named_orbits = parse_orbits(args.tlespath)
 
-kepler_inputs_t = timer()
-print(f"Time for creating kepler inputs: {kepler_inputs_t - omnetparse_t} seconds")
+orbits_t = timer()
+print(f"Time for creating poliastro orbits: {orbits_t - omnetparse_t} seconds")
 
 # create and write traces; one file per satellite
-for kepler_inputs in inputs:
+for name_orbit_tuple in named_orbits:
     # satellites will be renamed if name contains "/", to not mess up resulting paths
-    output_path = args.outputdir + kepler_inputs.name.replace("/","-") + ".trace"
+    output_path = args.outputdir + name_orbit_tuple[0].replace("/","-") + ".trace"
     
-    orb = Orbit.from_classical(
-            Earth, 
-            a=kepler_inputs.semimajoraxis, 
-            ecc=kepler_inputs.ecc, 
-            inc=kepler_inputs.inc, 
-            raan=kepler_inputs.raan, 
-            argp=kepler_inputs.argp, 
-            nu=kepler_inputs.true_anom, 
-            epoch=kepler_inputs.epoch)
+    orb = name_orbit_tuple[1]
     ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(start_time, spacing=update_interval, periods=periods)))
     
     cartesian_trace = ephem.sample(ephem.epochs)
-    skycoord = coords.SkyCoord(coords.TEME(cartesian_trace, obstime=ephem.epochs), frame="teme", obstime=ephem.epochs).transform_to("itrs")
-    skycoord.representation_type = coords.WGS84GeodeticRepresentation
-    print(skycoord)
-    wgs84_trace = skycoord.frame.cache["representation"][('WGS84GeodeticRepresentation', True)]
+    grcs_trace = coords.SkyCoord(coords.GCRS(cartesian_trace, obstime=ephem.epochs), frame="gcrs", obstime=ephem.epochs)
+    itrs_trace = grcs_trace.transform_to(coords.ITRS) 
+    wgs84_trace = itrs_trace.spherical.represent_as(coords.WGS84GeodeticRepresentation)
+    
+    wgs84_trace_in_deg = [(coord.lon.to(u.deg), coord.lat.to(u.deg), coord.height) for coord in wgs84_trace]
     
     with open(output_path, "w") as trace_f:
-        trace_f.write(kepler_inputs.name)
-        for coord in wgs84_trace:
-            trace_f.write("\n" + str(coord.lon.value) + "," + str(coord.lat.value) + "," + str(coord.height.value))
+        trace_f.write(name_orbit_tuple[0])
+        for coord in wgs84_trace_in_deg:
+            trace_f.write("\n" + str(coord[0].value) + "," + str(coord[1].value) + "," + str(coord[2].value))
 
     print("Wrote a trace...")  
 
 print(f"Successfully wrote traces to {args.outputdir}!")
 
 end_t = timer()
-print(f"Time for creating traces: {end_t - kepler_inputs_t} seconds")
+print(f"Time for creating traces: {end_t - orbits_t} seconds")
 print(f"Execution of the script with the provided arguments took {end_t - start_t} seconds.")
