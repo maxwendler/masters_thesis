@@ -205,7 +205,13 @@ std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNu
     }
     // assume uniqueness of unnumbered satellites -> all get num 1
     else if (std::regex_match(tleName, format3))
-    {
+    {   
+        // remove whitespaces for easier parsing of module names
+        while( int pos=tleName.find(" ") != std::string::npos)
+        {
+            tleName.erase(pos, 1);
+        }
+
         return std::pair<std::string, unsigned int>(
             tleName, 
             1

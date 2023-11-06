@@ -9,6 +9,7 @@ itervars: [
   #"simTimeLimit", 
   #"nodeXPos"
   ]
+sat_mod_regex_base: "SatelliteExampleScenario.leo.vehicleStatistics"
 sat_vectors: ["wgs84CoordLat:vector",
               "wgs84CoordLon:vector",
               "wgs84CoordAlt:vector",

@@ -9,7 +9,7 @@ def get_tles_paths():
     
     for fname in os.listdir("./tles/"):
         if fname.split("_")[0] in tles_fname_prefixes:
-            tles_fpaths.append(f'{"./tles/" + fname}')
+            tles_fpaths.append(f'{"tles/" + fname}')
     
     return tles_fpaths
 
@@ -146,7 +146,7 @@ rule createRunFile:
     #    "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 0' > {output}
+        echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
         """
 
 rule createRunmakerFiles:
@@ -201,7 +201,8 @@ def formatModuleRegex(wildcards):
     regex = regex.replace(".", "\.")
     regex = regex.replace("[", "\[")
     regex = regex.replace("]", "\]")
-    regex = regex.replace("*", "(?<module>[0-9]+)")
+    regex.replace("leo", "(?<module>leo.*\[[0-9]+\])")
+    # regex = regex.replace("*", "(?<module>[0-9]+)")
     regex = "\'^" + regex + "\'"
     return regex
 
@@ -280,29 +281,27 @@ def formatSatVecCsvFileNames():
                                                         constellation=[constellation],
                                                         mobility=config["mobilities"])
 
-    sat_mods_per_constellation = get_sat_mods_per_const()
-    
-    print(sat_mods_per_constellation)
+    # sat_mods_per_constellation = get_sat_mods_per_const()
 
     for c in configs_per_constellation.keys():
-        sat_mods = sat_mods_per_constellation[c]
-        for mod in sat_mods:
+        # sat_mods = sat_mods_per_constellation[c]
+
             for vec in config["sat_vectors"]:
-                f = "csv/vectors/" + c + "_" + mod + "_" + vec + ".csv"
+                f = "csv/vectors/" + c + "_" + config["sat_mod_regex_base"] + "_" + vec + ".csv"
                 files.append(f)
 
     return files
 
 def format_constellation_satvec_csvnames(wildcards):
     config_name = wildcards.opp_config
-    constellation = config_name.replace("Debug-", "")
-    sat_mods = get_const_sat_mods(constellation)
+    # constellation = config_name.replace("Debug-", "")
+    # sat_mods = get_const_sat_mods(constellation)
     
     files = []
-    for mod in sat_mods:
-            for vec in config["sat_vectors"]:
-                f = "csv/vectors/" + config_name + "_" + mod + "_" + vec + ".csv"
-                files.append(f)
+
+    for vec in config["sat_vectors"]:
+        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + vec + ".csv"
+        files.append(f)
     
     return files
     
