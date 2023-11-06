@@ -29,42 +29,31 @@ rule update_omnetini:
     shell:
         "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
 
-# TO BE REMOVED
-rule create_traces:
-    input:
-        ini_path="omnetpp.ini",
-        tles_paths=lambda wildcards: sorted(get_tles_paths())
-    output:
-        "traces/.done"
-    params:
-        confignames = sorted(expand("{optional_Debug}{constellation}-kepler", 
-                             optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                             constellation=config["tles_prefixes"])) 
-    run:
-        print(params.confignames)
-        shell_commands = []
-        for i in range(len(input.tles_paths)):
-            command = f"python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_paths[i]} {config['traces_dir']} -c {params.confignames[i]}"
-            shell_commands.append(command)
-        shell_commands.append(f"touch {output}")
-        shell(" && ".join(shell_commands))
-
-
 rule create_traces_v2:
     input:
         ini_path="omnetpp.ini",
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
-    output:
-        "traces/{constellation}.done"
     params:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
                                         optional_Debug="Debug-" if config["debug_mode"] else "",
-                                        constellation=wildcards.constellation) 
+                                        constellation=wildcards.constellation), 
+        itrs_option="-i" if config["itrs_traces"] else "",
+        orekit_option="-o" if config["use_orekit"] else ""
+    output:
+        config["traces_dir"] + "{constellation}.done"
     shell:
         """
+        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {config[traces_dir]} -c {params.configname} {params.itrs_option} {params.orekit_option}
         touch {output}
-        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} ./traces/ -c {params.configname}
         """
+
+rule create_traces_all:
+    input:
+        expand("{traces_dir}{constellation}.done", traces_dir=config["traces_dir"], constellation=config["tles_prefixes"])
+    output:
+        expand("{traces_dir}.done", traces_dir=config["traces_dir"])
+    shell:
+        "touch {output}"
 
 rule make_makefiles:
     input:

@@ -1,8 +1,10 @@
 # tles_dir: "tles/"
-tles_prefixes: ["iridium-NEXT", "oneweb", "satnogs", "starlink", "eccentric"]
-# traces_dir: "./traces/"
+tles_prefixes: ["iridiumNEXT", "oneweb", "satnogs", "starlink", "eccentric"]
+traces_dir: "traces/"
 
 debug_mode: true
+itrs_traces: false
+use_orekit: false
 mobilities: ["sgp4", "kepler"]
 itervars: [
   #"warmupPeriod", 
