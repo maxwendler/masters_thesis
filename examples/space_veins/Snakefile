@@ -158,9 +158,16 @@ def get_const_from_config(wildcards):
     constellation = config.split("-")[0]
     return constellation
 
+def get_trace_requirement(wildcards):
+    if "kepler" in wildcards.oppConfig:
+        return config["traces_dir"] + get_const_from_config(wildcards) + ".done"
+    else: 
+        return []
+
 rule run:
     input:
-        lambda wildcards: "traces/" + get_const_from_config(wildcards) + ".done",
+        # only require trace files for Kepler-orbit-based runs
+        get_trace_requirement,
         logFile="runs/{oppConfig}_runs.log",
         runFile="runs/{oppConfig}_runs.txt"
     output:
@@ -195,9 +202,17 @@ def formatModuleRegex(wildcards):
     regex = "\'^" + regex + "\'"
     return regex
 
-def formatVector(wildcards):
-    v = wildcards.vector.split(".")[-1]
-    return "-F " + v + "=" + v.replace(":", "_")
+def format_coord_vectors(wildcards):
+    if (wildcards.coordframe == "wgs84"):
+        return ("--list -F " + "wgs84CoordLat:vector=wgs84CoordLat_vector" +
+                                " -F wgs84CoordLon:vector=wgs84CoordLon_vector " +
+                                " -F wgs84CoordAlt:vector=wgs84CoordAlt_vector")
+    elif (wildcards.coordframe == "itrf"):
+        return ("--list -F " + "itrfCoordX:vector=itrfCoordX_vector" +
+                                " -F itrfCoordY:vector=itrfCoordY_vector" +
+                                " -F itrfCoordZ:vector=itrfCoordZ_vector")
+    else:
+        raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
 
 def formatItervars(wildcards):
     i = ""
@@ -209,16 +224,16 @@ rule vec2csv:
     input:
         "runs/{oppConfig}_done.txt"
     output:
-        "csv/vectors/{oppConfig}_{module}_{vector}.csv"
+        "csv/vectors/{oppConfig}_{module}_{coordframe}.csv"
     params:
         itervars=formatItervars,
-        vector=formatVector,
+        vectors=format_coord_vectors,
         moduleRegex=formatModuleRegex
     threads:
         1
     shell:
         """
-        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -M {params.moduleRegex} {params.vector} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
         """
 
 def get_sat_mods_per_const():
@@ -288,8 +303,8 @@ def format_constellation_satvec_csvnames(wildcards):
     
     files = []
 
-    for vec in config["sat_vectors"]:
-        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + vec + ".csv"
+    for frame in config["coord_frames"]:
+        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + frame + ".csv"
         files.append(f)
     
     return files

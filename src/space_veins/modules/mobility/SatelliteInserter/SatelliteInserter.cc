@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -172,55 +173,54 @@ std::pair<std::string, unsigned int> SatelliteInserter::getConstellationAndSatNu
 
     boost::algorithm::trim(tleName);
 
-    // replace special characters [., /]
+    // replace special characters "." and "/"
     for (int i=0; i < tleName.size(); i++){
-        if (/*tleName[i] == '/' ||*/ tleName[i] == '.'){
+        if (tleName[i] == '.' || tleName[i] == '/'){
             tleName.replace(i, 1, "-");
         }
     }
+
+    std::string satName = "";
+    unsigned int satNum = 0;
 
     if (std::regex_match(tleName, format1))
     {
         int delimiterPos1 = tleName.find("-");
         int delimiterPos2 = tleName.find(" ");
-        std::string satName = tleName.substr(0, delimiterPos1);
+        satName = tleName.substr(0, delimiterPos1);
         // condition can only hold if there's more after whitespace as tleName was trimmed
         if (delimiterPos2 != std::string::npos) satName += tleName.substr(delimiterPos2 + 1, std::string::npos);
-        return std::pair<std::string, unsigned int>(
-            satName,
-            std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2))
-        );
+        satNum = std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2));
     }
     else if (std::regex_match(tleName, format2))
     {
         int delimiterPos1 = tleName.find(" ");
         int delimiterPos2 = delimiterPos1 + 1 + tleName.substr(delimiterPos1 + 1, std::string::npos).find(" ");
-        std::string satName = tleName.substr(0, delimiterPos1);
+        satName = tleName.substr(0, delimiterPos1);
         // condition can only hold if there's more after whitespace as tleName was trimmed
         if (delimiterPos2 > delimiterPos1 && delimiterPos2 != std::string::npos) satName += tleName.substr(delimiterPos2 + 1, std::string::npos);
-        return std::pair<std::string, unsigned int>(
-            satName, 
-            std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2))
-        );
+        satNum = std::stoi(tleName.substr(delimiterPos1 + 1, delimiterPos2));
     }
     // assume uniqueness of unnumbered satellites -> all get num 1
     else if (std::regex_match(tleName, format3))
     {   
-        // remove whitespaces for easier parsing of module names
-        while( int pos=tleName.find(" ") != std::string::npos)
-        {
-            tleName.erase(pos, 1);
-        }
-
-        return std::pair<std::string, unsigned int>(
-            tleName, 
-            1
-        );
+        satName = tleName;
+        satNum = 1;
     }
     else 
     {
         throw cRuntimeError("Unexpected satellite name format!: \"%s\"", tleName.c_str());
     }
+
+    // remove whitespaces for easier parsing of module names
+    while(true)
+    {
+        int pos = satName.find(" ");
+        if (pos == std::string::npos) break;
+        else satName.erase(pos, 1);
+    }
+
+    return std::pair<std::string, unsigned int>(satName, satNum); 
 }
 
 void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned int vectorSize, std::string constellation) {    

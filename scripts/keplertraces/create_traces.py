@@ -73,10 +73,13 @@ named_orbits = parse_orbits(args.tlespath)
 orbits_t = timer()
 print(f"Time for creating poliastro orbits: {orbits_t - omnetparse_t} seconds")
 
+two_pi_to_negpos_pi_range = lambda deg_val: (-360 << u.deg) + deg_val if deg_val > (180 << u.deg) else deg_val
+
 # create and write traces; one file per satellite
 for name_orbit_tuple in named_orbits:
     # satellites will be renamed if name contains "/", to not mess up resulting paths
-    output_path = args.outputdir + name_orbit_tuple[0].replace("/","-") + ".trace"
+    satname = name_orbit_tuple[0].replace("/","-")
+    output_path = args.outputdir + satname  + ".trace"
     
     orb = name_orbit_tuple[1]
     ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(start_time, spacing=update_interval, periods=periods)))
@@ -108,10 +111,13 @@ for name_orbit_tuple in named_orbits:
             z_array = [ (coord.getZ() << (u.km)) for coord in itrs_trace]
             itrs_trace = coords.SkyCoord(x=x_array, y=y_array, z=z_array, frame="itrs", obstime=ephem.epochs)
         wgs84_trace = itrs_trace.spherical.represent_as(coords.WGS84GeodeticRepresentation)
-        wgs84_trace_in_deg = [(coord.lon.to(u.deg), coord.lat.to(u.deg), coord.height) for coord in wgs84_trace]
+        wgs84_trace_in_deg = [( two_pi_to_negpos_pi_range(coord.lat.to(u.deg)), 
+                                two_pi_to_negpos_pi_range(coord.lon.to(u.deg)), 
+                                coord.height) 
+                                for coord in wgs84_trace]
     
     with open(output_path, "w") as trace_f:
-        trace_f.write(name_orbit_tuple[0])
+        trace_f.write(satname)
         if args.itrs:
             if args.orekit:
                 for coord in itrs_trace:

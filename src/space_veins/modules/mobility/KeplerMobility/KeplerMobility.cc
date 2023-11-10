@@ -80,9 +80,9 @@ void KeplerMobility::updateSatellitePosition()
     
     // parse WGS84 coordinate from trace line
     std::string coord = std::strtok(sat_pos_wgs84_c_str, ",");        
-    double wgs84lon = std::stod(coord, NULL);
-    coord = std::strtok(NULL, ","); 
     double wgs84lat = std::stod(coord, NULL);
+    coord = std::strtok(NULL, ","); 
+    double wgs84lon = std::stod(coord, NULL);
     coord = std::strtok(NULL, ",");
     double wgs84alt =  std::stod(coord, NULL);
 
