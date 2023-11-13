@@ -43,24 +43,15 @@ rule create_traces_v2:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
                                         optional_Debug="Debug-" if config["debug_mode"] else "",
                                         constellation=wildcards.constellation),
-        traces_dir=get_traces_dir(),
-        itrf_option="-i" if config["itrf_traces"] else "",
+        itrf_option= lambda wildcards: "-i" if "itrf" in wildcards.traces_dir else "",
         orekit_option="-o" if config["use_orekit"] else ""
     output:
-        config["traces_dir"] + "{constellation}.done"
+        "{traces_dir}/{constellation}_traces.done"
     shell:
         """
-        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {params.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
+        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
         touch {output}
         """
-
-rule create_traces_all:
-    input:
-        expand("{traces_dir}{constellation}.done", traces_dir=config["traces_dir"], constellation=config["tles_prefixes"])
-    output:
-        expand("{traces_dir}.done", traces_dir=config["traces_dir"])
-    shell:
-        "touch {output}"
 
 rule make_makefiles:
     input:
@@ -167,13 +158,14 @@ def get_const_from_config(wildcards):
 
 def get_trace_requirement(wildcards):
     if "kepler" in wildcards.oppConfig:
-        return config["traces_dir"] + get_const_from_config(wildcards) + ".done"
+        return get_traces_dir() + get_const_from_config(wildcards) + "_traces.done"
     else: 
         return []
 
 rule run:
     input:
         # only require trace files for Kepler-orbit-based runs
+        # either traces/ or traces_orekit/ with use_orekit:true in config
         get_trace_requirement,
         logFile="runs/{oppConfig}_runs.log",
         runFile="runs/{oppConfig}_runs.txt"
