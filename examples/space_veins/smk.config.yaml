@@ -3,7 +3,7 @@ tles_prefixes: ["iridiumNEXT", "oneweb", "satnogs", "starlink", "eccentric"]
 traces_dir: "traces_itrs/"
 
 debug_mode: false
-itrs_traces: true
+itrs_traces: false
 use_orekit: false
 mobilities: ["sgp4", "kepler"]
 itervars: [

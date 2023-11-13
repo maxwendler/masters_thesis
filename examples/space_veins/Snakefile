@@ -224,16 +224,19 @@ rule vec2csv:
     input:
         "runs/{oppConfig}_done.txt"
     output:
-        "csv/vectors/{oppConfig}_{module}_{coordframe}.csv"
+        "csv/vectors/{oppConfig}_{module}_{coordframe}_sorted.csv"
     params:
         itervars=formatItervars,
         vectors=format_coord_vectors,
-        moduleRegex=formatModuleRegex
+        moduleRegex=formatModuleRegex,
+        unsorted_path="csv/vectors/{oppConfig}_{module}_{coordframe}.csv"
     threads:
         1
     shell:
         """
-        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {params.unsorted_path}
+        python3 ../../scripts/time_sort_csv.py {params.unsorted_path}  
+        rm {params.unsorted_path}
         """
 
 def get_sat_mods_per_const():
@@ -304,7 +307,7 @@ def format_constellation_satvec_csvnames(wildcards):
     files = []
 
     for frame in config["coord_frames"]:
-        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + frame + ".csv"
+        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + frame + "_sorted.csv"
         files.append(f)
     
     return files
