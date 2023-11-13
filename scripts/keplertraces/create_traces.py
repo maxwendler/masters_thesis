@@ -8,8 +8,6 @@ import astropy.units as u
 from timeit import default_timer as timer
 import os
 from orekit.pyhelpers import download_orekit_data_curdir, setup_orekit_curdir
-from astropy.time import Time
-
 
 start_t = timer()
 
@@ -19,7 +17,7 @@ parser.add_argument('omnetinipath', help="Path of omnetpp.ini that has settings 
 parser.add_argument('tlespath', help="Path of .txt with list of TLEs for which to create traces.")
 parser.add_argument('outputdir', help="Path of directory where .trace files (.txt-like contents) with satellite traces will be written to; one file per satellite.")
 parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.ini of which values shall overwrite general settings.')
-parser.add_argument('-i', '--itrs', action='store_true', help='Outputs traces in ITRS/ITRF traces instead of WGS84.')
+parser.add_argument('-i', '--itrf', action='store_true', help='Outputs traces in ITRS/ITRF traces instead of WGS84.')
 parser.add_argument('-o', '--orekit', action='store_true', help='Creates traces via orekit instead of poliastro/astropy APIs.')
 
 args = parser.parse_args()
@@ -33,13 +31,13 @@ try:
 except:
     pass
 
-if args.itrs:
-    print("Creating traces in ITRS...")
+if args.itrf:
+    print("Creating traces in ITRF...")
 else:
-    print("Creating traces in WGS84")
+    print("Creating traces in WGS84...")
 
 if args.orekit:
-    print("Using orekit API for GCRS to ITRS conversion...")
+    print("Using orekit API for GCRS to ITRF conversion...")
     if "orekit-data.zip" not in os.listdir("./"):
         download_orekit_data_curdir()
     
@@ -56,7 +54,7 @@ if args.orekit:
     from org.orekit.utils import PVCoordinates
     from org.hipparchus.geometry.euclidean.threed import Vector3D
 else:
-    print("Using astropy GCRS to ITRS conversion...")
+    print("Using astropy GCRS to ITRF conversion...")
 
 # get trace parameters (duration = sim-time-limit, spacing = updateInterval) from omnetpp.ini at given path
 timelimit, update_interval, start_time = parseomnetini(args.omnetinipath, args.config)
@@ -100,17 +98,17 @@ for name_orbit_tuple in named_orbits:
         itrf = FramesFactory.getITRF(ITRFVersion.ITRF_2008 ,IERSConventions.IERS_2010, False)
         gcrfItrfTransformation = gcrf.getTransformTo(itrf, date)
 
-        itrs_trace = [gcrfItrfTransformation.transformPVCoordinates(c).getPosition() for c in orekit_gcrs_trace]
+        itrf_trace = [gcrfItrfTransformation.transformPVCoordinates(c).getPosition() for c in orekit_gcrs_trace]
     else:
-        itrs_trace = grcs_trace.transform_to(coords.ITRS)
+        itrf_trace = grcs_trace.transform_to(coords.ITRS)
 
-    if not args.itrs:
+    if not args.itrf:
         if args.orekit:
-            x_array = [ (coord.getX() << (u.km)) for coord in itrs_trace]
-            y_array = [ (coord.getY() << (u.km)) for coord in itrs_trace]
-            z_array = [ (coord.getZ() << (u.km)) for coord in itrs_trace]
-            itrs_trace = coords.SkyCoord(x=x_array, y=y_array, z=z_array, frame="itrs", obstime=ephem.epochs)
-        wgs84_trace = itrs_trace.spherical.represent_as(coords.WGS84GeodeticRepresentation)
+            x_array = [ (coord.getX() << (u.km)) for coord in itrf_trace]
+            y_array = [ (coord.getY() << (u.km)) for coord in itrf_trace]
+            z_array = [ (coord.getZ() << (u.km)) for coord in itrf_trace]
+            itrf_trace = coords.SkyCoord(x=x_array, y=y_array, z=z_array, frame="itrs", obstime=ephem.epochs)
+        wgs84_trace = itrf_trace.spherical.represent_as(coords.WGS84GeodeticRepresentation)
         wgs84_trace_in_deg = [( two_pi_to_negpos_pi_range(coord.lat.to(u.deg)), 
                                 two_pi_to_negpos_pi_range(coord.lon.to(u.deg)), 
                                 coord.height) 
@@ -118,12 +116,12 @@ for name_orbit_tuple in named_orbits:
     
     with open(output_path, "w") as trace_f:
         trace_f.write(satname)
-        if args.itrs:
+        if args.itrf:
             if args.orekit:
-                for coord in itrs_trace:
+                for coord in itrf_trace:
                     trace_f.write("\n" + str(coord.getX()) + "," + str(coord.getY()) + "," + str(coord.getZ()))
             else:
-                for coord in itrs_trace:
+                for coord in itrf_trace:
                     trace_f.write("\n" + str(coord.x.value) + "," + str(coord.y.value) + "," + str(coord.z.value))
         else:
             for coord in wgs84_trace_in_deg:

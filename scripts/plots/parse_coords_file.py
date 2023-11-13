@@ -27,11 +27,6 @@ def _parse_coords_csv(csv_path: str) -> tuple[list[tuple[float, float, float], i
     return coords, start_second
 
 def _parse_trace_coords(trace_path: str) -> list[tuple[float, float, float]]:
-    """
-    Parses file with 3d coordinates of a satellite per row to list of float tuple coordinates, 
-    supporting CSV and .trace files.
-    For CSVs also returns start second of simulation too (for plotting purposes). 
-    """
     coords = []
     with open(trace_path, "r") as trace_f:
         name = trace_f.readline()
@@ -42,6 +37,11 @@ def _parse_trace_coords(trace_path: str) -> list[tuple[float, float, float]]:
     return coords
 
 def parse_coords_file(path: str, format: str) -> tuple[list[tuple[float, float, float], int]]:
+    """
+    Parses file with 3d coordinates of a satellite per row to list of float tuple coordinates, 
+    supporting CSV and .trace files.
+    For CSVs also returns start second of simulation too (for plotting purposes). 
+    """
     if format == "csv":
         return _parse_coords_csv(path)
     elif format == "trace":

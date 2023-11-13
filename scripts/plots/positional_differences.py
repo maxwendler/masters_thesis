@@ -186,16 +186,3 @@ with open(args.csv_path, "r") as csv_f:
 
     with open("/workspaces/ma-max-wendler/scripts/plots/test_output/" + args.constellation + "_" + args.frame + "_distances_keplersgp4.csv", "w") as new_csv_f:
         new_csv_f.write("\n".join(distance_csv_lines))
-
-    """
-    current_mod = ""
-    remaining_mod_entries = 0
-    for line in csv_f.readlines():
-        if remaining_mod_entries = 0:
-        line_modname = re.search(modname_re, line)
-        if line_modname != None:
-            line_modname = line_modname.group()
-            print(line)
-            print(line_modname)
-            print(modname_to_satname_dict[line_modname])
-    """
