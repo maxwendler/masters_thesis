@@ -224,12 +224,12 @@ rule vec2csv:
     input:
         "runs/{oppConfig}_done.txt"
     output:
-        "csv/vectors/{oppConfig}_{module}_{coordframe}_sorted.csv"
+        "csv/vectors/{oppConfig}_{coordframe}_sorted.csv"
     params:
         itervars=formatItervars,
         vectors=format_coord_vectors,
-        moduleRegex=formatModuleRegex,
-        unsorted_path="csv/vectors/{oppConfig}_{module}_{coordframe}.csv"
+        moduleRegex='^SatelliteExampleScenario\.leo',
+        unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv"
     threads:
         1
     shell:
@@ -307,7 +307,7 @@ def format_constellation_satvec_csvnames(wildcards):
     files = []
 
     for frame in config["coord_frames"]:
-        f = "csv/vectors/" + config_name + "_" + config["sat_mod_regex_base"] + "_" + frame + "_sorted.csv"
+        f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
         files.append(f)
     
     return files
@@ -320,3 +320,9 @@ rule sat_vec_to_csv_constellation:
         "csv/{opp_config}_vecs.done"
     shell:
         "touch {output}"
+
+rule calc_pos_diffs:
+    input:
+        "csv/{constellation}-{mobility}"
+    output:
+        "csv/pos_diff/{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"

@@ -24,7 +24,16 @@ header = "\t".join(rows[0].keys()) + "\n"
 rows = [ ("\t".join(r.values()) + "\n") for r in rows]
 rows = [header] + rows
 
-sorted_path = args.csv_path.removesuffix(".csv") + "_sorted.csv"
+# create output path with simplified file name
+path_parts = args.csv_path.split("/")
+in_csv_name = path_parts[-1]
+in_csv_name_parts = in_csv_name.split("_")
+opp_config = in_csv_name_parts[0]
+coord_frame = in_csv_name_parts[1].removesuffix(".csv")
+csv_dir_path = "/".join(path_parts[:-1]) + "/"
+sorted_path = csv_dir_path + opp_config + "_" + coord_frame + "_sorted.csv"
+print(sorted_path)
+
 with open(sorted_path, "w") as new_csv_f:
     new_csv_f.writelines(rows)
 
