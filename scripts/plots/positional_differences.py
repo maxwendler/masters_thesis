@@ -6,6 +6,13 @@ import csv
 from math import dist
 import matplotlib.pyplot as plt
 
+def sort_wgs84_coord_fieldnames(fieldnames: list[str]) -> list[str]:
+    coord_field_names_sorted = []
+    coord_field_names_sorted.append(filter(lambda col_name: "CoordLat" in col_name, fieldnames).__next__())
+    coord_field_names_sorted.append(filter(lambda col_name: "CoordLon" in col_name, fieldnames).__next__())
+    coord_field_names_sorted.append(filter(lambda col_name: "CoordAlt" in col_name, fieldnames).__next__())
+    return coord_field_names_sorted
+
 parser = argparse.ArgumentParser(prog="positional_differences.py", description="Outputs differences between coordinates of the specified trace files and result csvs.")
 
 parser.add_argument("traces_or_csv_path", help="Path of directory traces of a constellation (should only contain traces of the constellation).")
@@ -35,11 +42,7 @@ if args.traces_or_csv_path.endswith(".csv"):
         coord_field_names = list(filter(lambda col_name: col_name.endswith("_vector"), first_row.keys()))
         # needs reordering for wgs84
         if args.frame == "wgs84":
-            coord_field_names_sorted = []
-            coord_field_names_sorted.append(filter(lambda col_name: "CoordLat" in col_name, coord_field_names).__next__())
-            coord_field_names_sorted.append(filter(lambda col_name: "CoordLon" in col_name, coord_field_names).__next__())
-            coord_field_names_sorted.append(filter(lambda col_name: "CoordAlt" in col_name, coord_field_names).__next__())
-            coord_field_names = coord_field_names_sorted
+            coord_field_names = sort_wgs84_coord_fieldnames(coord_field_names)
 
         csv_f.seek(0)
 
@@ -89,11 +92,7 @@ with open(args.csv_path, "r") as csv_f:
     coord_field_names = list(filter(lambda col_name: col_name.endswith("_vector"), first_row.keys()))
     # needs reordering for wgs84
     if args.frame == "wgs84":
-        coord_field_names_sorted = []
-        coord_field_names_sorted.append(filter(lambda col_name: "CoordLat" in col_name, coord_field_names).__next__())
-        coord_field_names_sorted.append(filter(lambda col_name: "CoordLon" in col_name, coord_field_names).__next__())
-        coord_field_names_sorted.append(filter(lambda col_name: "CoordAlt" in col_name, coord_field_names).__next__())
-        coord_field_names = coord_field_names_sorted
+        coord_field_names = sort_wgs84_coord_fieldnames(coord_field_names)
 
     csv_f.seek(0)
 
@@ -203,6 +202,7 @@ with open(args.csv_path, "r") as csv_f:
                                         float(row[coord_field_names[1]]), 
                                         float(row[coord_field_names[2]]) ) ]
 
+# output file for testing purposes
 #with open("/workspaces/ma-max-wendler/scripts/plots/test_output/" + args.constellation + "_" + args.frame + "_distances_keplersgp4.csv", "w") as new_csv_f:
 #    new_csv_f.write("\n".join(distance_csv_lines))
 

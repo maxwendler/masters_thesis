@@ -343,3 +343,11 @@ rule calc_pos_diffs:
         debug_option = "-d" if config["debug_mode"] else ""
     shell:
         "python3 ../../scripts/plots/positional_differences.py {params.traces_dir_or_csv} {input.trace_done_or_csvs[1]} {wildcards.constellation} {wildcards.coord_frame} -c {params.debug_option} > {output}"
+
+rule plot_pos_diffs:
+    input:
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
+    shell:
+        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
