@@ -29,6 +29,12 @@ rule update_omnetini:
     shell:
         "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
 
+def get_traces_dir():
+    base_dir = config["traces_dir"].removesuffix("/")
+    orekit_str = "_orekit" if config["use_orekit"] else ""
+
+    return base_dir + orekit_str + "/"
+
 rule create_traces_v2:
     input:
         ini_path="omnetpp.ini",
@@ -36,14 +42,15 @@ rule create_traces_v2:
     params:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
                                         optional_Debug="Debug-" if config["debug_mode"] else "",
-                                        constellation=wildcards.constellation), 
-        itrs_option="-i" if config["itrs_traces"] else "",
+                                        constellation=wildcards.constellation),
+        traces_dir=get_traces_dir(),
+        itrf_option="-i" if config["itrf_traces"] else "",
         orekit_option="-o" if config["use_orekit"] else ""
     output:
         config["traces_dir"] + "{constellation}.done"
     shell:
         """
-        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {config[traces_dir]} -c {params.configname} {params.itrs_option} {params.orekit_option}
+        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {params.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
         touch {output}
         """
 
@@ -192,16 +199,6 @@ rule runAll:
     shell:
         "touch runs/runall.done"
 
-def formatModuleRegex(wildcards):
-    regex = ".".join(wildcards.module.split(".")[:-1])
-    regex = regex.replace(".", "\.")
-    regex = regex.replace("[", "\[")
-    regex = regex.replace("]", "\]")
-    regex.replace("leo", "(?<module>leo.*\[[0-9]+\])")
-    # regex = regex.replace("*", "(?<module>[0-9]+)")
-    regex = "\'^" + regex + "\'"
-    return regex
-
 def format_coord_vectors(wildcards):
     if (wildcards.coordframe == "wgs84"):
         return ("--list -F " + "wgs84CoordLat:vector=wgs84CoordLat_vector" +
@@ -299,30 +296,34 @@ def formatSatVecCsvFileNames():
 
     return files
 
+def get_debug_str():
+    return "Debug-" if config["debug_mode"] else ""
+
 def format_constellation_satvec_csvnames(wildcards):
-    config_name = wildcards.opp_config
-    # constellation = config_name.replace("Debug-", "")
-    # sat_mods = get_const_sat_mods(constellation)
-    
+    config_name = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility 
+
     files = []
 
     for frame in config["coord_frames"]:
+        if frame == "itrf" and wildcards.mobility == "kepler":
+            continue
         f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
         files.append(f)
     
     return files
-    
+
 rule sat_vec_to_csv_constellation:
     input:
-        "runs/{opp_config}_done.txt",
+        "runs/" + get_debug_str() + "{constellation}-{mobility}_done.txt",
         format_constellation_satvec_csvnames
     output:
-        "csv/{opp_config}_vecs.done"
+        "csv/" + get_debug_str() + "{constellation}-{mobility}_vecs.done"
     shell:
         "touch {output}"
 
 rule calc_pos_diffs:
     input:
-        "csv/{constellation}-{mobility}"
+        "csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+        "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
     output:
         "csv/pos_diff/{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"

@@ -333,15 +333,6 @@ void SatelliteInserter::instantiateSatellite(std::string traceFilePath)
     std::string firstLineStr; 
     std::getline(traceFile, firstLineStr);
     traceFile.close();
-    /*
-    char* firstLineCStr = new char[firstLineStr.length() + 1];
-    strcpy(firstLineCStr, firstLineStr.c_str());
-
-    std::string constellation = std::strtok(firstLineCStr , " ");        
-    std::string satNumStr = std::strtok(NULL, " ");
-    unsigned int satNum = std::stoi(satNumStr);
-    
-    delete[] firstLineCStr;*/
 
     std::pair<std::string, unsigned int> satellite = getConstellationAndSatNum(firstLineStr);
     unsigned int vectorSize = determineVectorSize(satellite.first, satellite.second);

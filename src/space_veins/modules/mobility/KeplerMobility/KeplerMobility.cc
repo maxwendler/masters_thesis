@@ -96,11 +96,11 @@ void KeplerMobility::updateSatellitePosition()
     PJ_COORD toTransfer = proj_coord(wgs84lon * (PI/180), wgs84lat * (PI/180), wgs84alt, 0);
     PJ_COORD geo_cart = proj_trans(wgs84_to_wgs84cartesian_projection, PJ_FWD, toTransfer);
     vehicleStatistics->recordWGS84CartCoord(geo_cart);
-    EV_TRACE << "SGP4Mobility sat_pos_wgs84 cartesian: x: " << geo_cart.xyz.x << ", y: " << geo_cart.xyz.y << ", z: " << geo_cart.xyz.z << std::endl;
+    EV_TRACE << "KeplerMobility sat_pos_wgs84 cartesian: x: " << geo_cart.xyz.x << ", y: " << geo_cart.xyz.y << ", z: " << geo_cart.xyz.z << std::endl;
 
     // Geocentric to topocentric, see https://proj.org/operations/conversions/topocentric.html
     PJ_COORD topo_cart = proj_trans(wgs84cartesian_to_topocentric_projection, PJ_FWD, geo_cart);
-    EV_TRACE << "SGP4Mobility topo as cartesian coordinates: e: " << topo_cart.enu.e << ", n:" << -topo_cart.enu.n << ", u: " << topo_cart.enu.u << std::endl;
+    EV_TRACE << "KeplerMobility topo as cartesian coordinates: e: " << topo_cart.enu.e << ", n:" << -topo_cart.enu.n << ", u: " << topo_cart.enu.u << std::endl;
     vehicleStatistics->recordSopRelativeCoord(veins::Coord(topo_cart.enu.e, -topo_cart.enu.n, topo_cart.enu.u));
 
     // Note the minus operator at the northing: The reason is OMNeT++'s coordinate system. The origin is in the upper left corner,
@@ -110,7 +110,7 @@ void KeplerMobility::updateSatellitePosition()
     // Further, the position of the SOP is added such that the satellite position is relative to OMNeT++'s origin.
     auto sop_omnet_coord = sop->get_sop_omnet_coord();
     inet::Coord satellitePosition(topo_cart.enu.e + sop_omnet_coord.x, -topo_cart.enu.n + sop_omnet_coord.y, topo_cart.enu.u + sop_omnet_coord.z);
-    EV_TRACE << "SGP4Mobility new lastPosition: " << satellitePosition << std::endl;
+    EV_TRACE << "KeplerMobility new lastPosition: " << satellitePosition << std::endl;
 
     lastPosition = satellitePosition;
     vehicleStatistics->recordOmnetCoord(veins::Coord(lastPosition.x, lastPosition.y, lastPosition.z));
