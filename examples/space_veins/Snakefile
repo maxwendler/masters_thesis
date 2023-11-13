@@ -29,11 +29,12 @@ rule update_omnetini:
     shell:
         "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
 
-def get_traces_dir():
+def get_traces_dir(itrf=None):
     base_dir = config["traces_dir"].removesuffix("/")
     orekit_str = "_orekit" if config["use_orekit"] else ""
+    itrf_str = "_itrf" if itrf else ""
 
-    return base_dir + orekit_str + "/"
+    return base_dir + itrf_str + orekit_str + "/"
 
 rule create_traces_v2:
     input:
@@ -313,9 +314,32 @@ rule sat_vec_to_csv_constellation:
     shell:
         "touch {output}"
 
+def get_coord_inputs(wildcards):
+    if (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler") and wildcards.coord_frame == "itrf":
+        other_mobility = wildcards.mobility1 if wildcards.mobility2 == "kepler" else wildcards.mobility2
+        return [get_traces_dir(True) + "{constellation}_traces.done",
+                "csv/vectors/{constellation}-" + other_mobility + "_{coord_frame}_sorted.csv"]
+    else:
+        return ["csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+                "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
+
+def get_traces_dir_from_donefile(donefile_path):
+    donefile_name = donefile_path.split("/")[-1]
+    constellation = donefile_name.split("_")[0]
+    all_traces_dir = donefile_path.removesuffix(donefile_name)
+    for file_or_dir_name in os.listdir(all_traces_dir):
+        if file_or_dir_name.startswith(constellation) and not file_or_dir_name.endswith("_traces.done"):
+            return all_traces_dir + file_or_dir_name
+    error_str = f"No directory for constellation {constellation} was found!"
+    raise NameError(error_str)
+
 rule calc_pos_diffs:
     input:
-        "csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
-        "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+        trace_done_or_csvs=get_coord_inputs
     output:
-        "csv/pos_diff/{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    params:
+        traces_dir_or_csv = lambda wildcards, input: input.trace_done_or_csvs[0] if input.trace_done_or_csvs[0].endswith(".csv") else get_traces_dir_from_donefile(input.trace_done_or_csvs[0]),
+        debug_option = "-d" if config["debug_mode"] else ""
+    shell:
+        "python3 ../../scripts/plots/positional_differences.py {params.traces_dir_or_csv} {input.trace_done_or_csvs[1]} {wildcards.constellation} {wildcards.coord_frame} -c {params.debug_option} > {output}"

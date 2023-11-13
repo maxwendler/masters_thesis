@@ -23,35 +23,53 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: positional_differences.py irtf and traces",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/plots/positional_differences.py",
+            "args" : ["/workspaces/ma-max-wendler/examples/space_veins/traces_itrf/eccentric_2023-10-22-21-03-39",
+                      "/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/eccentric-sgp4_itrf_sorted.csv",
+                      "eccentric",
+                      "itrf",
+                      "-c"]
+        },
+        {
+            "name": "Python: positional_differences.py wgs84 and csvs",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/plots/positional_differences.py",
+            "args" : ["/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/eccentric-kepler_wgs84_sorted.csv",
+                      "/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/eccentric-sgp4_wgs84_sorted.csv",
+                      "eccentric",
+                      "wgs84",
+                      "-c"]
+        },
+        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",
             "program": "opp_run_dbg",
-        }
-        ,
+        },
         {
             "type": "lldb",
             "request": "attach",
             "name": "wait for (and attach to) running simulation (debug mode)",
             "program": "opp_run_dbg",
             "waitFor": true
-        }
-        ,
+        },
         {
             "name": "attach to running simulation (release mode)",
             "type": "lldb",
             "request": "attach",
             "program": "opp_run",
-        }
-        ,
+        },
         {
             "type": "lldb",
             "request": "attach",
             "name": "wait for (and attach to) running simulation (release mode)",
             "program": "opp_run",
             "waitFor": true
-        }
-        ,
+        },
         {
             // launch server with `lldb-server-13 platform --server --listen 127.0.0.1:1234` in directory of simulation (or symbols from dynamic libraries loaded at runtime won't be found)
             "name": "wait for (and attach to) running simulation (debug mode) (on 127.0.0.1:1234)",
