@@ -12,10 +12,11 @@ csv_path = args.csv_path
 sat_mods = args.sat_mods
 modname_re = r"leo.*]"
 
+satmod_lines = []
 with open(csv_path, "r") as csv_f:
     
     row_reader = csv.reader(csv_f, delimiter="\t")
-    header = "\t".join(row_reader.__next__()) + "\n"
+    header = "\t".join(row_reader.__next__())
 
     is_reading_mod_coords = False
     mod_rows = []
@@ -23,13 +24,13 @@ with open(csv_path, "r") as csv_f:
     for row in row_reader:
         leo_modname = re.search(modname_re, "".join(row)).group()
         if leo_modname in sat_mods:
-            print(leo_modname)
+
             # still reading
             if is_reading_mod_coords:
-                mod_rows.append("\t".join(row) + "\n")
+                mod_rows.append("\t".join(row))
             # new coord list for mod found
             else:
-                mod_rows = ["\t".join(row) + "\n"]
+                mod_rows = ["\t".join(row)]
                 is_reading_mod_coords = True
             
             current_mod = leo_modname
@@ -37,17 +38,26 @@ with open(csv_path, "r") as csv_f:
         else:
             # reading done
             if is_reading_mod_coords:
+                
+                satmod_lines = [header] + mod_rows
+
+                # output to file instead of print for testing purposes
+                """
                 modcsv_path = ("/".join( csv_path.split("/")[:-1] ) + 
                                 "/satmod_csv/" + 
                                 csv_path.split("/")[-1].removesuffix(".csv") + 
                                 "_" + current_mod + ".csv")
-                print(mod_rows)
-                print(modcsv_path)
-                lines = [header] + mod_rows
-                with open (modcsv_path, "w") as satmod_csv_f:
-                    satmod_csv_f.writelines(lines)
                 
+                # with open (modcsv_path, "w") as satmod_csv_f:
+                #    satmod_csv_f.writelines(satmod_lines)
+                """
                 is_reading_mod_coords = False
+                sat_mods.remove(current_mod)
+                if len(sat_mods) == 0:
+                    break
+            
             # was not reading / nothing to read yet
             else:
                 pass
+
+print("\n".join(satmod_lines))
