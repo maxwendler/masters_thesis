@@ -386,7 +386,7 @@ def get_satmod_csv_paths_or_traces_done(wildcards, same_config=True):
         # return path of {constellation}_traces.done and paths of csvs of other mobility
         if wildcards.coord_frame == "itrf" and (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler"):
             non_kepler_mob = wildcards.mobility1 if wildcards.mobility1 != "kepler" else wildcards.mobility2
-            non_kepler_mob_config_str = get_debug_str + wildcards.constellation + "-" + non_kepler_mob
+            non_kepler_mob_config_str = get_debug_str() + wildcards.constellation + "-" + non_kepler_mob
             non_kepler_mob_base_path = "csv/vectors/satmod/" + non_kepler_mob_config_str + "_" + wildcards.coord_frame + "_sorted_"
             
             orekit_str = "_orekit" if config["use_orekit"] else ""
@@ -423,9 +423,25 @@ def get_trace_paths(wildcards, input, same_config=True):
         # no traces required
         else:
             return []
-    # no traces required
+    
     else:
-        return []
+
+        if wildcards.coord_frame == "itrf" and (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler"):
+            orekit_str = "_orekit" if config["use_orekit"] else ""
+            traces_dir = "traces_itrf" + orekit_str + "/"
+            constellation = wildcards.constellation
+            const_traces_dir = traces_dir + filter(lambda file_or_dir_name: file_or_dir_name.startswith(constellation) and not file_or_dir_name.endswith("_traces.done"),
+                                                    os.listdir(traces_dir)).__next__() + "/"
+            
+            modname_to_satname_dict = None
+            with open(const_traces_dir + "modname_to_satname_dict.json", "r") as dict_f:
+                modname_to_satname_dict = json.load(dict_f)
+            satnames = [modname_to_satname_dict[modname] for modname in leo_modnames]
+
+            return [(const_traces_dir + satname + ".trace") for satname in satnames]
+        
+        else:
+            return []
 
 def filter_csv_paths(path_list):
     return list(filter(lambda path: path.endswith(".csv"), path_list))
@@ -445,12 +461,13 @@ rule plot_orbs_of_mobility:
         python3 ../../scripts/plots/plot_orbs.py {params.csv_option} {params.csv_paths} {params.trace_option} {params.trace_paths} -o '{output}' -e
         """
 
-"""
 rule plot_orbs_of_mobilities:
     input:
-        satmod_csv_paths= lambda wildcards: get_satmod_csv_paths(wildcards, False)
+        coord_paths= lambda wildcards: get_satmod_csv_paths_or_traces_done(wildcards, False)
     output:
-        "plots/orbs/mobilities/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.png"
+        "plots/orbs/mobilities/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
+    params:
+        csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
+        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, input, False))
     shell:
-        "touch {output}"
-"""
+        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}'' -e"
