@@ -5,18 +5,7 @@ import matplotlib.pyplot as plt
 import re
 import numpy as np
 from math import inf
-from satname_to_modname import satname_to_modname
-import random
-
-random.seed()
-
-def hex_to_rgb(value):
-    value = value.lstrip('#')
-    lv = len(value)
-    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-
-def rgb_to_hex(rgb):
-    return '#%02x%02x%02x' % rgb
+import os
 
 parser = argparse.ArgumentParser(prog="plot_orbs.py", 
                                  description="""Plots the orbits from the given coordinate CSVs and trace files using cartesian coordinates. 
@@ -29,6 +18,10 @@ parser.add_argument('-o', '--output_path', metavar='output_path', type=str, requ
 parser.add_argument('-e', "--earth", action="store_true", help="If flag is set, also plots sphere with average earth radius.")
 
 args = parser.parse_args()
+
+output_dir = "/".join(args.output_path.split("/")[:-1])
+os.makedirs(output_dir, exist_ok=True)
+
 csv_paths = args.csv_paths
 trace_paths = args.trace_paths
 
@@ -37,7 +30,6 @@ modname_re = r"leo.*]"
 # color cycle of length ten
 color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 color_idx = 0
-modname_to_color_dict = {}
 
 layout = go.Layout(
     title= " ".join(args.output_path.split("/")[-1].split("_")[:2])
@@ -98,7 +90,6 @@ if csv_paths:
         leo_modname = re.search(modname_re, csv_p).group()
 
         color = color_cycle[color_idx % len(color_cycle)]
-        modname_to_color_dict[leo_modname] = color
 
         orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=leo_modname, line=dict(
                 color=color
@@ -143,58 +134,20 @@ if trace_paths:
             min_z = orb_min_z
 
         satname = trace_p.split("/")[-1].removesuffix(".trace")
-        leo_modname = satname_to_modname(satname)
-        base_color = None
-        try:
-            base_color = modname_to_color_dict[leo_modname]
-        except:
-            pass
-        
-        modified_base_color = None
-        if base_color:
-            
-            base_color_rgb = hex_to_rgb(base_color)
-            # randomly pick rgb component to change, where change will be visible
-            modified_rgb_comp_idx = -1
-            iterations = 0
-            while modified_rgb_comp_idx == -1 and iterations < 50:
-                modified_rgb_comp_idx = random.randrange(0, 3)
-                if base_color_rgb[modified_rgb_comp_idx] < 20 or base_color_rgb[modified_rgb_comp_idx] > 235:
-                    modified_rgb_comp_idx = -1
-                iterations += 1
-            
-            if iterations == 50:
-                modified_rgb_comp_idx = random.randrange(0, 3)
 
-            # randomly choose sign of modification amount
-            modification_sign = [-1, 1][random.randrange(0, 2)]
-            limit_function = min if modification_sign == 1 else max
-            limit = 255 if modification_sign == 1 else 0
+        color = color_cycle[color_idx % len(color_cycle)]
 
-            modified_rgb_comp0 = limit_function(limit, base_color_rgb[0] + modification_sign * 20) if modified_rgb_comp_idx == 0 else base_color_rgb[0]   
-            modified_rgb_comp1 = limit_function(limit, base_color_rgb[1] + modification_sign * 20) if modified_rgb_comp_idx == 1 else base_color_rgb[1] 
-            modified_rgb_comp2 = limit_function(limit, base_color_rgb[2] + modification_sign * 20) if modified_rgb_comp_idx == 2 else base_color_rgb[2] 
-            modified_base_color_rgb = (modified_rgb_comp0, modified_rgb_comp1, modified_rgb_comp2)
-
-            print("base rgb:", base_color_rgb)
-            print("modified rgb:", modified_base_color_rgb)
-
-            modified_base_color = rgb_to_hex(modified_base_color_rgb)
-
-        color = modified_base_color if modified_base_color else color_cycle[color_idx % len(color_cycle)]
-
-        orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=satname, line=dict(
+        orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=satname + "_trace", line=dict(
                 color=color
             )
         )
         
-        orb_start = go.Scatter3d(x=xs[:1], y=ys[:1], z=zs[:1], mode='markers', name=satname+"_start", line=dict(
+        orb_start = go.Scatter3d(x=xs[:1], y=ys[:1], z=zs[:1], mode='markers', name=satname+"_trace_start", line=dict(
                 color=color
             )
         )
         
-        if not modified_base_color:
-            color_idx += 1
+        color_idx += 1
 
         fig.add_trace(orb_start)
         fig.add_trace(orb_line)

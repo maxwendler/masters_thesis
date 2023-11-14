@@ -470,4 +470,4 @@ rule plot_orbs_of_mobilities:
         csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
         trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, input, False))
     shell:
-        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}'' -e"
+        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}' -e"
