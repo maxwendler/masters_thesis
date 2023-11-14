@@ -8,6 +8,11 @@ import astropy.units as u
 from timeit import default_timer as timer
 import os
 from orekit.pyhelpers import download_orekit_data_curdir, setup_orekit_curdir
+import sys 
+sys.path.append("/workspaces/ma-max-wendler/scripts/plots")
+from satname_to_modname import satname_to_modname
+import json
+
 
 start_t = timer()
 
@@ -73,10 +78,14 @@ print(f"Time for creating poliastro orbits: {orbits_t - omnetparse_t} seconds")
 
 two_pi_to_negpos_pi_range = lambda deg_val: (-360 << u.deg) + deg_val if deg_val > (180 << u.deg) else deg_val
 
+modname_to_satname_dict = {}
+
 # create and write traces; one file per satellite
 for name_orbit_tuple in named_orbits:
     # satellites will be renamed if name contains "/", to not mess up resulting paths
     satname = name_orbit_tuple[0].replace("/","-")
+    leo_modname = satname_to_modname(satname)
+    modname_to_satname_dict[leo_modname] = satname
     output_path = args.outputdir + satname  + ".trace"
     
     orb = name_orbit_tuple[1]
@@ -128,6 +137,9 @@ for name_orbit_tuple in named_orbits:
                 trace_f.write("\n" + str(coord[0].value) + "," + str(coord[1].value) + "," + str(coord[2].value))
 
     print("Wrote a trace...")  
+
+with open(args.outputdir + "modname_to_satname_dict.json", "w") as dict_f:
+    json.dump(modname_to_satname_dict, dict_f)
 
 print(f"Successfully wrote traces to {args.outputdir}!")
 
