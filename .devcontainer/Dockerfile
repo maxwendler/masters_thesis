@@ -32,7 +32,7 @@
 #            install snakemake
 
 FROM mcr.microsoft.com/devcontainers/base:jammy
-COPY sources.list /etc/apt/
+# COPY sources.list /etc/apt/
 
 RUN \
     apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install --no-install-recommends \
@@ -42,8 +42,11 @@ RUN \
 WORKDIR /opt
 
 ARG OPP_VERSION=5.7
-COPY install-omnetpp.sh .
-RUN ./install-omnetpp.sh && rm ./install-omnetpp.sh
+COPY install-omnetpp-part1.sh .
+RUN ./install-omnetpp-part1.sh && rm ./install-omnetpp-part1.sh
+
+COPY install-omnetpp-part2.sh .
+RUN ./install-omnetpp-part2.sh && rm ./install-omnetpp-part2.sh
 
 ARG SUMO_VERSION=1.18.0
 COPY install-sumo.sh .
@@ -58,10 +61,3 @@ RUN ./install-misc.sh && rm ./install-misc.sh
 
 COPY install-snakemake.sh .
 RUN ./install-snakemake.sh && rm ./install-snakemake.sh
-
-WORKDIR /
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-  && pip install --no-cache-dir -r py-requirements.txt
-
-RUN pip install --force-reinstall -v "numpy==1.22"

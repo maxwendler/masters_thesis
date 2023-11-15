@@ -53,6 +53,8 @@
 	]
 	,
 
+	"postCreateCommand": "bash .devcontainer/create-conda-env.sh && bash -i .devcontainer/use-pip-in-conda-env.sh",
+
 	// vscode extensions and settings
 	"customizations": {
 		"vscode": {
