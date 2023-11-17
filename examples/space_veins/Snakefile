@@ -21,16 +21,17 @@ def quote_strs(tles_paths: list[str]):
 
 rule update_omnetini:
     input:
+        "../../scripts/keplertraces/updateomnetini.py",
         ini_template="omnetpp.ini.template",
         tles_paths=get_tles_paths()
     params:
         # as snakemake won't accept filepath strings containing quotes as input
-        # but updateomnetini.pp requires them
+        # but updateomnetini.py requires them
         quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths)
     output:
         "omnetpp.ini"
     shell:
-        "python3 /workspaces/ma-max-wendler/scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
+        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
 
 def get_traces_dir(itrf=None):
     base_dir = config["traces_dir"].removesuffix("/")
@@ -39,8 +40,9 @@ def get_traces_dir(itrf=None):
 
     return base_dir + itrf_str + orekit_str + "/"
 
-rule create_traces_v2:
+rule create_traces:
     input:
+        "../../scripts/keplertraces/create_traces.py",
         ini_path="omnetpp.ini",
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
     params:
@@ -53,7 +55,7 @@ rule create_traces_v2:
         "{traces_dir}/{constellation}_traces.done"
     shell:
         """
-        python3 /workspaces/ma-max-wendler/scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
+        python3 ../../scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
         touch {output}
         """
 
@@ -215,7 +217,8 @@ def formatItervars(wildcards):
 
 rule vec2csv:
     input:
-        "runs/{oppConfig}_done.txt"
+        "runs/{oppConfig}_done.txt",
+        "../../scripts/time_sort_csv.py"
     output:
         "csv/vectors/{oppConfig}_{coordframe}_sorted.csv"
     params:
@@ -338,6 +341,7 @@ def get_traces_dir_from_donefile(donefile_path):
 
 rule calc_pos_diffs:
     input:
+        "../../scripts/plots/positional_differences.py",
         trace_done_or_csvs=get_coord_inputs
     output:
         "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
@@ -349,6 +353,7 @@ rule calc_pos_diffs:
 
 rule plot_pos_diffs:
     input:
+        "../../scripts/plots/plot_differences.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
         "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
@@ -357,6 +362,7 @@ rule plot_pos_diffs:
 
 rule plot_pos_diffs_ecdf:
     input:
+        "../../scripts/plots/plot_differences_ecdf.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
         "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
@@ -365,6 +371,7 @@ rule plot_pos_diffs_ecdf:
 
 rule plot_pos_diffs_both:
     input:
+        "../../scripts/plots/plot_differences_both.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
         "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
@@ -373,11 +380,12 @@ rule plot_pos_diffs_both:
 
 rule satmod_csv:
     input:
-        "csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
+        "../../scripts/plots/to_sat_csv.py",
+        in_csv="csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
     output:
         "csv/vectors/satmod/{opp_config}_{coord_frame}_sorted_{leo_modname}.csv"
     shell:
-        "python3 ../../scripts/plots/to_sat_csv.py {input} {wildcards.leo_modname} > {output}"
+        "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} {wildcards.leo_modname} > {output}"
 
 
 def get_satmod_csv_paths_or_traces_done(wildcards, same_config=True):
@@ -419,7 +427,7 @@ def get_satmod_csv_paths_or_traces_done(wildcards, same_config=True):
             mob2_base_path = "csv/vectors/satmod/" + mob2_config_str + "_" + wildcards.coord_frame + "_sorted_"
             return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
 
-def get_trace_paths(wildcards, input, same_config=True):
+def get_trace_paths(wildcards, same_config=True):
     leo_modnames = wildcards.leo_modnames.split("-")
 
     if same_config:
@@ -464,14 +472,15 @@ def filter_csv_paths(path_list):
 
 rule plot_orbs_of_mobility:
     input:
+        "../../scripts/plots/plot_orbs.py",
         coord_paths=get_satmod_csv_paths_or_traces_done
     output:
         "plots/orbs/mobility/{opp_config}_{coord_frame}_{leo_modnames}.html"
     params:
         csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
         csv_option= lambda wildcards, input: "-c" if len(filter_csv_paths(input.coord_paths)) > 0 else "",
-        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, input)),
-        trace_option= lambda wildcards, input: "-t" if len(get_trace_paths(wildcards, input)) > 0 else ""
+        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards)),
+        trace_option= lambda wildcards, input: "-t" if len(get_trace_paths(wildcards)) > 0 else ""
     shell:
         """
         python3 ../../scripts/plots/plot_orbs.py {params.csv_option} {params.csv_paths} {params.trace_option} {params.trace_paths} -o '{output}' -e
@@ -479,12 +488,13 @@ rule plot_orbs_of_mobility:
 
 rule plot_orbs_of_mobilities:
     input:
+        "../../scripts/plots/plot_orbs.py",
         coord_paths= lambda wildcards: get_satmod_csv_paths_or_traces_done(wildcards, False)
     output:
         "plots/orbs/mobilities/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
     params:
         csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
-        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, input, False))
+        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, False))
     shell:
         "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}' -e"
     
