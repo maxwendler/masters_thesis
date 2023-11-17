@@ -35,11 +35,6 @@
 #   - OPP_VERSION: the version of OMNeT++ to install (e.g. 6.0.1)
 
 # abort if one of the environment variables is not set
-if [ -z "$OPP_VERSION" ]; then
-    echo "OPP_VERSION is not set"
-    exit 1
-fi
-
 set -e
 
 # install dependencies (needed before java will install)

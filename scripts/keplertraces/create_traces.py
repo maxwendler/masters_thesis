@@ -89,7 +89,7 @@ for name_orbit_tuple in named_orbits:
     output_path = args.outputdir + satname  + ".trace"
     
     orb = name_orbit_tuple[1]
-    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(start_time, spacing=update_interval, periods=periods)))
+    ephem = orb.to_ephem(strategy=EpochsArray(epochs=time_range(start_time + update_interval, spacing=update_interval, periods=periods-1)))
     
     cartesian_trace = ephem.sample(ephem.epochs)
     if not args.orekit:

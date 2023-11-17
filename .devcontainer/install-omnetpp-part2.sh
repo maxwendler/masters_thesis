@@ -8,7 +8,7 @@ cd /opt
 if [ ! -d omnetpp-${OPP_VERSION} ]; then
     mkdir -p omnetpp-${OPP_VERSION}
     cd omnetpp-${OPP_VERSION}
-    curl --location https://github.com/omnetpp/omnetpp/releases/download/omnetpp-${OPP_VERSION}/omnetpp-${OPP_VERSION}-linux-${ARCH}.tgz | tar -xzv --strip-components=1
+    curl --location https://github.com/omnetpp/omnetpp/releases/download/omnetpp-${OPP_VERSION}/omnetpp-${OPP_VERSION}-src-linux.tgz | tar -xzv --strip-components=1
 fi
 
 cd /opt

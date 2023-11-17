@@ -42,6 +42,9 @@ RUN \
 WORKDIR /opt
 
 ARG OPP_VERSION=5.7
+#COPY install-omnetpp.sh .
+#RUN ./install-omnetpp.sh && rm ./install-omnetpp.sh
+
 COPY install-omnetpp-part1.sh .
 RUN ./install-omnetpp-part1.sh && rm ./install-omnetpp-part1.sh
 

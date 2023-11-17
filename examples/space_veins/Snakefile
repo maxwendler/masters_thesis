@@ -355,6 +355,22 @@ rule plot_pos_diffs:
     shell:
         "python3 ../../scripts/plots/plot_differences.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
 
+rule plot_pos_diffs_ecdf:
+    input:
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
+    shell:
+        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
+
+rule plot_pos_diffs_both:
+    input:
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+    shell:
+        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
+
 rule satmod_csv:
     input:
         "csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
@@ -471,3 +487,4 @@ rule plot_orbs_of_mobilities:
         trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, input, False))
     shell:
         "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}' -e"
+    
