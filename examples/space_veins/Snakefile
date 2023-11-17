@@ -56,7 +56,7 @@ rule create_traces:
     shell:
         """
         python3 ../../scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
-        touch {output}
+        date +%Y%m%d%H%M%S > {output}
         """
 
 rule make_makefiles:
@@ -130,8 +130,20 @@ rule createRunmakerLogFile:
     shell:
         "touch {output}"
 
+def get_trace_requirement(wildcards):
+    if "kepler" in wildcards.oppConfig:
+        return get_traces_dir() + get_const_from_config(wildcards.oppConfig) + "_traces.done"
+    else: 
+        return []
+
 rule createRunFile:
     input:
+        # only require trace files for Kepler-orbit-based runs
+        # either traces/ or traces_orekit/ with use_orekit:true in config
+        # ---
+        # placed here instead of in rule 'run' so that run file is regenerated with more recent traces
+        # otherwise, run file still has run marked as 'd', done
+        get_trace_requirement,
         "omnetpp.ini"
     output:
         "runs/{oppConfig}_runs.txt"
@@ -162,17 +174,8 @@ def get_const_from_config(config_str):
     constellation = config.split("-")[0]
     return constellation
 
-def get_trace_requirement(wildcards):
-    if "kepler" in wildcards.oppConfig:
-        return get_traces_dir() + get_const_from_config(wildcards.oppConfig) + "_traces.done"
-    else: 
-        return []
-
 rule run:
     input:
-        # only require trace files for Kepler-orbit-based runs
-        # either traces/ or traces_orekit/ with use_orekit:true in config
-        get_trace_requirement,
         logFile="runs/{oppConfig}_runs.log",
         runFile="runs/{oppConfig}_runs.txt"
     output:
@@ -183,7 +186,8 @@ rule run:
     #    "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} && touch {output}
+        python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
+        date +%Y%m%d%H%M%S > {output}
         """
 
 rule runAll:
