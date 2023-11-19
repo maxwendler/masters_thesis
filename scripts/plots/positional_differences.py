@@ -75,7 +75,7 @@ if args.traces_or_csv_path.endswith(".csv"):
 modname_to_satname_dict = {}
 
 if not is_csv2csv:
-    satnames = [traces_fname.removesuffix(".trace") for traces_fname in os.listdir(args.traces_or_csv_path)]
+    satnames = [traces_fname.removesuffix(".trace") for traces_fname in list(filter( lambda fname: fname.endswith(".trace"), os.listdir(args.traces_or_csv_path)))]
     for sname in satnames:
         modname_to_satname_dict[satname_to_modname(sname)] = sname
 
@@ -201,6 +201,89 @@ with open(args.csv_path, "r") as csv_f:
             current_mod_3d_coords = [   (float(row[coord_field_names[0]]), 
                                         float(row[coord_field_names[1]]), 
                                         float(row[coord_field_names[2]]) ) ]
+
+# process last read elements after reading is done
+mod_leoname = re.search(modname_re, current_mod).group()
+
+if is_csv2csv:
+                    
+    other_csv_current_mod_coords = comparison_csv_coords[current_mod]
+    if len(other_csv_current_mod_coords) != len(current_mod_3d_coords):
+        error_str = f"One CSV ({args.traces_or_csv_path}) has {len(other_csv_current_mod_coords)} per module, while the other one ({args.csv_path}) has {len(current_mod_3d_coords)}!"
+        raise AssertionError(error_str)
+    
+    distances = []
+    coord_comp_distances = {
+        coord_field_names[0]: [],
+        coord_field_names[1]: [],
+        coord_field_names[2]: []
+    }
+
+    for i in range(0, len(current_mod_3d_coords)):
+        
+        if args.frame == "itrf":
+            euklid_dist = dist(other_csv_current_mod_coords[i], current_mod_3d_coords[i])
+            distances.append(euklid_dist)
+        else:
+            distances.append(0)
+
+        if args.coord_comp:
+            for j in range(0, 3):
+                dimension_dist = abs(other_csv_current_mod_coords[i][j] - current_mod_3d_coords[i][j])
+                coord_comp_distances[coord_field_names[j]].append(dimension_dist)
+
+else:
+
+    # open (new) trace file
+    if trace_file:
+        if not trace_file.closed:
+            trace_file.close()
+    trace_path = traces_path + modname_to_satname_dict[mod_leoname] + ".trace"
+    trace_file = open(trace_path)
+    # read coordinates from trace (skipping to entry of second n at (n + 1)th line because of name in line one => idx n)
+    trace_coords = trace_file.readlines()[start_second:]
+    if len(trace_coords) != len(current_mod_3d_coords):
+        error_str = f"Trace file does not contain same number of values from start second {str(start_second)} at index {str(start_second)}: {len(trace_coords)} in trace, {len(current_mod_3d_coords)} in csv"
+        raise IndexError(error_str)
+
+    distances = []
+    coord_comp_distances = {
+        coord_field_names[0]: [],
+        coord_field_names[1]: [],
+        coord_field_names[2]: []
+    }
+
+    for i in range(0, len(trace_coords)):
+        trace_line_coords = list(map(lambda coord_comp: float(coord_comp.strip()), trace_coords[i].split(",")))
+        
+        if args.frame == "itrf":
+            euklid_dist = dist(trace_line_coords, current_mod_3d_coords[i])
+            distances.append(euklid_dist)
+        else:
+            distances.append(0)
+        
+        if args.coord_comp:
+            for j in range(0, len(trace_line_coords)):
+                dimension_dist = abs(trace_line_coords[j] - current_mod_3d_coords[i][j])
+                coord_comp_distances[coord_field_names[j]].append(dimension_dist)
+
+if len(distance_csv_lines) == 0:
+    csv_header = "sat_name"
+    for i in range(start_second, start_second + len(distances)):
+        csv_header += "," + str(i)
+    distance_csv_lines.append(csv_header)
+
+mod_distances_str = mod_leoname
+for d in distances:
+    mod_distances_str += "," + str(d) 
+distance_csv_lines.append(mod_distances_str)
+
+if args.coord_comp:
+    for coord_dim in coord_field_names:
+        coord_dim_distances_str = mod_leoname + "_" + coord_dim
+        for d in coord_comp_distances[coord_dim]:
+            coord_dim_distances_str += "," + str(d)
+        distance_csv_lines.append(coord_dim_distances_str)
 
 # output file for testing purposes
 #with open("/workspaces/ma-max-wendler/scripts/plots/test_output/" + args.constellation + "_" + args.frame + "_distances_keplersgp4.csv", "w") as new_csv_f:

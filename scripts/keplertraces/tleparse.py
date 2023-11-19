@@ -1,5 +1,4 @@
 from tletools import TLE
-from keplerinputs import KeplerInputs
 from astropy.time import Time
 from poliastro.twobody import Orbit
 

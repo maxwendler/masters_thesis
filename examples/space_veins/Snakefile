@@ -1,8 +1,12 @@
 import os
 import glob
-import sys
-sys.path.append("/workspaces/ma-max-wendler/scripts/plots")
 import json
+import sys
+sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "plots"))
+from satname_to_modname import satname_to_modname
+sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10", "site-packages"))
+sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
+from tleparse import read
 
 configfile: "smk.config.yaml"
 
@@ -239,65 +243,16 @@ rule vec2csv:
         rm {params.unsorted_path}
         """
 
-def get_sat_mods_per_const():
-    sat_modules_per_constellation = {}
-    results = os.listdir("./results/")
-    debug_mode_str = "Debug-" if config["debug_mode"] else ""
-    for constellation in config["tles_prefixes"]:
-        for res_fname in results:
-            if res_fname.startswith(f"{debug_mode_str}{constellation}") and res_fname.endswith(".vec"):
-                # parse satellite module names from .vec
-
-                sat_mods = set()
-
-                with open("./results/" + res_fname, "r") as vec_file:
-
-                    for line in vec_file.readlines():
-                        if "SatelliteExampleScenario.leo" in line:
-                            sat_name = line.split(" ")[2]
-                            sat_mods.add(sat_name)
-                
-                sat_modules_per_constellation[constellation] = sat_mods
-    
-    return sat_modules_per_constellation
-
 def get_const_sat_mods(constellation: str):
-    results = os.listdir("./results/")
-    debug_mode_str = "Debug-" if config["debug_mode"] else ""
+
+    const_tles_fname = filter( lambda tles_path: tles_path.startswith(constellation), os.listdir("./tles/")).__next__()
+    tles = read("./tles/" + const_tles_fname)
+
     sat_mods = set()
-    for res_fname in results:
-        if res_fname.startswith(f"{debug_mode_str}{constellation}") and res_fname.endswith(".vec"):
-            # parse satellite module names from .vec
-
-            with open("./results/" + res_fname, "r") as vec_file:
-
-                for line in vec_file.readlines():
-                    if "SatelliteExampleScenario.leo" in line:
-                        sat_name = line.split(" ")[2]
-                        sat_mods.add(sat_name)
+    for tle in tles:
+        sat_mods.add( satname_to_modname(tle.name) )
     
     return sat_mods
-
-def formatSatVecCsvFileNames():
-    files = list()
-    f = ""
-    configs_per_constellation = {}
-    for constellation in config["tles_prefixes"]:
-        configs_per_constellation[constellation] = expand("{optional_Debug}{constellation}-{mobility}", 
-                                                        optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                                                        constellation=[constellation],
-                                                        mobility=config["mobilities"])
-
-    # sat_mods_per_constellation = get_sat_mods_per_const()
-
-    for c in configs_per_constellation.keys():
-        # sat_mods = sat_mods_per_constellation[c]
-
-            for vec in config["sat_vectors"]:
-                f = "csv/vectors/" + c + "_" + config["sat_mod_regex_base"] + "_" + vec + ".csv"
-                files.append(f)
-
-    return files
 
 def get_debug_str():
     return "Debug-" if config["debug_mode"] else ""
@@ -360,27 +315,43 @@ rule plot_pos_diffs:
         "../../scripts/plots/plot_differences.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
+        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} '{wildcards.leo_modname}' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
 
 rule plot_pos_diffs_ecdf:
     input:
         "../../scripts/plots/plot_differences_ecdf.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
+        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} '{wildcards.leo_modname}'' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
 
 rule plot_pos_diffs_both:
     input:
         "../../scripts/plots/plot_differences_both.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/"+ get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} {wildcards.leo_modname} /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff"
+        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
+
+def get_const_pos_diff_paths(wildcards):
+    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+                constellation=wildcards.constellation, 
+                coord_frame=wildcards.coord_frame, 
+                mobility1=wildcards.mobility1, 
+                mobility2=wildcards.mobility2,
+                leo_modname=get_const_sat_mods(wildcards.constellation))
+
+rule plot_const_pos_diffs:
+    input:
+        get_const_pos_diff_paths
+    output:
+        "plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
+    shell:
+        "touch {output}"
 
 rule satmod_csv:
     input:

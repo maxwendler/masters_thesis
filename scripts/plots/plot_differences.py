@@ -13,7 +13,8 @@ csv_path = args.csv_path
 sat_mods = args.sat_mods
 output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
 csv_fname = csv_path.split("/")[-1]
-output_path_template = output_dir + csv_fname.removesuffix("_distances.csv")
+# [1:-1] removes constellation prefix and _distances.csv suffix
+output_path_template = output_dir + "_".join(csv_fname.split("_")[1:-1])
 
 with open(csv_path, "r") as csv_f:
     
