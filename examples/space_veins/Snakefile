@@ -23,6 +23,13 @@ def get_tles_paths():
 def quote_strs(tles_paths: list[str]):
     return [str('"' + tle_path + '"') for tle_path in tles_paths]
 
+def get_traces_dir(itrf=None):
+    base_dir = config["traces_dir"].removesuffix("/")
+    orekit_str = "_orekit" if config["use_orekit"] else ""
+    itrf_str = "_itrf" if itrf else ""
+
+    return base_dir + itrf_str + orekit_str + "/"
+
 rule update_omnetini:
     input:
         "../../scripts/keplertraces/updateomnetini.py",
@@ -31,18 +38,12 @@ rule update_omnetini:
     params:
         # as snakemake won't accept filepath strings containing quotes as input
         # but updateomnetini.py requires them
-        quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths)
+        quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
+        traces_dir = get_traces_dir(True)
     output:
         "omnetpp.ini"
     shell:
-        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces_itrf/ {params.quoted_tles_paths}"
-
-def get_traces_dir(itrf=None):
-    base_dir = config["traces_dir"].removesuffix("/")
-    orekit_str = "_orekit" if config["use_orekit"] else ""
-    itrf_str = "_itrf" if itrf else ""
-
-    return base_dir + itrf_str + orekit_str + "/"
+        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} {params.traces_dir} {params.quoted_tles_paths}"
 
 rule create_traces:
     input:
@@ -223,17 +224,23 @@ def formatItervars(wildcards):
         i += "-I " + s + " "
     return i
 
+def get_orekit_path_option():
+    if config["use_orekit"]:
+        return "orekit/"
+    else:
+        return "no-orekit/"
+
 rule vec2csv:
     input:
         "runs/{oppConfig}_done.txt",
         "../../scripts/time_sort_csv.py"
     output:
-        "csv/vectors/{oppConfig}_{coordframe}_sorted.csv"
+        "csv/" + "vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}_sorted.csv"
     params:
         itervars=formatItervars,
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv"
+        unsorted_path="csv/vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}.csv"
     threads:
         1
     shell:
@@ -266,7 +273,7 @@ def format_constellation_satvec_csvnames(wildcards):
         #currently, use all frames, as poliastro itrf traces are used as simulation input
         #if frame == "itrf" and wildcards.mobility == "kepler":
         #    continue
-        f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
+        f = "csv/vectors/" + get_orekit_path_option() + config_name + "_" + frame + "_sorted.csv"
         files.append(f)
     
     return files
@@ -276,7 +283,7 @@ rule sat_vec_to_csv_constellation:
         "runs/" + get_debug_str() + "{constellation}-{mobility}_done.txt",
         format_constellation_satvec_csvnames
     output:
-        "csv/" + get_debug_str() + "{constellation}-{mobility}_vecs.done"
+        "csv/" + get_orekit_path_option() + get_debug_str() + "{constellation}-{mobility}_vecs.done"
     shell:
         "touch {output}"
 
@@ -289,8 +296,8 @@ def get_coord_inputs(wildcards):
     #            "csv/vectors/{constellation}-" + other_mobility + "_{coord_frame}_sorted.csv"]
     
     #else:
-        return ["csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
-                "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
+        return ["csv/vectors/" + get_orekit_path_option() + "{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+                "csv/vectors/" + get_orekit_path_option() + "{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
 
 def get_traces_dir_from_donefile(donefile_path):
     donefile_name = donefile_path.split("/")[-1]
@@ -307,7 +314,7 @@ rule calc_pos_diffs:
         "../../scripts/plots/positional_differences.py",
         trace_done_or_csvs=get_coord_inputs
     output:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     params:
         traces_dir_or_csv = lambda wildcards, input: input.trace_done_or_csvs[0] if input.trace_done_or_csvs[0].endswith(".csv") else get_traces_dir_from_donefile(input.trace_done_or_csvs[0]),
     shell:
@@ -316,32 +323,32 @@ rule calc_pos_diffs:
 rule plot_pos_diffs:
     input:
         "../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/"+ get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
+        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} '{wildcards.leo_modname}' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
+        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 rule plot_pos_diffs_ecdf:
     input:
         "../../scripts/plots/plot_differences_ecdf.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
+        "plots/pos_diff/"+ get_orekit_path_option() +"{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} '{wildcards.leo_modname}'' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
+        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 rule plot_pos_diffs_both:
     input:
         "../../scripts/plots/plot_differences_both.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' /workspaces/ma-max-wendler/examples/space_veins/plots/pos_diff/{wildcards.constellation}"
+        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 def get_const_pos_diff_paths(wildcards):
-    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+    return expand("plots/pos_diff/"+ get_orekit_path_option()+ "{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
                 constellation=wildcards.constellation, 
                 coord_frame=wildcards.coord_frame, 
                 mobility1=wildcards.mobility1, 
@@ -352,19 +359,18 @@ rule plot_const_pos_diffs:
     input:
         get_const_pos_diff_paths
     output:
-        "plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
+        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
     shell:
         "touch {output}"
 
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",
-        in_csv="csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
+        in_csv="csv/vectors/" + get_orekit_path_option() + "{opp_config}_{coord_frame}_sorted.csv"
     output:
-        "csv/vectors/satmod/{opp_config}_{coord_frame}_sorted_{leo_modname}.csv"
+        "csv/vectors/" + get_orekit_path_option() + "satmod/{opp_config}_{coord_frame}_sorted_{leo_modname}.csv"
     shell:
         "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} {wildcards.leo_modname} > {output}"
-
 
 def get_satmod_csv_paths_or_traces_done(wildcards, same_config=True):
     leo_modnames = wildcards.leo_modnames.split("-")

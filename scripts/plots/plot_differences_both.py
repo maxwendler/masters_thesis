@@ -8,15 +8,15 @@ parser = argparse.ArgumentParser(prog="plot_differences_both.py", description="P
 
 parser.add_argument("csv_path", help="Path of csv file with (distance SGP4/Kepler at sim. second) vectors per satellite module.")
 parser.add_argument('sat_mods', metavar='leo_modname', type=str, nargs='+', help='a satellite module name, leo...[...]')
-parser.add_argument("output_dir", help="Directory where resulting plot will be saved.")
+parser.add_argument("output_path", help="Directory where resulting plot will be saved.")
 
 args = parser.parse_args()
 csv_path = args.csv_path
 sat_mods = args.sat_mods
-output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
+# output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
 csv_fname = csv_path.split("/")[-1]
 # [1:-1] removes constellation prefix and _distances.csv suffix
-output_path_template = output_dir + "_".join(csv_fname.split("_")[1:-1])
+# output_path_template = output_dir + "_".join(csv_fname.split("_")[1:-1])
 
 fig = make_subplots(rows=1, cols=2, subplot_titles=("difference in km / sim sec.", "difference ecdf"))
 
@@ -46,7 +46,8 @@ with open(csv_path, "r") as csv_f:
             ecdf = px.ecdf(differences_dict_ecdf, x="differences")
             fig.add_trace(ecdf.data[0], row=1, col=2)
 
-            fig.write_image(f'{output_path_template}_{mod_leoname}_distances_both.png')
+            #fig.write_image(f'{output_path_template}_{mod_leoname}_distances_both.png')
+            fig.write_image(args.output_path)
 
             sat_mods.remove(mod_leoname)
             if len(sat_mods) == 0:
