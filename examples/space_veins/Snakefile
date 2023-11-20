@@ -363,6 +363,22 @@ rule plot_const_pos_diffs:
     shell:
         "touch {output}"
 
+rule plot_diff_distributions:
+    input:
+        "../../scripts/plots/plot_difference_distributions.py",
+        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.png",
+        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.html",
+        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.png",
+        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
+    params:
+        output_dir="plots/pos_diff_distr/" + get_orekit_path_option()
+    shell:
+        """
+        python3 ../../scripts/plots/plot_difference_distributions.py {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
+        """
+
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",
