@@ -35,7 +35,7 @@ rule update_omnetini:
     output:
         "omnetpp.ini"
     shell:
-        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces/ {params.quoted_tles_paths}"
+        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} ./traces_itrf/ {params.quoted_tles_paths}"
 
 def get_traces_dir(itrf=None):
     base_dir = config["traces_dir"].removesuffix("/")
@@ -136,7 +136,7 @@ rule createRunmakerLogFile:
 
 def get_trace_requirement(wildcards):
     if "kepler" in wildcards.oppConfig:
-        return get_traces_dir() + get_const_from_config(wildcards.oppConfig) + "_traces.done"
+        return get_traces_dir(True) + get_const_from_config(wildcards.oppConfig) + "_traces.done"
     else: 
         return []
 
@@ -263,8 +263,9 @@ def format_constellation_satvec_csvnames(wildcards):
     files = []
 
     for frame in config["coord_frames"]:
-        if frame == "itrf" and wildcards.mobility == "kepler":
-            continue
+        #currently, use all frames, as poliastro itrf traces are used as simulation input
+        #if frame == "itrf" and wildcards.mobility == "kepler":
+        #    continue
         f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
         files.append(f)
     
@@ -280,11 +281,14 @@ rule sat_vec_to_csv_constellation:
         "touch {output}"
 
 def get_coord_inputs(wildcards):
-    if (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler") and wildcards.coord_frame == "itrf":
-        other_mobility = wildcards.mobility1 if wildcards.mobility2 == "kepler" else wildcards.mobility2
-        return [get_traces_dir(True) + "{constellation}_traces.done",
-                "csv/vectors/{constellation}-" + other_mobility + "_{coord_frame}_sorted.csv"]
-    else:
+    # code below only use for wgs84 traces as simulation inputs
+    
+    #if (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler") and wildcards.coord_frame == "itrf":
+    #    other_mobility = wildcards.mobility1 if wildcards.mobility2 == "kepler" else wildcards.mobility2
+    #    return [get_traces_dir(True) + "{constellation}_traces.done",
+    #            "csv/vectors/{constellation}-" + other_mobility + "_{coord_frame}_sorted.csv"]
+    
+    #else:
         return ["csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
                 "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
 

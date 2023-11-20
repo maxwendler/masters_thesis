@@ -46,6 +46,19 @@ void KeplerMobility::initialize(int stage)
         // create projection context
         pj_ctx = proj_context_create();
 
+        // create itrf2008_to_wgs84_projection
+        itrf2008_to_wgs84_projection = proj_create_crs_to_crs(
+                pj_ctx,
+                "EPSG:5332",    // from ITRF2008
+                "EPSG:4326",    // to WGS84
+                NULL);
+
+        // fix longitude, latitude order, see https://proj.org/development/quickstart.html
+        itrf2008_to_wgs84_projection = proj_normalize_for_visualization(pj_ctx, itrf2008_to_wgs84_projection);
+        if (itrf2008_to_wgs84_projection == 0) {
+            throw cRuntimeError("itrf2008_to_wgs84_projection initialization error");
+        }
+
         // create wgs84_to_wgs84cartesian_projection
         wgs84_to_wgs84cartesian_projection = proj_create(
                 pj_ctx,
@@ -71,9 +84,9 @@ void KeplerMobility::initialize(int stage)
 
 void KeplerMobility::updateSatellitePosition()
 {   
+    /* old code for reading wgs84 traces
     // read next trace line
     std::string sat_pos_wgs84_str; 
-    // ASSERT(traceFile->is_open());
     std::getline(traceFile, sat_pos_wgs84_str);
     char* sat_pos_wgs84_c_str = new char[sat_pos_wgs84_str.length() + 1];
     strcpy(sat_pos_wgs84_c_str, sat_pos_wgs84_str.c_str());
@@ -87,13 +100,35 @@ void KeplerMobility::updateSatellitePosition()
     double wgs84alt =  std::stod(coord, NULL);
 
     delete[] sat_pos_wgs84_c_str;
+    */
 
-    WGS84Coord sat_pos_wgs84 = WGS84Coord(wgs84lat, wgs84lon, wgs84alt);
+    std::string itrfPosStr; 
+    std::getline(traceFile, itrfPosStr);
+    char* itrfPosCStr = new char[itrfPosStr.length() + 1];
+    strcpy(itrfPosCStr, itrfPosStr.c_str());
+    
+    // parse WGS84 coordinate from trace line
+    std::string coord = std::strtok(itrfPosCStr, ",");        
+    double itrfX = std::stod(coord, NULL);
+    coord = std::strtok(NULL, ","); 
+    double itrfY = std::stod(coord, NULL);
+    coord = std::strtok(NULL, ",");
+    double itrfZ =  std::stod(coord, NULL);
+
+    delete[] itrfPosCStr;
+
+    vehicleStatistics->recordItrfCoord(veins::Coord(itrfX, itrfY, itrfZ));
+    // Coordinate transformation ITRF -> WGS84
+    PJ_COORD toTransfer = proj_coord(itrfX * 1000, itrfY * 1000, itrfZ * 1000, 0); // conversion km -> m!
+    PJ_COORD geo = proj_trans(itrf2008_to_wgs84_projection, PJ_FWD, toTransfer);
+    WGS84Coord sat_pos_wgs84 = WGS84Coord(geo.lpz.phi, geo.lpz.lam, geo.lpz.z);
     vehicleStatistics->recordWGS84Coord(sat_pos_wgs84);
+    EV_TRACE << "KeplerMobility simTime(): " << simTime() << std::endl;
+    EV_TRACE << "KeplerMobility sat_pos_wgs84: " << sat_pos_wgs84 << std::endl;
 
     // Transform satellite's WGS84 coordinate from geodetic to cartesian representation, proj needs Radians for an unknown reason
     // see https://proj.org/operations/conversions/cart.html
-    PJ_COORD toTransfer = proj_coord(wgs84lon * (PI/180), wgs84lat * (PI/180), wgs84alt, 0);
+    toTransfer = proj_coord(sat_pos_wgs84.lon * (PI/180), sat_pos_wgs84.lat * (PI/180), sat_pos_wgs84.alt, 0);
     PJ_COORD geo_cart = proj_trans(wgs84_to_wgs84cartesian_projection, PJ_FWD, toTransfer);
     vehicleStatistics->recordWGS84CartCoord(geo_cart);
     EV_TRACE << "KeplerMobility sat_pos_wgs84 cartesian: x: " << geo_cart.xyz.x << ", y: " << geo_cart.xyz.y << ", z: " << geo_cart.xyz.z << std::endl;

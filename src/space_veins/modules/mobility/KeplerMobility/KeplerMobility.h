@@ -16,11 +16,11 @@ namespace space_veins {
 class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
 
     protected:
-        // only MIGHT be necessary
         bool isPreInitialized;
-        // proj context
+        
+        // Proj projections
         PJ_CONTEXT* pj_ctx;
-        // one or multiple projections for wgs84 to topodetic
+        PJ* itrf2008_to_wgs84_projection;
         PJ* wgs84_to_wgs84cartesian_projection;
         PJ* wgs84cartesian_to_topocentric_projection;
 
