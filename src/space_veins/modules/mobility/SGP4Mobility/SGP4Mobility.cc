@@ -63,32 +63,6 @@ void SGP4Mobility::initialize(int stage)
         WATCH(tle.tle_line1);
         WATCH(tle.tle_line2);
         WATCH(wall_clock_sim_start_time_utc);
-        EV_DEBUG << "SGP4 model wall_clock_sim_start_time_utc: " << wall_clock_sim_start_time_utc << std::endl;
-        std::istringstream iss(wall_clock_sim_start_time_utc);
-        std::tm tmp;    // helper struct to read in the wall_clock_sim_start_time_utc
-        iss >> std::get_time(&tmp, "%Y-%m-%d-%H-%M-%S");
-
-        wall_clock_start_time.year = tmp.tm_year + 1900;  //tm_year is number of year after 1900 according to struct
-        wall_clock_start_time.mon = tmp.tm_mon + 1;       //tm_mon is number of months after Jan (Jan = 0)
-        wall_clock_start_time.day = tmp.tm_mday;
-        wall_clock_start_time.hour = tmp.tm_hour;
-        wall_clock_start_time.min = tmp.tm_min;
-        wall_clock_start_time.sec = tmp.tm_sec;
-
-        EV_DEBUG << "SGP4 model time initialized to: year: " << wall_clock_start_time.year
-                 << " month: " << wall_clock_start_time.mon
-                 << " day: " << wall_clock_start_time.day
-                 << " hour: " << wall_clock_start_time.hour
-                 << " minute: " << wall_clock_start_time.min
-                 << " second: " << wall_clock_start_time.sec
-                 << std::endl;
-
-        // Store current wall clock time (wct) as std::chrono::system_clock::time_point
-        setenv("TZ", "/usr/share/zoneinfo/posix/UTC", 1); // POSIX-specific
-        std::tm tm = {};
-        std::stringstream ss(wall_clock_sim_start_time_utc);
-        ss >> std::get_time(&tm, "%Y-%m-%d-%H-%M-%S");
-        wct = std::chrono::system_clock::from_time_t(std::mktime(&tm));
 
         // create projection context
         pj_ctx = proj_context_create();
@@ -126,6 +100,8 @@ void SGP4Mobility::initialize(int stage)
                               deltamin,
                               satrec);
 
+        // Calculate elapsed time beginning from the tle epoch
+        // 1. Calculate julian date_time of the tle epoch
         // Store tle epoch as date_time_t object
         tle_epoch.year = (satrec.epochyr >= 57) ? 1900 + satrec.epochyr : 2000 + satrec.epochyr;
         SGP4Funcs::days2mdhms_SGP4(satrec.epochyr,
@@ -137,22 +113,52 @@ void SGP4Mobility::initialize(int stage)
                                    tle_epoch.sec
                                    );
 
-        // Calculate elapsed time beginning from the tle epoch
         std::stringstream ss2;
-        std::tm tm_tle_epoch = {};
         ss2 << tle_epoch.year << "-" << std::setfill('0') << std::setw(2) << tle_epoch.mon << "-" << tle_epoch.day << "-" << tle_epoch.hour << "-" << tle_epoch.min << "-" << tle_epoch.sec;
         EV_DEBUG << "tle_epoch: " << ss2.str() << std::endl;
-        ss2 >> std::get_time(&tm_tle_epoch, "%Y-%m-%d-%H-%M-%S");
-        ep = std::chrono::system_clock::from_time_t(std::mktime(&tm_tle_epoch)); // tle epoch
+        SGP4Funcs::jday_SGP4(tle_epoch.year,
+                             tle_epoch.mon,
+                             tle_epoch.day,
+                             tle_epoch.hour,
+                             tle_epoch.min,
+                             tle_epoch.sec,
+                             tle_epoch_jd,
+                             tle_epoch_frac);
+        EV_DEBUG << std::fixed << "tle_epoch_jd: " << tle_epoch_jd << "; frac: " << tle_epoch_frac << std::endl;
 
-        std::time_t toPrint = std::chrono::system_clock::to_time_t(wct);
-        EV_DEBUG << "Current wall clock time: wct: " << std::put_time(std::gmtime(&toPrint), "%c %Z") << std::endl;
+        // 2. Calculate wall clock time as julian date
+        EV_DEBUG << "SGP4 model wall_clock_sim_start_time_utc: " << wall_clock_sim_start_time_utc << std::endl;
+        std::istringstream iss(wall_clock_sim_start_time_utc);
+        std::tm tmp;    // helper struct to read in the wall_clock_sim_start_time_utc
+        iss >> std::get_time(&tmp, "%Y-%m-%d-%H-%M-%S");
+        wall_clock_start_time.year = tmp.tm_year + 1900;  //tm_year is number of year after 1900 according to struct
+        wall_clock_start_time.mon = tmp.tm_mon + 1;       //tm_mon is number of months after Jan (Jan = 0)
+        wall_clock_start_time.day = tmp.tm_mday;
+        wall_clock_start_time.hour = tmp.tm_hour;
+        wall_clock_start_time.min = tmp.tm_min;
+        wall_clock_start_time.sec = tmp.tm_sec;
 
-        toPrint = std::chrono::system_clock::to_time_t(ep);
-        EV_DEBUG << "TLE epoch: ep: " << std::put_time(std::gmtime(&toPrint), "%c %Z") << std::endl;
+        EV_DEBUG << "SGP4 model time initialized to: year: " << wall_clock_start_time.year
+                 << " month: " << wall_clock_start_time.mon
+                 << " day: " << wall_clock_start_time.day
+                 << " hour: " << wall_clock_start_time.hour
+                 << " minute: " << wall_clock_start_time.min
+                 << " second: " << wall_clock_start_time.sec
+                 << std::endl;
 
-        wall_clock_since_tle_epoch_min = std::chrono::duration<double, std::chrono::minutes::period>(wct - ep);
-        EV_DEBUG << "wall_clock_since_tle_epoch_min: wct - ep: " << wall_clock_since_tle_epoch_min.count() << " min" << std::endl;
+        SGP4Funcs::jday_SGP4(wall_clock_start_time.year,
+                             wall_clock_start_time.mon,
+                             wall_clock_start_time.day,
+                             wall_clock_start_time.hour,
+                             wall_clock_start_time.min,
+                             wall_clock_start_time.sec,
+                             wall_clock_sim_start_time_jd,
+                             wall_clock_sim_start_time_frac);
+        EV_DEBUG << std::fixed << "wall_clock_sim_start_time_jd: " << wall_clock_sim_start_time_jd << "; frac: " << wall_clock_sim_start_time_frac << std::endl;
+
+        // 3. Calculate elapsed time in minutes
+        diffTleEpochWctMin = (wall_clock_sim_start_time_jd - tle_epoch_jd) * 1440 + (wall_clock_sim_start_time_frac - tle_epoch_frac) * 1440;
+        EV_DEBUG << "diffTleEpochWctMin: " << diffTleEpochWctMin << " min" << std::endl;
     }
     if (stage == 4) {
         // has to be done after the SOP stage in which the sop_omnet_coord is retrieved from its mobility
@@ -174,58 +180,37 @@ void SGP4Mobility::initialize(int stage)
 
 void SGP4Mobility::updateSatellitePosition()
 {
-    // t is the duration from tle epoch until current simTime() in minutes as required by SGP4Funcs::sgp4
-    std::chrono::duration<double, std::chrono::minutes::period> t = wall_clock_since_tle_epoch_min + std::chrono::duration<double, std::chrono::milliseconds::period>(simTime().dbl() * 1000);
-    EV_DEBUG << "SGP4Mobility wall_clock_since_tle_epoch_min: " << wall_clock_since_tle_epoch_min.count() << " min" << std::endl;
-    EV_DEBUG << "SGP4Mobility wall_clock_since_tle_epoch_min + simTime(): " << t.count() << " min" << std::endl;
+    // add simTime() to diffTleEpochWctMin to calculate the satellite position according to the current simulation time
+    EV_TRACE << "simTime in minutes: " << simTime().dbl() / 60 << " min" << std::endl;
+    double t = diffTleEpochWctMin + simTime().dbl() / 60;
+    EV_TRACE << "t: " << t << " min" << std::endl;
 
     // Calculate satellite position using SGP4 in TEME coodinate system
     double r_array[3];
     double v_array[3];
     bool ret = SGP4Funcs::sgp4(satrec,
-                            (double)t.count(),          // time since epoch in min
-                            r_array,
-                            v_array);
+                               t,          // time since epoch in min
+                               r_array,
+                               v_array);
     // Copy results into a vector
+    EV_TRACE << "time since epoch: " << t << " min" << std::endl;
     int n = sizeof(r_array) / sizeof(r_array[0]);
     std::vector<double> r_TEME(r_array, r_array + n);
     std::vector<double> v_TEME(v_array, v_array + n);
+    EV_TRACE << "TEME x: " << r_TEME[0] << ", y: " << r_TEME[1] << ", z: " << r_TEME[2] << std::endl;
 
-    // Calculate the current date_time_t which is required in order to calculate the date according to the Julian calendar
-    // SGP4 Model needs the current SGP4Mobility::date_time_t: tle_epoch + t as date -> DD-MM-YYYY:HH-mm-SS.SSS
-    // Transform duration t from minutes in needed period
-    std::chrono::duration<double, std::chrono::milliseconds::period> tp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t);
+    // Calculate the current wall clock time as julian date for TEME to ITRF conversion
+    // ignore leap seconds for now
+    double daysToAdd = std::trunc((wall_clock_sim_start_time_frac + simTime().dbl()) / 86400.0);
+    EV_TRACE << "daysToAdd: " << daysToAdd << std::endl;
+    current_wall_clock_time_frac = wall_clock_sim_start_time_frac + simTime().dbl() / 86400.0;
+    current_wall_clock_time_jd = wall_clock_sim_start_time_jd + daysToAdd;
+    EV_TRACE << std::fixed << "current_wall_clock_time_jd: " << current_wall_clock_time_jd << ", current_wall_clock_time_frac: " << current_wall_clock_time_frac << std::endl;
 
-    auto cdtTimeT = std::chrono::system_clock::to_time_t(ep) + ((long)(tp_ms.count()) / 1000);
-    EV_TRACE << "tp_s count: " << (long)(tp_ms.count()) / (double)1000 << std::endl;
-    EV_TRACE << "system_clock is steady: " << std::chrono::system_clock::is_steady << std::endl;
-    std::tm cdt = *(std::gmtime(&cdtTimeT));
-    cdt.tm_year += 1900;
-    cdt.tm_mon += 1;
-
-    EV_TRACE << "SGP4Mobility cdt: year: " << cdt.tm_year
-             << ",  month: " << cdt.tm_mon
-             << ",  day: " << cdt.tm_mday
-             << ",  hour: " << cdt.tm_hour
-             << ",  minute: " << cdt.tm_min
-             << ",  second: " << cdt.tm_sec + ((double)((int)tp_ms.count() % 1000) / 1000)
-             << std::endl;
-
-    // Calculate julian date_time for TEME to ITRF conversion
-    double julian_day, julian_day_frac;
-    SGP4Funcs::jday_SGP4(cdt.tm_year,
-                         cdt.tm_mon,
-                         cdt.tm_mday,
-                         cdt.tm_hour,
-                         cdt.tm_min,
-                         (double)(cdt.tm_sec) + ((double)((int)tp_ms.count() % 1000) / 1000),
-                         julian_day,
-                         julian_day_frac);
-
-    julian_day += julian_day_frac;
     // Coordinate transformation TEME -> ITRF
-    std::pair<std::vector<double>, std::vector<double>> itrf = TEME_to_ITRF(julian_day, r_TEME, v_TEME);
+    std::pair<std::vector<double>, std::vector<double>> itrf = TEME_to_ITRF(current_wall_clock_time_jd, r_TEME, v_TEME, 0.0, 0.0, current_wall_clock_time_frac);
     vehicleStatistics->recordItrfCoord(veins::Coord(itrf.first[0], itrf.first[1], itrf.first[2]));
+    EV_TRACE << "SGP4Mobility itrf: x: " << itrf.first[0] << ", y: " << itrf.first[1] << ", z: " << itrf.first[2] << std::endl;
     // Coordinate transformation ITRF -> WGS84
     PJ_COORD toTransfer = proj_coord(itrf.first[0] * 1000, itrf.first[1] * 1000, itrf.first[2] * 1000, 0); // conversion km -> m!
     PJ_COORD geo = proj_trans(itrf2008_to_wgs84_projection, PJ_FWD, toTransfer);

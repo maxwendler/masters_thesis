@@ -117,13 +117,20 @@ protected:
     SatelliteObservationPoint* sop;
 
     // Time management
-    date_time_t tle_epoch;                      // date_time_t of the TLE's epoch
-    std::chrono::system_clock::time_point ep;
+    // wall clock start time utc
     std::string wall_clock_sim_start_time_utc;  // wall clock start time of the simulation's begin
     date_time_t wall_clock_start_time;          // wall clock start time of the simulation's begin as date_time_t object
-    std::chrono::system_clock::time_point wct;  // current wall clock time
-    std::chrono::duration<double, std::chrono::minutes::period> wall_clock_since_tle_epoch_min;  // elapsed minutes since tle epoch considering configured wall clock start time in UTC and elapsed simulation time
-    date_time_t current_date_time;
+    double wall_clock_sim_start_time_jd;        // julian date of the simulation's begin
+    double wall_clock_sim_start_time_frac;      // fraction of the day of the simulation's begin for julian date
+    // TLE epoch
+    date_time_t tle_epoch;                      // date_time_t of the TLE's epoch
+    double tle_epoch_jd;                        // julian date of the TLE's epoch
+    double tle_epoch_frac;                      // fraction of the day of the TLE's epoch for julian date
+    // Current wall clock time as julian data
+    double current_wall_clock_time_jd;          // current wall clock time as julian date
+    double current_wall_clock_time_frac;        // fraction of the day of the current wall clock time for julian date
+    // Difference Tle epoch current wall clock time in minutes
+    double diffTleEpochWctMin;                  // difference between the TLE's epoch and the wall clock start time in minutes
 
     /* Statistics */
     VehicleStatistics* vehicleStatistics;
