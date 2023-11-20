@@ -96,18 +96,23 @@ for name_orbit_tuple in named_orbits:
         grcs_trace = coords.SkyCoord(coords.GCRS(cartesian_trace, obstime=ephem.epochs), frame="gcrs", obstime=ephem.epochs)
     
     if args.orekit:
-        start_time.format = "isot"
-        datetime_components = DateTimeComponents.parseDateTime(start_time.value)
+
         utc = TimeScalesFactory.getUTC()
-        date = AbsoluteDate(datetime_components, utc)
-        
-        orekit_gcrs_trace = [PVCoordinates(Vector3D(float(c.x.value),float(c.y.value),float(c.z.value))) for c in cartesian_trace]
-        
         gcrf = FramesFactory.getGCRF()
         itrf = FramesFactory.getITRF(ITRFVersion.ITRF_2008 ,IERSConventions.IERS_2010, False)
-        gcrfItrfTransformation = gcrf.getTransformTo(itrf, date)
 
-        itrf_trace = [gcrfItrfTransformation.transformPVCoordinates(c).getPosition() for c in orekit_gcrs_trace]
+        itrf_trace = []
+        for i in range(0, len(ephem.epochs)):
+            epoch = ephem.epochs[i]
+            epoch.format = "isot"
+
+            datetime_components = DateTimeComponents.parseDateTime(epoch.value)
+            date = AbsoluteDate(datetime_components, utc)
+            
+            cartesian_coord = cartesian_trace[i]
+            gcrs_coord = PVCoordinates(Vector3D(float(cartesian_coord.x.value),float(cartesian_coord.y.value),float(cartesian_coord.z.value)))
+            gcrfItrfTransformation = gcrf.getTransformTo(itrf, date)
+            itrf_trace.append(gcrfItrfTransformation.transformPVCoordinates(gcrs_coord).getPosition())
     else:
         itrf_trace = grcs_trace.transform_to(coords.ITRS)
 
