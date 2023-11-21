@@ -45,10 +45,28 @@ rule update_omnetini:
     shell:
         "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} {params.traces_dir} {params.quoted_tles_paths}"
 
+rule get_omnetini_traceparams:
+    input:
+        "../../scripts/keplertraces/parseomnetini.py",
+        ini="omnetpp.ini"
+    output:
+        #get_traces_dir(True) + "params/{opp_config}_update.done"
+        get_traces_dir(True) + "params/{opp_config}_params.txt"
+    params:
+        # gets updated by script if values actually change"
+    shell:
+        # only touch output, so that only updates of params matter for rule create_traces
+        """
+        python3 ../../scripts/keplertraces/parseomnetini.py {input.ini} {wildcards.opp_config} {output}
+        """
+
+def get_traceparams_done(wildcards):
+    return None
+
 rule create_traces:
     input:
         "../../scripts/keplertraces/create_traces.py",
-        ini_path="omnetpp.ini",
+        params_path=lambda wildcards: get_traces_dir(True) + "params/" + get_debug_str() + "{constellation}-kepler_params.txt",
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
     params:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
@@ -60,7 +78,7 @@ rule create_traces:
         "{traces_dir}/{constellation}_traces.done"
     shell:
         """
-        python3 ../../scripts/keplertraces/create_traces.py {input.ini_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
+        python3 ../../scripts/keplertraces/create_traces.py {input.params_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
         date +%Y%m%d%H%M%S > {output}
         """
 

@@ -3,6 +3,9 @@ import astropy.units as u
 from astropy.time import Time
 import configparser
 from datetime import datetime
+import argparse
+import os
+from pathlib import Path
 
 def parse_time_val(val_str: str) -> u.Quantity:
     """
@@ -110,3 +113,20 @@ def parseomnetini(omnetinipath: str, config: str) -> tuple[u.Quantity, u.Quantit
     print(f"parsed updateInterval: {updateinterval}")
     print(f"parsed wall_clock_sim_start_time_utc: {wall_clock_time}")
     return timelimit, updateinterval, wall_clock_time
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog="parseomnetini.py", description="Prints simulation timelimit, satellite update interval and utc start time for given config of omnetpp.ini.")
+    parser.add_argument("omnetini_path")
+    parser.add_argument("config")
+    parser.add_argument("output_path")
+    args = parser.parse_args()
+
+    timelimit, updateInterval, wall_clock_time = parseomnetini(args.omnetini_path, args.config)
+    
+    # format for .txt
+    params_str = "\n".join(["timelimit,"+str(timelimit.value), "updateInterval,"+str(updateInterval.value), "wall_clock_time,"+str(wall_clock_time)])
+
+    with open(args.output_path, "w") as params_file:
+        params_file.writelines(params_str)
+
+    print(f"Write params file at {args.output_path}.") 
