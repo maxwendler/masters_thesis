@@ -1,5 +1,5 @@
 # tles_dir: "tles/"
-tles_prefixes: ["iridiumNEXT", "oneweb", "satnogs", "starlink", "eccentric"]
+tles_prefixes: ["iridiumNEXT", "eccentric", "oneweb"] #, "starlink"]
 traces_dir: "traces/"
 
 debug_mode: false

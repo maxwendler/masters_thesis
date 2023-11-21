@@ -1,7 +1,6 @@
 import argparse
 import csv
 import plotly.express as px
-import pandas as pd
 
 def parse_difference_csv(csv_path):
     with open(csv_path, "r") as csv_f:
@@ -20,34 +19,36 @@ def parse_difference_csv(csv_path):
                 
     return satnames, sat_distances
 
-parser = argparse.ArgumentParser(prog="plot_difference_distributions", description="Plots sum histrogram of coordinate differences & difference box plot of each satellite.")
-parser.add_argument("difference_csv_path", help="Path of the csv of coordinate differences per satellite.")
-parser.add_argument("output_dir", help="Directory where both plots will be saved.")
-parser.add_argument("filename_prefix")
-args = parser.parse_args()
+if __name__ == "__main__":
 
-difference_csv_path = args.difference_csv_path
-satnames, sat_distances = parse_difference_csv(difference_csv_path)
+    parser = argparse.ArgumentParser(prog="plot_difference_distributions", description="Plots sum histrogram of coordinate differences & difference box plot of each satellite.")
+    parser.add_argument("difference_csv_path", help="Path of the csv of coordinate differences per satellite.")
+    parser.add_argument("output_dir", help="Directory where both plots will be saved.")
+    parser.add_argument("filename_prefix")
+    args = parser.parse_args()
 
-sat_distsums = [sum(distances) for distances in sat_distances]
-avg_distsum = sum(sat_distsums) / len(sat_distsums)
-avg_dist = avg_distsum / len(sat_distances[0])
+    difference_csv_path = args.difference_csv_path
+    satnames, sat_distances = parse_difference_csv(difference_csv_path)
 
-# sum of distances histogram with horizontal line for avg distsum
-# subtitle: avg. dist
-fig = px.bar(x=satnames, y=sat_distsums, labels={'x': f'Average difference: {round(avg_dist, 6)} km', 'y': "difference sum in km"})
-fig.add_hline(y=avg_distsum, annotation={"text": "avg sum"})
+    sat_distsums = [sum(distances) for distances in sat_distances]
+    avg_distsum = sum(sat_distsums) / len(sat_distsums)
+    avg_dist = avg_distsum / len(sat_distances[0])
 
-fig.write_image(args.output_dir + args.filename_prefix + "sum-histogram.png")
-fig.write_html(args.output_dir + args.filename_prefix + "sum-histogram.html")
+    # sum of distances histogram with horizontal line for avg distsum
+    # subtitle: avg. dist
+    fig = px.bar(x=satnames, y=sat_distsums, labels={'x': f'Average difference: {round(avg_dist, 6)} km', 'y': "difference sum in km"})
+    fig.add_hline(y=avg_distsum, annotation={"text": "avg sum"})
 
-satnames_for_df = []
-for name in satnames:
-    satnames_for_df += [name] * len(sat_distances[0]) 
-distances_for_df = []
-for distance_list in sat_distances:
-    distances_for_df += distance_list
+    fig.write_image(args.output_dir + args.filename_prefix + "sum-histogram.png")
+    fig.write_html(args.output_dir + args.filename_prefix + "sum-histogram.html")
 
-fig = px.box(x=satnames_for_df, y=distances_for_df, labels={'y': "difference in km"})
-fig.write_image(args.output_dir + args.filename_prefix + "boxplot.png")
-fig.write_html(args.output_dir + args.filename_prefix + "boxplot.html")
+    satnames_for_df = []
+    for name in satnames:
+        satnames_for_df += [name] * len(sat_distances[0]) 
+    distances_for_df = []
+    for distance_list in sat_distances:
+        distances_for_df += distance_list
+
+    fig = px.box(x=satnames_for_df, y=distances_for_df, labels={'y': "difference in km"})
+    fig.write_image(args.output_dir + args.filename_prefix + "boxplot.png")
+    fig.write_html(args.output_dir + args.filename_prefix + "boxplot.html")

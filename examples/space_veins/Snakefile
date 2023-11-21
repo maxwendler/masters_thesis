@@ -379,6 +379,41 @@ rule plot_diff_distributions:
         python3 ../../scripts/plots/plot_difference_distributions.py {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
         """
 
+rule plot_all_diff_distributions:
+    input:
+        "../../scripts/plots/plot_difference_distributions.py",
+        expand("plots/pos_diff_distr/{orekit}{debug}{constellation}_itrf_sgp4-kepler_sum-histogram.png",
+                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_sum-histogram.html",
+                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.png",
+                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.html",
+                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"])
+    output:
+        "plots/pos_diff_distr/.done"
+    shell:
+        "touch {output}"
+
+rule plot_orekit_comparison_histogram:
+    input:
+        "../../scripts/plots/plot_orekit_comparison_histogram.py",
+        no_orekit_csv="csv/pos_diff/no-orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv",
+        orekit_csv="csv/pos_diff/orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_orekit-histogram.html"
+    shell:
+        "python3 ../../scripts/plots/plot_orekit_comparison_histogram.py {input.no_orekit_csv} {input.orekit_csv} {output}"
+
+rule plot_all_orekit_comparison_histrograms:
+    input:
+        "../../scripts/plots/plot_orekit_comparison_histogram.py",
+        expand("plots/pos_diff_distr/" + "{debug}{constellation}_itrf_sgp4-kepler_orekit-histogram.html", debug=get_debug_str(), constellation=[config["tles_prefixes"]])
+    output:
+        "plots/pos_diff_distr/histograms.done"
+    shell:
+        "touch {output}"
+
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",
