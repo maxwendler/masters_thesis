@@ -79,7 +79,7 @@ timelimit, update_interval, start_time = tuple(res_vals)
 params_str = "\n".join(["timelimit,"+str(timelimit.value), "updateInterval,"+str(update_interval.value), "wall_clock_time,"+str(start_time)])
 
 matches_old_params = False
-if Path(args.params_path.removesuffix(".txt") + "_old.txt"):
+if Path(args.params_path.removesuffix(".txt") + "_old.txt").exists():
 
     with open(args.params_path.removesuffix(".txt") + "_old.txt", "r") as params_f:
         lines = [line.strip() for line in params_f.readlines()]

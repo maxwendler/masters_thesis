@@ -419,14 +419,17 @@ rule plot_orekit_comparison_histogram:
         no_orekit_csv="csv/pos_diff/no-orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv",
         orekit_csv="csv/pos_diff/orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_orekit-histogram.html"
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_orekit-histogram.{format}"
     shell:
         "python3 ../../scripts/plots/plot_orekit_comparison_histogram.py {input.no_orekit_csv} {input.orekit_csv} {output}"
 
 rule plot_all_orekit_comparison_histrograms:
     input:
         "../../scripts/plots/plot_orekit_comparison_histogram.py",
-        expand("plots/pos_diff_distr/" + "{debug}{constellation}_itrf_sgp4-kepler_orekit-histogram.html", debug=get_debug_str(), constellation=[config["tles_prefixes"]])
+        expand("plots/pos_diff_distr/{debug}{constellation}_itrf_sgp4-kepler_orekit-histogram.{format}", 
+                debug=get_debug_str(), 
+                constellation=config["tles_prefixes"],
+                format=["txt","png"])
     output:
         "plots/pos_diff_distr/histograms.done"
     shell:
