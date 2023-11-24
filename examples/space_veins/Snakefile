@@ -556,6 +556,38 @@ rule plot_const_omnet_coord_stats:
     shell:
         "touch {output}"
 
+rule calc_comm_period_info:
+    input:
+        script="../../scripts/statistics/comm_period_info.py",
+        tle_times="tles/{constellation}_times.json",
+        angle_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_angles.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=wildcards.mobility),
+        dist_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_distances.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=wildcards.mobility),
+        delay_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_delays.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=wildcards.mobility)
+    output:
+        "stats/comm_periods/{constellation}/{mobility}/{modname}_communication-periods.json"
+    shell:
+        "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
+
+def get_const_comm_period_info_paths(wildcards):
+    return expand("stats/comm_periods/{constellation}/{mobility}/{modname}_communication-periods.json",
+                constellation=wildcards.constellation,  
+                mobility=["sgp4","kepler"], 
+                modname=get_const_sat_mods(wildcards.constellation))
+
+rule calc_const_comm_period_info:
+    input:
+        get_const_comm_period_info_paths
+    output:
+        "stats/comm_periods/{constellation}.done"
+    shell:
+        "touch {output}"
+
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",

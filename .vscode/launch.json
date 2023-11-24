@@ -23,22 +23,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: plot_sop_stats.py",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/plots/plot_sop_stats.py",
-            "console": "integratedTerminal",
-            "args": ["'leoSHERPA-LTC2[1]'",
-                     "--angles_csv_path",
-                     "/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-kepler_angles.csv",
-                     "--distances_csv_path", 
-                     "/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-kepler_distances.csv",
-                     "--delays_csv_path",
-                     "/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-kepler_delays.csv",
-                     "'plots/sop/orekit/eccentric-kepler_leoSHERPA-LTC2[1]_angles_distances_delays.png'"],
-            "justMyCode": true
-        },
-        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",

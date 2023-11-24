@@ -3,44 +3,14 @@ import csv
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import json
+import sys, os
+sys.path.append(os.path.join(sys.path[0],".","statistics"))
+from comm_period_info import get_communication_periods
 
 def parse_second_range_from_header(header: str):
     start_second = int(header[1])
     end_second = int(header[-1])
     return list(range(start_second, end_second + 1))
-
-def get_communication_periods(angles: list[float], min_angle: float, start_sec: float, step: float) -> list[tuple[float, float]]:
-    
-    comm_periods = []
-    per_start_sec = None
-    per_end_sec = None
-    comm_possible = False
-    
-    for i in range(0, len(angles)):
-        current_sec = start_sec + i * step
-        angle = angles[i]
-
-        # communication becomes or remains possible
-        if angle > min_angle:
-            
-            # comm. becomes possible
-            if not comm_possible:
-                per_start_sec = current_sec
-                comm_possible = True
-            # else: comm. remains possible
-        
-        # communication becomes or remains impossible
-        else:
-
-            # communication becomes impossible
-            if comm_possible:
-                per_end_sec = current_sec
-                comm_periods.append( (per_start_sec, per_end_sec) )
-                comm_possible = False
-            
-            # else: communication remains impossible
-    
-    return comm_periods
 
 parser = argparse.ArgumentParser(prog="plot_sop_stat.py", description="Plots at least one of elevation angle, distance and propagation delay relative to SOP from given CSV files.")
 parser.add_argument("leo_modname")
