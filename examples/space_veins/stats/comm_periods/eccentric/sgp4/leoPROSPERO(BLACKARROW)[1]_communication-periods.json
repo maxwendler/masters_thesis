@@ -1,5 +1,6 @@
 {
     "modname": "leoPROSPERO(BLACKARROW)[1]",
+    "mobility": "sgp4",
     "periods": [
         [
             14540,

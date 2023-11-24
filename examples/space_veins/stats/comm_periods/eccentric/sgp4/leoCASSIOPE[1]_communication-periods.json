@@ -1,5 +1,6 @@
 {
     "modname": "leoCASSIOPE[1]",
+    "mobility": "sgp4",
     "periods": [
         [
             27564,

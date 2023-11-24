@@ -1,5 +1,6 @@
 {
     "modname": "leoPOPACS[3]",
+    "mobility": "sgp4",
     "periods": [
         [
             3600,

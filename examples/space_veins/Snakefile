@@ -588,6 +588,28 @@ rule calc_const_comm_period_info:
     shell:
         "touch {output}"
 
+rule compare_comm_period_info:
+    input:
+        script="../../scripts/statistics/compare_comm_period_info.py",
+        ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json"
+    output:
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+    shell:
+        "python3 {input.script} {input.ref_stats} {input.new_stats} {output}"
+
+rule plot_communication_period_comparison:
+    input:
+        script="../../scripts/statistics/plot_comm_comparison.py",
+        ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json",
+        period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+    output:
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.png",
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
+    shell:
+        "python3 {input.script} {input.period_groups} {wildcards.ref_mobility} {input.ref_stats} {wildcards.new_mobility} {input.new_stats}"
+
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",

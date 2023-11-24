@@ -1,5 +1,6 @@
 {
     "modname": "leoSHINSEI(MS-F2)[1]",
+    "mobility": "sgp4",
     "periods": [
         [
             15,

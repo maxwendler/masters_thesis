@@ -1,5 +1,6 @@
 {
     "modname": "leoPOPACS[2]",
+    "mobility": "kepler",
     "periods": [
         [
             77930,

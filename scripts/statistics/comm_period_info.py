@@ -15,7 +15,7 @@ def get_communication_periods(angles: list[float], min_angle: float, start_sec: 
         angle = angles[i]
 
         # communication becomes or remains possible
-        if angle > min_angle:
+        if angle >= min_angle:
             
             # comm. becomes possible
             if not comm_possible:
@@ -28,7 +28,7 @@ def get_communication_periods(angles: list[float], min_angle: float, start_sec: 
 
             # communication becomes impossible
             if comm_possible:
-                per_end_sec = current_sec
+                per_end_sec = current_sec - 1
                 comm_periods.append( (per_start_sec, per_end_sec) )
                 comm_possible = False
             
@@ -78,6 +78,7 @@ periods = get_communication_periods(angles, args.min_angle, second_range[0], 1)
 distances, second_range = get_mod_csv_row_vals(args.distances_csv_path, args.modname)
 delays, second_range = get_mod_csv_row_vals(args.delays_csv_path, args.modname)
 
+periods_angles = []
 periods_delays = []
 periods_distances = []
 period_start_offsets = []
@@ -88,11 +89,19 @@ for p in periods:
     end_sec = p[1]
     period_start_to_epoch_offset = start_sec - mod_epoch_to_start_offset_secs
 
-    periods_distances.append(distances[start_sec:end_sec+1])
-    periods_delays.append(delays[start_sec:end_sec+1])
+    periods_angles.append(angles[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
+    periods_distances.append(distances[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
+    periods_delays.append(delays[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
     period_start_offsets.append(period_start_to_epoch_offset)
 
-communication_period_dict = { "modname": args.modname, "periods": periods, "period_start_to_epoch_offsets": period_start_offsets, "distances": periods_distances, "delays": periods_delays }
+mobility = args.output_path.split("/")[-2]
+communication_period_dict = {"modname": args.modname, 
+                             "mobility": mobility, 
+                             "periods": periods, 
+                             "period_start_to_epoch_offsets": period_start_offsets, 
+                             "angles": periods_angles,
+                             "distances": periods_distances, 
+                             "delays": periods_delays }
 
 output_dir = "/".join(args.output_path.split("/")[:-1])
 os.makedirs(output_dir, exist_ok=True)

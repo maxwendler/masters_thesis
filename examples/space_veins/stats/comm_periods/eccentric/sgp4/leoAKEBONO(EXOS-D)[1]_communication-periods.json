@@ -1,5 +1,6 @@
 {
     "modname": "leoAKEBONO(EXOS-D)[1]",
+    "mobility": "sgp4",
     "periods": [
         [
             18596,
