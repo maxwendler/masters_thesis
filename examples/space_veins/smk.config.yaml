@@ -1,5 +1,5 @@
 # tles_dir: "tles/"
-tles_prefixes: ["iridiumNEXT", "eccentric", "oneweb"] #, "starlink"]
+tles_prefixes: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
 traces_dir: "traces/"
 
 debug_mode: false
@@ -11,11 +11,14 @@ itervars: [
   #"nodeXPos"
   ]
 sat_mod_regex_base: "SatelliteExampleScenario.leo.vehicleStatistics"
-sat_vectors: ["wgs84CoordLat:vector",
-              "wgs84CoordLon:vector",
-              "wgs84CoordAlt:vector",
-              "itrfCoordX:vector",
-              "itrfCoordY:vector",
-              "itrfCoordZ:vector"]
+#sat_vectors:  #"wgs84CoordLat:vector",
+              #"wgs84CoordLon:vector",
+              #"wgs84CoordAlt:vector",
+              #"itrfCoordX:vector",
+              #"itrfCoordY:vector",
+              #"itrfCoordZ:vector",
+              #"omnetCoordX:vector",
+              #"omnetCoordY:vector",
+              #"omnetCoordZ:vector"]
 
-coord_frames: ["wgs84", "itrf"]
+coord_frames: ["itrf", "omnet"] # "wgs84"]

@@ -7,15 +7,23 @@ from satname_to_modname import satname_to_modname
 sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10", "site-packages"))
 sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
 from tleparse import read
+from parseomnetini import parseomnetini
+from pathlib import Path
+import configparser
 
 configfile: "smk.config.yaml"
+
+def get_tle_path(constellation):
+    for fname in os.listdir("./tles/"):
+        if constellation in fname:
+            return "tles/" + fname
 
 def get_tles_paths():
     tles_fname_prefixes = config["tles_prefixes"]
     tles_fpaths = [] 
     
     for fname in os.listdir("./tles/"):
-        if fname.split("_")[0] in tles_fname_prefixes:
+        if fname.split("_")[0] in tles_fname_prefixes and fname.endswith(".txt"):
             tles_fpaths.append(f'{"tles/" + fname}')
     
     return tles_fpaths
@@ -30,6 +38,15 @@ def get_traces_dir(itrf=None):
 
     return base_dir + itrf_str + orekit_str + "/"
 
+rule calc_tle_times:
+    input:
+        script="../../scripts/keplertraces/tletimes.py",
+        tles=lambda wildcards: get_tle_path(wildcards.constellation)
+    output:
+        "tles/{constellation}_times.json"
+    shell:
+        "python3 {input.script} {input.tles}"
+
 rule update_omnetini:
     input:
         "../../scripts/keplertraces/updateomnetini.py",
@@ -43,7 +60,25 @@ rule update_omnetini:
     output:
         "omnetpp.ini"
     shell:
-        "python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} {params.traces_dir} {params.quoted_tles_paths}"
+        """python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} {params.traces_dir} {params.quoted_tles_paths}
+        
+        cp backups/omnetpp.ini old/omnetpp.ini
+
+        cp omnetpp.ini backups/omnetpp.ini
+        """
+
+def config_params_changed(config: str) -> bool:
+    inipath = "omnetpp.ini"
+    old_inipath = "old/omnetpp.ini"
+    
+    params_tuple = parseomnetini(inipath, config)
+    old_params_tuple = parseomnetini(old_inipath, config)
+
+    for val_i in range(0, len(params_tuple)):
+        if params_tuple[val_i] != old_params_tuple[val_i]:
+            return True
+
+    return False    
 
 rule get_omnetini_traceparams:
     input:
@@ -59,9 +94,6 @@ rule get_omnetini_traceparams:
         """
         python3 ../../scripts/keplertraces/parseomnetini.py {input.ini} {wildcards.opp_config} {output}
         """
-
-def get_traceparams_done(wildcards):
-    return None
 
 rule create_traces:
     input:
@@ -172,9 +204,11 @@ rule createRunFile:
         "runs/{oppConfig}_runs.txt"
     # container:
     #    "../../singularity/singularity-space_veins.sif"
+    # params:
+    #    shell="echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}"
     shell:
         """
-        echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
+            echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
         """
 
 rule createRunmakerFiles:
@@ -233,6 +267,10 @@ def format_coord_vectors(wildcards):
         return ("--list -F " + "itrfCoordX:vector=itrfCoordX_vector" +
                                 " -F itrfCoordY:vector=itrfCoordY_vector" +
                                 " -F itrfCoordZ:vector=itrfCoordZ_vector")
+    elif (wildcards.coordframe == "omnet"):
+        return ("--list -F " + "omnetCoordX:vector=omnetCoordX_vector" +
+                                " -F omnetCoordY:vector=omnetCoordY_vector" +
+                                " -F omnetCoordZ:vector=omnetCoordZ_vector")
     else:
         raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
 
@@ -253,7 +291,7 @@ rule vec2csv:
         "runs/{oppConfig}_done.txt",
         "../../scripts/time_sort_csv.py"
     output:
-        "csv/" + "vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}_sorted.csv"
+        "csv/vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}_sorted.csv"
     params:
         itervars=formatItervars,
         vectors=format_coord_vectors,
@@ -359,11 +397,12 @@ rule plot_pos_diffs_ecdf:
 rule plot_pos_diffs_both:
     input:
         "../../scripts/plots/plot_differences_both.py",
+        tle_times="tles/{constellation}_times.json",
         in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
         "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
     shell:
-        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
 
 def get_const_pos_diff_paths(wildcards):
     return expand("plots/pos_diff/"+ get_orekit_path_option()+ "{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
@@ -435,122 +474,158 @@ rule plot_all_orekit_comparison_histrograms:
     shell:
         "touch {output}"
 
+rule calc_pos_diff_diffs_itrf_omnet:
+    input:
+        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_distances.csv",
+        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_distances.csv",
+        "../../scripts/plots/diff_differences.py"
+    output:
+        "csv/pos_diff_diffs/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv" 
+    shell:
+        "python3 ../../scripts/plots/diff_differences.py '{input[0]}' '{input[1]}' > {output}"
+
+rule plot_pos_diff_diffs_both:
+    input:
+        "../../scripts/plots/plot_differences_both.py",
+        in_csv="csv/pos_diff_diffs/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv"
+    output:
+        "plots/pos_diff_diffs/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+    shell:
+        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+
+def get_const_pos_diff_diffs_paths(wildcards):
+    return expand("plots/pos_diff_diffs/"+ get_orekit_path_option()+ "{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+                constellation=wildcards.constellation,  
+                mobility1=wildcards.mobility1, 
+                mobility2=wildcards.mobility2,
+                leo_modname=get_const_sat_mods(wildcards.constellation))
+
+rule plot_const_pos_diff_diffs:
+    input:
+        get_const_pos_diff_diffs_paths
+    output:
+        "plots/pos_diff_diffs/" + get_orekit_path_option() + "{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_distances.done"
+    shell:
+        "touch {output}"
+
+rule calc_omnet_coord_stats:
+    input:
+        in_csv="csv/vectors/" + get_orekit_path_option() + "{oppConfig}_omnet_sorted.csv",
+        script="../../scripts/plots/sop_stats.py"
+    output:
+        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_distances.csv",
+        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_angles.csv",
+        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_delays.csv"
+    params:
+        output_dir="csv/sop/" + get_orekit_path_option()
+    shell:
+        "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
+
+rule plot_omnet_coord_stats:
+    input:
+        script="../../scripts/plots/plot_sop_stats.py",
+        tle_times="tles/{constellation}_times.json",
+        angle_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_angles.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=["sgp4","kepler"]),
+        dist_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_distances.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=["sgp4","kepler"]),
+        delay_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_delays.csv",
+                                    constellation=wildcards.constellation,
+                                    mobility=["sgp4","kepler"])
+    output:
+        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.html",
+        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.png"
+    params:
+        output_base_path = "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays"
+    shell:
+        "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats png html"
+
+def get_const_pos_omnet_stats_plot_paths(wildcards):
+    return expand("plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
+                constellation=wildcards.constellation,  
+                modname=get_const_sat_mods(wildcards.constellation),
+                format=["png", "html"])
+
+rule plot_const_omnet_coord_stats:
+    input:
+        get_const_pos_omnet_stats_plot_paths
+    output:
+        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_angles_distances_delays.done"
+    shell:
+        "touch {output}"
+
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",
         in_csv="csv/vectors/" + get_orekit_path_option() + "{opp_config}_{coord_frame}_sorted.csv"
     output:
-        "csv/vectors/" + get_orekit_path_option() + "satmod/{opp_config}_{coord_frame}_sorted_{leo_modname}.csv"
+        "csv/vectors/" + get_orekit_path_option() + "satmod/{opp_config}_{coord_frame}_{leo_modname}.csv"
     shell:
-        "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} {wildcards.leo_modname} > {output}"
+        "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
 
-def get_satmod_csv_paths_or_traces_done(wildcards, same_config=True):
-    leo_modnames = wildcards.leo_modnames.split("-")
+def get_satmod_csv_paths(wildcards, same_config=True):
+    leo_modnames = wildcards.leo_modnames.split("+")
 
+    # one config (= one mobility) -> one csv per satmod 
     if same_config:
+        base_path = "csv/vectors/" + get_orekit_path_option() +"satmod/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
+        return [(base_path + modname + ".csv") for modname in leo_modnames]
 
-        if "kepler" in wildcards.opp_config and wildcards.coord_frame == "itrf":
-            orekit_str = "_orekit" if config["use_orekit"] else ""
-            traces_dir = "traces_itrf" + orekit_str + "/"
-            constellation = get_const_from_config(wildcards.opp_config)
-            return [traces_dir + constellation + "_traces.done"]
-
-        # no traces required, can use simulation results
-        else:
-            base_path = "csv/vectors/satmod/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_sorted_"
-            return [(base_path + modname + ".csv") for modname in leo_modnames]
-
-    # one config might be kepler, coord frame might be itrf
+    # tw0 configs (= two mobilities) -> two csvs per satmod 
     else:
-
-        # return path of {constellation}_traces.done and paths of csvs of other mobility
-        if wildcards.coord_frame == "itrf" and (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler"):
-            non_kepler_mob = wildcards.mobility1 if wildcards.mobility1 != "kepler" else wildcards.mobility2
-            non_kepler_mob_config_str = get_debug_str() + wildcards.constellation + "-" + non_kepler_mob
-            non_kepler_mob_base_path = "csv/vectors/satmod/" + non_kepler_mob_config_str + "_" + wildcards.coord_frame + "_sorted_"
-            
-            orekit_str = "_orekit" if config["use_orekit"] else ""
-            traces_dir = "traces_itrf" + orekit_str + "/"
-            traces_done_path = traces_dir + wildcards.constellation + "_traces.done"
-
-            return [(non_kepler_mob_base_path + modname + ".csv") for modname in leo_modnames] + [traces_done_path]
-
-        # only return csv paths
-        else:
-            mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
-            mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
-            mob1_base_path = "csv/vectors/satmod/" + mob1_config_str + "_" + wildcards.coord_frame + "_sorted_"
-            mob2_base_path = "csv/vectors/satmod/" + mob2_config_str + "_" + wildcards.coord_frame + "_sorted_"
-            return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
-
-def get_trace_paths(wildcards, same_config=True):
-    leo_modnames = wildcards.leo_modnames.split("-")
-
-    if same_config:
-        if "kepler" in wildcards.opp_config and wildcards.coord_frame == "itrf":
-            orekit_str = "_orekit" if config["use_orekit"] else ""
-            traces_dir = "traces_itrf" + orekit_str + "/"
-            constellation = get_const_from_config(wildcards.opp_config)
-            const_traces_dir = traces_dir + filter(lambda file_or_dir_name: file_or_dir_name.startswith(constellation) and not file_or_dir_name.endswith("_traces.done"),
-                                                    os.listdir(traces_dir)).__next__() + "/"
-            
-            modname_to_satname_dict = None
-            with open(const_traces_dir + "modname_to_satname_dict.json", "r") as dict_f:
-                modname_to_satname_dict = json.load(dict_f)
-            satnames = [modname_to_satname_dict[modname] for modname in leo_modnames]
-
-            return [(const_traces_dir + satname + ".trace") for satname in satnames]
-        # no traces required
-        else:
-            return []
+        mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
+        mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
+        mob1_base_path = "csv/vectors/" + get_orekit_path_option() + "satmod/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
+        mob2_base_path = "csv/vectors/" + get_orekit_path_option() + "satmod/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
+        return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
     
-    else:
-
-        if wildcards.coord_frame == "itrf" and (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler"):
-            orekit_str = "_orekit" if config["use_orekit"] else ""
-            traces_dir = "traces_itrf" + orekit_str + "/"
-            constellation = wildcards.constellation
-            const_traces_dir = traces_dir + filter(lambda file_or_dir_name: file_or_dir_name.startswith(constellation) and not file_or_dir_name.endswith("_traces.done"),
-                                                    os.listdir(traces_dir)).__next__() + "/"
-            
-            modname_to_satname_dict = None
-            with open(const_traces_dir + "modname_to_satname_dict.json", "r") as dict_f:
-                modname_to_satname_dict = json.load(dict_f)
-            satnames = [modname_to_satname_dict[modname] for modname in leo_modnames]
-
-            return [(const_traces_dir + satname + ".trace") for satname in satnames]
-        
-        else:
-            return []
-
-def filter_csv_paths(path_list):
-    return list(filter(lambda path: path.endswith(".csv"), path_list))
-
 rule plot_orbs_of_mobility:
     input:
         "../../scripts/plots/plot_orbs.py",
-        coord_paths=get_satmod_csv_paths_or_traces_done
+        coord_paths=get_satmod_csv_paths
     output:
         "plots/orbs/mobility/{opp_config}_{coord_frame}_{leo_modnames}.html"
     params:
-        csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
-        csv_option= lambda wildcards, input: "-c" if len(filter_csv_paths(input.coord_paths)) > 0 else "",
-        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards)),
-        trace_option= lambda wildcards, input: "-t" if len(get_trace_paths(wildcards)) > 0 else ""
+        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths)
     shell:
         """
-        python3 ../../scripts/plots/plot_orbs.py {params.csv_option} {params.csv_paths} {params.trace_option} {params.trace_paths} -o '{output}' -e
+        python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -o '{output}' -e
         """
 
 rule plot_orbs_of_mobilities:
     input:
         "../../scripts/plots/plot_orbs.py",
-        coord_paths= lambda wildcards: get_satmod_csv_paths_or_traces_done(wildcards, False)
+        coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
     output:
         "plots/orbs/mobilities/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
     params:
-        csv_paths= lambda wildcards, input: quote_strs(filter_csv_paths(input.coord_paths)),
-        trace_paths= lambda wildcards, input: quote_strs(get_trace_paths(wildcards, False))
+        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths),
     shell:
-        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -t {params.trace_paths} -o '{output}' -e"
-    
+        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -o '{output}' -e"
+
+rule make_symbolic_link_and_hidden_data:
+    input:
+        "omnetpp.ini"
+    output:
+        "test.txt"
+    #shell:
+    #    """
+    #    touch {output}
+    #    touch old/{output}
+    #    """
+    run:
+        os.makedirs("./old", exist_ok=True)
+        if Path("./old/test.txt").exists():
+            print("old test txt exists")
+        else:
+            print("old test txt does not exist")
+
+        #with open(output[0], "w") as output_f:
+        #    output_f.write(" ")
+        
+        with open("old/" + output[0], "w") as output_f_copy:
+            output_f_copy.write("huasefuiasdiufhasidfhiasdhfiashui")
+        
+        os.symlink("old/" + output[0], output[0])

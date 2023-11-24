@@ -147,8 +147,10 @@ void KeplerMobility::updateSatellitePosition()
     inet::Coord satellitePosition(topo_cart.enu.e + sop_omnet_coord.x, -topo_cart.enu.n + sop_omnet_coord.y, topo_cart.enu.u + sop_omnet_coord.z);
     EV_TRACE << "KeplerMobility new lastPosition: " << satellitePosition << std::endl;
 
+    // in metres
     lastPosition = satellitePosition;
-    vehicleStatistics->recordOmnetCoord(veins::Coord(lastPosition.x, lastPosition.y, lastPosition.z));
+    veins::Coord lastPositionKm = veins::Coord(lastPosition.x / 1000, lastPosition.y / 1000, lastPosition.z / 1000);
+    vehicleStatistics->recordOmnetCoord(lastPositionKm);
 }
 
 void KeplerMobility::handleSelfMessage(cMessage* message)
