@@ -117,6 +117,8 @@ scripts/keplertraces/tles/*
 examples/**/dag.svg
 examples/space_veins/csv
 examples/space_veins/plots
+examples/space_veins/stats
+examples/space_veins/tles/*_times.json
 examples/space_veins/traces*
 .conda
 **/orekit-data.zip

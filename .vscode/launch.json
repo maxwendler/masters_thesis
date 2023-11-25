@@ -23,21 +23,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: comm_period_info.py",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/comm_period_info.py",
-            "console": "integratedTerminal",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-sgp4_angles.csv", 
-                    "/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-sgp4_distances.csv", 
-                    "/workspaces/ma-max-wendler/examples/space_veins/csv/sop/orekit/eccentric-sgp4_delays.csv",
-                    "/workspaces/ma-max-wendler/examples/space_veins/tles/eccentric_times.json",
-                    "leoSHERPA-LTC2[1]", 
-                    "25", 
-                    "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/eccentric/sgp4/leoSHERPA-LTC2[1]_communication-periods.json"],
-            "justMyCode": true
-        },
-        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",

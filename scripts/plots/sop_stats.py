@@ -54,7 +54,8 @@ for satname in sat_coord_dict.keys():
         delay = 0
         if elev_angle > min_eval_angle or not args.eval_angle:
             # *.radioMedium.propagation.propagationSpeed = 299792458 mps # speed of light
-            delay = distance / 299792.458
+            # * 1000 -> ms
+            delay = distance * 1000 / 299792.458
         sat_propagation_delays.append(delay)
 
     new_line = satname

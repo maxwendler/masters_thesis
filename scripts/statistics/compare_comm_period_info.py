@@ -49,7 +49,7 @@ for ref_period_idx in range(0, len(ref_periods)):
     
     if not match_found:
         
-        unmatched_periods.append({ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, "coverage": 0, "excluded": 0, "ref_start_to_epoch_offset": ref_mobility_stats["period_start_to_epoch_offsets"][ref_period_idx]})
+        unmatched_periods.append({ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, "ref_coverage": 0, "new_excluded": 0, "ref_start_to_epoch_offset": ref_mobility_stats["period_start_to_epoch_offsets"][ref_period_idx]})
 
     else:
 
@@ -94,8 +94,8 @@ for new_period_idx in range(0, len(new_periods)):
     period = new_periods[new_period_idx]
     if period not in matched_new_mobility_periods:
         unmatched_periods.append({new_mobility: {"period_idx": new_period_idx, "period": period}, 
-                                  "coverage": 0, 
-                                  "excluded": 100, 
+                                  "ref_coverage": 0, 
+                                  "new_excluded": 100, 
                                   "new_start_to_epoch_offset": new_mobility_stats["period_start_to_epoch_offsets"][new_period_idx]})
 
 output = {"period_groups": period_groups, "unmatched periods": unmatched_periods}
