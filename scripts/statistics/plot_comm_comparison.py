@@ -90,64 +90,64 @@ for period_group_idx in range(0, len(period_groups)):
     ref_angles = ref_vals_start_padding + ref_mobility_stats["angles"][ref_period_idx] + ref_vals_end_padding
     new_angles = new_vals_start_padding + new_mobility_stats["angles"][new_period_idx] + new_vals_end_padding
 
-    ref_angles_dict = {"sim. second": sec_range, "elevation angle in °": ref_angles}
-    new_angles_dict = {"sim. second": sec_range, "elevation angle in °": new_angles}
-
     fig.add_trace(
-        go.Scatter(x=ref_angles_dict["sim. second"], 
-                   y=ref_angles_dict["elevation angle in °"],
+        go.Scatter(x=sec_range, 
+                   y=ref_angles,
                    line=dict(color='Red')),
         row=plot_row_idx, col=1,
     )
     
     fig.add_trace(
-        go.Scatter(x=new_angles_dict["sim. second"], 
-                   y=new_angles_dict["elevation angle in °"],
+        go.Scatter(x=sec_range, 
+                   y=new_angles,
                    line=dict(color='Blue')),
         row=plot_row_idx, col=1,
     )
+
+    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
+    fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
 
     # line plots of distances
     ref_distances = ref_vals_start_padding + ref_mobility_stats["distances"][ref_period_idx] + ref_vals_end_padding
     new_distances = new_vals_start_padding + new_mobility_stats["distances"][new_period_idx] + new_vals_end_padding
 
-    ref_distances_dict = {"sim. second": sec_range, "distance in km": ref_distances}
-    new_distances_dict = {"sim. second": sec_range, "distance in km": new_distances}
-
     fig.add_trace(
-        go.Scatter(x=ref_distances_dict["sim. second"], 
-                   y=ref_distances_dict["distance in km"],
+        go.Scatter(x=sec_range, 
+                   y=ref_distances,
                    line=dict(color='Red')),
         row=plot_row_idx, col=2,
     )
     
     fig.add_trace(
-        go.Scatter(x=new_distances_dict["sim. second"], 
-                   y=new_distances_dict["distance in km"],
+        go.Scatter(x=sec_range, 
+                   y=new_distances,
                    line=dict(color='Blue')),
         row=plot_row_idx, col=2,
     )
+
+    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=2)
+    fig.update_yaxes(title_text="distance in km", row=plot_row_idx, col=2)
 
     # line plots of propagation delays
     ref_delays = ref_vals_start_padding + ref_mobility_stats["delays"][ref_period_idx] + ref_vals_end_padding
     new_delays = new_vals_start_padding + new_mobility_stats["delays"][new_period_idx] + new_vals_end_padding
 
-    ref_delays_dict = {"sim. second": sec_range, "delay in s": ref_delays}
-    new_delays_dict = {"sim. second": sec_range, "delay in s": new_delays}
-
     fig.add_trace(
-        go.Scatter(x=ref_delays_dict["sim. second"], 
-                   y=ref_delays_dict["delay in s"],
+        go.Scatter(x=sec_range, 
+                   y=ref_delays,
                    line=dict(color='Red')),
         row=plot_row_idx, col=3,
     )
     
     fig.add_trace(
-        go.Scatter(x=new_delays_dict["sim. second"], 
-                   y=new_delays_dict["delay in s"],
+        go.Scatter(x=sec_range, 
+                   y=new_delays,
                    line=dict(color='Blue')),
         row=plot_row_idx, col=3,
     )
+
+    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
+    fig.update_yaxes(title_text="delay in s", row=plot_row_idx, col=3)
 
 fig.write_image(output_path_base + ".png", width=1920, height=1080)
 fig.write_html(output_path_base + ".html")

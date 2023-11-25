@@ -31,16 +31,16 @@ row_num = 0
 subplot_titles = []
 if args.angles_csv_paths:
     row_num += 1
-    subplot_titles.append("elevation angle to SOP at sim. second")
-    subplot_titles.append("elevation angle to SOP at sim. second")
+    subplot_titles.append("elevation angle in ° to SOP at sim. second")
+    subplot_titles.append("elevation angle in ° to SOP at sim. second")
 if args.distances_csv_paths:
     row_num += 1
-    subplot_titles.append("distance to SOP at sim. second")
-    subplot_titles.append("distance to SOP at sim. second")
+    subplot_titles.append("distance in km to SOP at sim. second")
+    subplot_titles.append("distance in km to SOP at sim. second")
 if args.delays_csv_paths:
     row_num += 1
-    subplot_titles.append("delay from SOP to sat. at sim. second")
-    subplot_titles.append("delay from SOP to sat. at sim. second")
+    subplot_titles.append("delay in s from SOP to sat. at sim. second")
+    subplot_titles.append("delay in s from SOP to sat. at sim. second")
 
 fig = make_subplots(rows=row_num, cols=2, subplot_titles=subplot_titles)    
 
