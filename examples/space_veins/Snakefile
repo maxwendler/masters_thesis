@@ -596,7 +596,7 @@ rule compare_comm_period_info:
     output:
         "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
     shell:
-        "python3 {input.script} {input.ref_stats} {input.new_stats} {output}"
+        "python3 {input.script} '{input.ref_stats}' '{input.new_stats}' '{output}'"
 
 rule plot_communication_period_comparison:
     input:
@@ -608,7 +608,60 @@ rule plot_communication_period_comparison:
         "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.png",
         "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
     shell:
-        "python3 {input.script} {input.period_groups} {wildcards.ref_mobility} {input.ref_stats} {wildcards.new_mobility} {input.new_stats}"
+        "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}'"
+
+def get_const_comm_comp_json_paths(wildcards):
+    return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.json",
+            constellation=wildcards.constellation,  
+            modname=get_const_sat_mods(wildcards.constellation))
+
+def get_const_comm_comp_plot_paths(wildcards):
+    return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
+            constellation=wildcards.constellation,  
+            modname=get_const_sat_mods(wildcards.constellation),
+            format=["png", "html"])
+
+rule plot_const_communication_period_comparisons:
+    input:
+        get_const_comm_comp_plot_paths
+    output:
+        "stats/compare_comm_periods/{constellation}_communication_comparisons.done"
+    shell:
+        "touch {output}"
+
+rule plot_communication_period_comparison_overlaps:
+    input:
+        script="../../scripts/statistics/plot_sat_overlap_stats.py",
+        period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+    output:
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_overlaps.png"
+    shell:
+        """
+        python3 {input.script} '{input.period_groups}'
+        """
+
+rule calc_communication_period_comparison_summary:
+    input:
+        get_const_comm_comp_json_paths,
+        script="../../scripts/statistics/summarize_comm_comp_info.py"
+    output:
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_summary.json"
+    params:
+        comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
+    shell:
+        "python3 {input.script} {params.comp_jsons_dir} {output}"
+
+rule plot_const_overlap_stats:
+    input:
+        get_const_comm_comp_json_paths,
+        script="../../scripts/statistics/plot_const_overlap_stats.py"
+    output:
+        "stats/compare_comm_periods/{constellation}_overlaps_plot.html",
+        png_out="stats/compare_comm_periods/{constellation}_overlaps_plot.png"
+    params:
+        comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
+    shell:
+        "python3 {input.script} {params.comp_jsons_dir} {output.png_out}"
 
 rule satmod_csv:
     input:
