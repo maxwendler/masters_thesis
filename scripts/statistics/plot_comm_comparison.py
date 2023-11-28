@@ -30,124 +30,139 @@ with open(args.comm_periods_path, "r") as in_json:
 period_groups = comm_periods["period_groups"]
 
 row_num = len(period_groups)
-# rows: period groups, columns: angles, distances, delays
-fig = make_subplots(rows=row_num, cols=3)   
-fig.update_layout(showlegend=False)
 
-fig.add_annotation(dict(font=dict(color="red",size=14),
-                        x=0,
-                        y=1.1,
+# nothing to display: just add that as text in figure
+if not row_num > 0:
+    fig = go.Figure()
+
+    fig.add_annotation(dict(font=dict(color="black",size=40),
+                        x=0.5,
+                        y=0.5,
                         showarrow=False,
-                        text=f"{ref_mobility} values",
+                        text="No common communication periods to display.",
                         textangle=0,
                         xref="paper",
                         yref="paper"))
 
-fig.add_annotation(dict(font=dict(color="blue",size=14),
-                        x=0,
-                        y=1.05,
-                        showarrow=False,
-                        text=f"{new_mobility} values",
-                        textangle=0,
-                        xref="paper",
-                        yref="paper"))
+else:
+    # rows: period groups, columns: angles, distances, delays
+    fig = make_subplots(rows=row_num, cols=3)   
+    fig.update_layout(showlegend=False)
 
-for period_group_idx in range(0, len(period_groups)):
-    plot_row_idx = period_group_idx + 1
+    fig.add_annotation(dict(font=dict(color="red",size=14),
+                            x=0,
+                            y=1.1,
+                            showarrow=False,
+                            text=f"{ref_mobility} values",
+                            textangle=0,
+                            xref="paper",
+                            yref="paper"))
 
-    period_group = period_groups[period_group_idx]
+    fig.add_annotation(dict(font=dict(color="blue",size=14),
+                            x=0,
+                            y=1.05,
+                            showarrow=False,
+                            text=f"{new_mobility} values",
+                            textangle=0,
+                            xref="paper",
+                            yref="paper"))
 
-    ref_period_idx = period_group[ref_mobility]["period_idx"]
-    new_period_idx = period_group[new_mobility]["period_idx"]
+    for period_group_idx in range(0, len(period_groups)):
+        plot_row_idx = period_group_idx + 1
 
-    start_sec = min(period_group[ref_mobility]["period"][0], period_group[new_mobility]["period"][0])
-    end_sec = max(period_group[ref_mobility]["period"][1], period_group[new_mobility]["period"][1])
-    sec_range = list( range(start_sec, end_sec) )
-    
-    ref_vals_start_padding = []
-    if period_group[ref_mobility]["period"][0] > period_group[new_mobility]["period"][0]:
-        ref_vals_start_padding = [0] * (period_group[ref_mobility]["period"][0] - period_group[new_mobility]["period"][0]) 
-    
-    ref_vals_end_padding = []
-    if period_group[ref_mobility]["period"][1] < period_group[new_mobility]["period"][1]:
-        ref_vals_end_padding = [0] * (period_group[new_mobility]["period"][1] - period_group[ref_mobility]["period"][1])
-    
-    new_vals_start_padding = []
-    if period_group[new_mobility]["period"][0] > period_group[ref_mobility]["period"][0]:
-        new_vals_start_padding = [0] * (period_group[new_mobility]["period"][0] - period_group[ref_mobility]["period"][0]) 
-    
-    new_vals_end_padding = []
-    if period_group[new_mobility]["period"][1] < period_group[ref_mobility]["period"][1]:
-        new_vals_end_padding = [0] * (period_group[ref_mobility]["period"][1] - period_group[new_mobility]["period"][1])
+        period_group = period_groups[period_group_idx]
 
-    ref_vals_len = len(ref_vals_start_padding) + (period_group[ref_mobility]["period"][1] - period_group[ref_mobility]["period"][0]) + len(ref_vals_end_padding)
-    new_vals_len = len(new_vals_start_padding) + (period_group[new_mobility]["period"][1] - period_group[new_mobility]["period"][0]) + len(new_vals_end_padding)
+        ref_period_idx = period_group[ref_mobility]["period_idx"]
+        new_period_idx = period_group[new_mobility]["period_idx"]
 
-    if ref_vals_len != new_vals_len:
-        raise ValueError(f"Array of reference mobility values with padding has different length than array of new mobility values with padding ({ref_vals_len} to {new_vals_len})")
+        start_sec = min(period_group[ref_mobility]["period"][0], period_group[new_mobility]["period"][0])
+        end_sec = max(period_group[ref_mobility]["period"][1], period_group[new_mobility]["period"][1])
+        sec_range = list( range(start_sec, end_sec) )
+        
+        ref_vals_start_padding = []
+        if period_group[ref_mobility]["period"][0] > period_group[new_mobility]["period"][0]:
+            ref_vals_start_padding = [0] * (period_group[ref_mobility]["period"][0] - period_group[new_mobility]["period"][0]) 
+        
+        ref_vals_end_padding = []
+        if period_group[ref_mobility]["period"][1] < period_group[new_mobility]["period"][1]:
+            ref_vals_end_padding = [0] * (period_group[new_mobility]["period"][1] - period_group[ref_mobility]["period"][1])
+        
+        new_vals_start_padding = []
+        if period_group[new_mobility]["period"][0] > period_group[ref_mobility]["period"][0]:
+            new_vals_start_padding = [0] * (period_group[new_mobility]["period"][0] - period_group[ref_mobility]["period"][0]) 
+        
+        new_vals_end_padding = []
+        if period_group[new_mobility]["period"][1] < period_group[ref_mobility]["period"][1]:
+            new_vals_end_padding = [0] * (period_group[ref_mobility]["period"][1] - period_group[new_mobility]["period"][1])
 
-    # line plots of elevation angles
-    ref_angles = ref_vals_start_padding + ref_mobility_stats["angles"][ref_period_idx] + ref_vals_end_padding
-    new_angles = new_vals_start_padding + new_mobility_stats["angles"][new_period_idx] + new_vals_end_padding
+        ref_vals_len = len(ref_vals_start_padding) + (period_group[ref_mobility]["period"][1] - period_group[ref_mobility]["period"][0]) + len(ref_vals_end_padding)
+        new_vals_len = len(new_vals_start_padding) + (period_group[new_mobility]["period"][1] - period_group[new_mobility]["period"][0]) + len(new_vals_end_padding)
 
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=ref_angles,
-                   line=dict(color='Red')),
-        row=plot_row_idx, col=1,
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=new_angles,
-                   line=dict(color='Blue')),
-        row=plot_row_idx, col=1,
-    )
+        if ref_vals_len != new_vals_len:
+            raise ValueError(f"Array of reference mobility values with padding has different length than array of new mobility values with padding ({ref_vals_len} to {new_vals_len})")
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
-    fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
+        # line plots of elevation angles
+        ref_angles = ref_vals_start_padding + ref_mobility_stats["angles"][ref_period_idx] + ref_vals_end_padding
+        new_angles = new_vals_start_padding + new_mobility_stats["angles"][new_period_idx] + new_vals_end_padding
 
-    # line plots of distances
-    ref_distances = ref_vals_start_padding + ref_mobility_stats["distances"][ref_period_idx] + ref_vals_end_padding
-    new_distances = new_vals_start_padding + new_mobility_stats["distances"][new_period_idx] + new_vals_end_padding
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=ref_angles,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=1,
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=new_angles,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=1,
+        )
 
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=ref_distances,
-                   line=dict(color='Red')),
-        row=plot_row_idx, col=2,
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=new_distances,
-                   line=dict(color='Blue')),
-        row=plot_row_idx, col=2,
-    )
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
+        fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=2)
-    fig.update_yaxes(title_text="distance in km", row=plot_row_idx, col=2)
+        # line plots of distances
+        ref_distances = ref_vals_start_padding + ref_mobility_stats["distances"][ref_period_idx] + ref_vals_end_padding
+        new_distances = new_vals_start_padding + new_mobility_stats["distances"][new_period_idx] + new_vals_end_padding
 
-    # line plots of propagation delays
-    ref_delays = ref_vals_start_padding + ref_mobility_stats["delays"][ref_period_idx] + ref_vals_end_padding
-    new_delays = new_vals_start_padding + new_mobility_stats["delays"][new_period_idx] + new_vals_end_padding
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=ref_distances,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=2,
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=new_distances,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=2,
+        )
 
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=ref_delays,
-                   line=dict(color='Red')),
-        row=plot_row_idx, col=3,
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=sec_range, 
-                   y=new_delays,
-                   line=dict(color='Blue')),
-        row=plot_row_idx, col=3,
-    )
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=2)
+        fig.update_yaxes(title_text="distance in km", row=plot_row_idx, col=2)
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
-    fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
+        # line plots of propagation delays
+        ref_delays = ref_vals_start_padding + ref_mobility_stats["delays"][ref_period_idx] + ref_vals_end_padding
+        new_delays = new_vals_start_padding + new_mobility_stats["delays"][new_period_idx] + new_vals_end_padding
+
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=ref_delays,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=3,
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=sec_range, 
+                    y=new_delays,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=3,
+        )
+
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
+        fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
 
 fig.write_image(output_path_base + ".png", width=1920, height=1080)
 fig.write_html(output_path_base + ".html")

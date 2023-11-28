@@ -542,6 +542,47 @@ rule plot_omnet_coord_stats:
     shell:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats png html"
 
+
+rule calc_omnet_stat_diffs:
+    input:
+        script="../../scripts/statistics/omnet_stat_differences.py",
+        ref_mobility_csv="csv/sop/orekit/{constellation}-{ref_mobility}_{stat}.csv",
+        new_mobility_csv="csv/sop/orekit/{constellation}-{new_mobility}_{stat}.csv"
+    output:
+        "csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{stat}_{diffs_or_changes}.csv"
+    params:
+        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
+    shell:
+        "python3 {input.script} {input.ref_mobility_csv} {input.new_mobility_csv} {output} {params.change_option}"
+
+rule plot_omnet_stat_diffs:
+    input:
+        script="../../scripts/statistics/plot_omnet_stat_differences.py",
+        angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
+        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv"
+    output:
+        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_{diffs_or_changes}_full.html",
+        png_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_{diffs_or_changes}_full.png"
+    params:
+        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
+    shell:
+        "python3 {input.script} {input.angles_csv} {input.distances_csv} {wildcards.modname} {output.png_out} {params.change_option}"
+
+rule plot_local_omnet_stat_diffs:
+    input:
+        script="../../scripts/statistics/plot_omnet_stat_differences.py",
+        angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
+        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
+        delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv",
+        comm_comp_json="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+    output:
+        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.html",
+        png_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.png"
+    params:
+        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
+    shell:
+        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 {wildcards.modname} {output.png_out} {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
+
 def get_const_pos_omnet_stats_plot_paths(wildcards):
     return expand("plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
                 constellation=wildcards.constellation,  
