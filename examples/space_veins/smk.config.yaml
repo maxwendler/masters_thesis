@@ -3,7 +3,6 @@ tles_prefixes: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
 traces_dir: "traces/"
 
 debug_mode: false
-use_orekit: false
 mobilities: ["sgp4", "kepler"]
 itervars: [
   #"warmupPeriod", 

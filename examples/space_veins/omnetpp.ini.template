@@ -8,7 +8,7 @@
 ##########################################################
 warmup-period = ${warmupPeriod=15}s
 # 24h + warmupPeriod + cool down phase (5s)
-sim-time-limit = ${simTimeLimit=10820}s
+sim-time-limit = ${simTimeLimit=86420}s
 repeat = 1
 debug-on-errors = true
 print-undisposed = true

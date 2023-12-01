@@ -153,5 +153,5 @@ else:
     )
 
 fig.write_image(args.img_output_path)
-html_output_path = args.img_output_path.removesuffix("png") + "html"
+html_output_path = args.img_output_path.removesuffix("svg") + "html"
 fig.write_html(html_output_path)

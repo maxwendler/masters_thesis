@@ -31,13 +31,6 @@ def get_tles_paths():
 def quote_strs(tles_paths: list[str]):
     return [str('"' + tle_path + '"') for tle_path in tles_paths]
 
-def get_traces_dir(itrf=None):
-    base_dir = config["traces_dir"].removesuffix("/")
-    orekit_str = "_orekit" if config["use_orekit"] else ""
-    itrf_str = "_itrf" if itrf else ""
-
-    return base_dir + itrf_str + orekit_str + "/"
-
 rule calc_tle_times:
     input:
         script="../../scripts/keplertraces/tletimes.py",
@@ -56,11 +49,10 @@ rule update_omnetini:
         # as snakemake won't accept filepath strings containing quotes as input
         # but updateomnetini.py requires them
         quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
-        traces_dir = get_traces_dir(True)
     output:
         "omnetpp.ini"
     shell:
-        """python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} {params.traces_dir} {params.quoted_tles_paths}
+        """python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} traces/ {params.quoted_tles_paths}
         
         cp backups/omnetpp.ini old/omnetpp.ini
 
@@ -85,8 +77,7 @@ rule get_omnetini_traceparams:
         "../../scripts/keplertraces/parseomnetini.py",
         ini="omnetpp.ini"
     output:
-        #get_traces_dir(True) + "params/{opp_config}_update.done"
-        get_traces_dir(True) + "params/{opp_config}_params.txt"
+        "traces/params/{opp_config}_params.txt"
     params:
         # gets updated by script if values actually change"
     shell:
@@ -98,19 +89,17 @@ rule get_omnetini_traceparams:
 rule create_traces:
     input:
         "../../scripts/keplertraces/create_traces.py",
-        params_path=lambda wildcards: get_traces_dir(True) + "params/" + get_debug_str() + "{constellation}-kepler_params.txt",
+        params_path=lambda wildcards: "traces/params/" + get_debug_str() + "{constellation}-kepler_params.txt",
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
     params:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
                                         optional_Debug="Debug-" if config["debug_mode"] else "",
                                         constellation=wildcards.constellation),
-        itrf_option= lambda wildcards: "-i" if "itrf" in wildcards.traces_dir else "",
-        orekit_option="-o" if config["use_orekit"] else ""
     output:
-        "{traces_dir}/{constellation}_traces.done"
+        "traces/{constellation}_traces.done"
     shell:
         """
-        python3 ../../scripts/keplertraces/create_traces.py {input.params_path} {input.tles_path} {wildcards.traces_dir} -c {params.configname} {params.itrf_option} {params.orekit_option}
+        python3 ../../scripts/keplertraces/create_traces.py {input.params_path} {input.tles_path} traces/ -c {params.configname} -i -o
         date +%Y%m%d%H%M%S > {output}
         """
 
@@ -187,14 +176,13 @@ rule createRunmakerLogFile:
 
 def get_trace_requirement(wildcards):
     if "kepler" in wildcards.oppConfig:
-        return get_traces_dir(True) + get_const_from_config(wildcards.oppConfig) + "_traces.done"
+        return "traces/" + get_const_from_config(wildcards.oppConfig) + "_traces.done"
     else: 
         return []
 
 rule createRunFile:
     input:
         # only require trace files for Kepler-orbit-based runs
-        # either traces/ or traces_orekit/ with use_orekit:true in config
         # ---
         # placed here instead of in rule 'run' so that run file is regenerated with more recent traces
         # otherwise, run file still has run marked as 'd', done
@@ -280,23 +268,17 @@ def formatItervars(wildcards):
         i += "-I " + s + " "
     return i
 
-def get_orekit_path_option():
-    if config["use_orekit"]:
-        return "orekit/"
-    else:
-        return "no-orekit/"
-
 rule vec2csv:
     input:
         "runs/{oppConfig}_done.txt",
         "../../scripts/time_sort_csv.py"
     output:
-        "csv/vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}_sorted.csv"
+        "csv/vectors/{oppConfig}_{coordframe}_sorted.csv"
     params:
         itervars=formatItervars,
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vectors/" + get_orekit_path_option() + "{oppConfig}_{coordframe}.csv"
+        unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv"
     threads:
         1
     shell:
@@ -326,10 +308,7 @@ def format_constellation_satvec_csvnames(wildcards):
     files = []
 
     for frame in config["coord_frames"]:
-        #currently, use all frames, as poliastro itrf traces are used as simulation input
-        #if frame == "itrf" and wildcards.mobility == "kepler":
-        #    continue
-        f = "csv/vectors/" + get_orekit_path_option() + config_name + "_" + frame + "_sorted.csv"
+        f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
         files.append(f)
     
     return files
@@ -339,58 +318,38 @@ rule sat_vec_to_csv_constellation:
         "runs/" + get_debug_str() + "{constellation}-{mobility}_done.txt",
         format_constellation_satvec_csvnames
     output:
-        "csv/" + get_orekit_path_option() + get_debug_str() + "{constellation}-{mobility}_vecs.done"
+        "csv/" + get_debug_str() + "{constellation}-{mobility}_vecs.done"
     shell:
         "touch {output}"
 
 def get_coord_inputs(wildcards):
-    # code below only use for wgs84 traces as simulation inputs
-    
-    #if (wildcards.mobility1 == "kepler" or wildcards.mobility2 == "kepler") and wildcards.coord_frame == "itrf":
-    #    other_mobility = wildcards.mobility1 if wildcards.mobility2 == "kepler" else wildcards.mobility2
-    #    return [get_traces_dir(True) + "{constellation}_traces.done",
-    #            "csv/vectors/{constellation}-" + other_mobility + "_{coord_frame}_sorted.csv"]
-    
-    #else:
-        return ["csv/vectors/" + get_orekit_path_option() + "{constellation}-{mobility1}_{coord_frame}_sorted.csv",
-                "csv/vectors/" + get_orekit_path_option() + "{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
-
-def get_traces_dir_from_donefile(donefile_path):
-    donefile_name = donefile_path.split("/")[-1]
-    constellation = donefile_name.split("_")[0]
-    all_traces_dir = donefile_path.removesuffix(donefile_name)
-    for file_or_dir_name in os.listdir(all_traces_dir):
-        if file_or_dir_name.startswith(constellation) and not file_or_dir_name.endswith("_traces.done"):
-            return all_traces_dir + file_or_dir_name
-    error_str = f"No directory for constellation {constellation} was found!"
-    raise NameError(error_str)
+        return ["csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+                "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
 
 rule calc_pos_diffs:
     input:
         "../../scripts/plots/positional_differences.py",
-        trace_done_or_csvs=get_coord_inputs
+        coord_csvs=get_coord_inputs
     output:
-        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    params:
-        traces_dir_or_csv = lambda wildcards, input: input.trace_done_or_csvs[0] if input.trace_done_or_csvs[0].endswith(".csv") else get_traces_dir_from_donefile(input.trace_done_or_csvs[0]),
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     shell:
-        "python3 ../../scripts/plots/positional_differences.py {params.traces_dir_or_csv} {input.trace_done_or_csvs[1]} {wildcards.coord_frame} -c > {output}"
+        "python3 ../../scripts/plots/positional_differences.py {input.coord_csvs[0]} {input.coord_csvs[1]} {wildcards.coord_frame} -c > {output}"
 
 rule plot_pos_diffs:
     input:
         "../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/"+ get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
     shell:
         "python3 ../../scripts/plots/plot_differences.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 rule plot_pos_diffs_ecdf:
     input:
         "../../scripts/plots/plot_differences_ecdf.py",
-        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/"+ get_orekit_path_option() +"{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
     shell:
         "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
@@ -398,14 +357,14 @@ rule plot_pos_diffs_both:
     input:
         "../../scripts/plots/plot_differences_both.py",
         tle_times="tles/{constellation}_times.json",
-        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
     shell:
         "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
 
 def get_const_pos_diff_paths(wildcards):
-    return expand("plots/pos_diff/"+ get_orekit_path_option()+ "{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
                 constellation=wildcards.constellation, 
                 coord_frame=wildcards.coord_frame, 
                 mobility1=wildcards.mobility1, 
@@ -416,21 +375,21 @@ rule plot_const_pos_diffs:
     input:
         get_const_pos_diff_paths
     output:
-        "plots/pos_diff/" + get_orekit_path_option() + "{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
+        "plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
     shell:
         "touch {output}"
 
 rule plot_diff_distributions:
     input:
         "../../scripts/plots/plot_difference_distributions.py",
-        in_csv="csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.png",
-        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.png",
-        "plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.png",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.html",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.png",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
     params:
-        output_dir="plots/pos_diff_distr/" + get_orekit_path_option()
+        output_dir="plots/pos_diff_distr/"
     shell:
         """
         python3 ../../scripts/plots/plot_difference_distributions.py {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
@@ -439,62 +398,40 @@ rule plot_diff_distributions:
 rule plot_all_diff_distributions:
     input:
         "../../scripts/plots/plot_difference_distributions.py",
-        expand("plots/pos_diff_distr/{orekit}{debug}{constellation}_itrf_sgp4-kepler_sum-histogram.png",
-                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_sum-histogram.html",
-                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.png",
-                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.html",
-                orekit=get_orekit_path_option(), debug=get_debug_str(), constellation=config["tles_prefixes"])
+        expand("plots/pos_diff_distr/{debug}{constellation}_itrf_sgp4-kepler_sum-histogram.png",
+                debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_sum-histogram.html",
+                debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.png",
+                debug=get_debug_str(), constellation=config["tles_prefixes"]),
+        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.html",
+                debug=get_debug_str(), constellation=config["tles_prefixes"])
     output:
         "plots/pos_diff_distr/.done"
     shell:
         "touch {output}"
 
-rule plot_orekit_comparison_histogram:
-    input:
-        "../../scripts/plots/plot_orekit_comparison_histogram.py",
-        no_orekit_csv="csv/pos_diff/no-orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv",
-        orekit_csv="csv/pos_diff/orekit/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    output:
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_orekit-histogram.{format}"
-    shell:
-        "python3 ../../scripts/plots/plot_orekit_comparison_histogram.py {input.no_orekit_csv} {input.orekit_csv} {output}"
-
-rule plot_all_orekit_comparison_histrograms:
-    input:
-        "../../scripts/plots/plot_orekit_comparison_histogram.py",
-        expand("plots/pos_diff_distr/{debug}{constellation}_itrf_sgp4-kepler_orekit-histogram.{format}", 
-                debug=get_debug_str(), 
-                constellation=config["tles_prefixes"],
-                format=["txt","png"])
-    output:
-        "plots/pos_diff_distr/histograms.done"
-    shell:
-        "touch {output}"
-
 rule calc_pos_diff_diffs_itrf_omnet:
     input:
-        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_distances.csv",
-        "csv/pos_diff/" + get_orekit_path_option() + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_distances.csv",
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_distances.csv",
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_distances.csv",
         "../../scripts/plots/diff_differences.py"
     output:
-        "csv/pos_diff_diffs/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv" 
+        "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv" 
     shell:
         "python3 ../../scripts/plots/diff_differences.py '{input[0]}' '{input[1]}' > {output}"
 
 rule plot_pos_diff_diffs_both:
     input:
         "../../scripts/plots/plot_differences_both.py",
-        in_csv="csv/pos_diff_diffs/" + get_orekit_path_option() + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv"
+        in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv"
     output:
-        "plots/pos_diff_diffs/" + get_orekit_path_option() + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+        "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
     shell:
         "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 def get_const_pos_diff_diffs_paths(wildcards):
-    return expand("plots/pos_diff_diffs/"+ get_orekit_path_option()+ "{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
                 constellation=wildcards.constellation,  
                 mobility1=wildcards.mobility1, 
                 mobility2=wildcards.mobility2,
@@ -504,20 +441,20 @@ rule plot_const_pos_diff_diffs:
     input:
         get_const_pos_diff_diffs_paths
     output:
-        "plots/pos_diff_diffs/" + get_orekit_path_option() + "{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_distances.done"
+        "plots/pos_diff_diffs{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_distances.done"
     shell:
         "touch {output}"
 
 rule calc_omnet_coord_stats:
     input:
-        in_csv="csv/vectors/" + get_orekit_path_option() + "{oppConfig}_omnet_sorted.csv",
+        in_csv="csv/vectors/{oppConfig}_omnet_sorted.csv",
         script="../../scripts/plots/sop_stats.py"
     output:
-        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_distances.csv",
-        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_angles.csv",
-        "csv/sop/" + get_orekit_path_option() + "{oppConfig}_delays.csv"
+        "csv/sop/{oppConfig}_distances.csv",
+        "csv/sop/{oppConfig}_angles.csv",
+        "csv/sop/{oppConfig}_delays.csv"
     params:
-        output_dir="csv/sop/" + get_orekit_path_option()
+        output_dir="csv/sop/"
     shell:
         "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
 
@@ -525,25 +462,25 @@ rule plot_omnet_coord_stats:
     input:
         script="../../scripts/statistics/plot_sop_stats.py",
         tle_times="tles/{constellation}_times.json",
-        angle_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_angles.csv",
+        angle_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
                                     mobility=["sgp4","kepler"]),
-        dist_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_distances.csv",
+        dist_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_distances.csv",
                                     constellation=wildcards.constellation,
                                     mobility=["sgp4","kepler"]),
-        delay_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_delays.csv",
+        delay_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_delays.csv",
                                     constellation=wildcards.constellation,
                                     mobility=["sgp4","kepler"])
     output:
-        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.html",
-        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.svg"
+        "plots/sop/" + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.html",
+        "plots/sop/" + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.svg"
     params:
-        output_base_path = "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays"
+        output_base_path = "plots/sop/{constellation}/sgp4-kepler_{modname}_angles_distances_delays"
     shell:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
 def get_const_omnet_stats_plot_paths(wildcards):
-    return expand("plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
+    return expand("plots/sop/{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
                 constellation=wildcards.constellation,  
                 modname=get_const_sat_mods(wildcards.constellation),
                 format=["svg", "html"])
@@ -552,15 +489,15 @@ rule plot_const_omnet_coord_stats:
     input:
         get_const_omnet_stats_plot_paths
     output:
-        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_angles_distances_delays.done"
+        "plots/sop/{constellation}/sgp4-kepler_angles_distances_delays.done"
     shell:
         "touch {output}"
 
 rule calc_omnet_stat_diffs:
     input:
         script="../../scripts/statistics/omnet_stat_differences.py",
-        ref_mobility_csv="csv/sop/orekit/{constellation}-{ref_mobility}_{stat}.csv",
-        new_mobility_csv="csv/sop/orekit/{constellation}-{new_mobility}_{stat}.csv"
+        ref_mobility_csv="csv/sop/{constellation}-{ref_mobility}_{stat}.csv",
+        new_mobility_csv="csv/sop/{constellation}-{new_mobility}_{stat}.csv"
     output:
         "csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{stat}_{diffs_or_changes}.csv"
     params:
@@ -597,7 +534,6 @@ rule plot_local_omnet_stat_diffs:
     shell:
         "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
 
-
 def get_const_omnet_stat_diff_plot_paths(wildcards):
     return expand("plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
                 constellation=wildcards.constellation,
@@ -616,19 +552,17 @@ rule plot_const_omnet_stat_diffs:
     shell:
         "touch {output}"
 
-
-
 rule calc_comm_period_info:
     input:
         script="../../scripts/statistics/comm_period_info.py",
         tle_times="tles/{constellation}_times.json",
-        angle_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_angles.csv",
+        angle_csv=lambda wildcards: expand("csv/sop/{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
                                     mobility=wildcards.mobility),
-        dist_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_distances.csv",
+        dist_csv=lambda wildcards: expand("csv/sop/{constellation}-{mobility}_distances.csv",
                                     constellation=wildcards.constellation,
                                     mobility=wildcards.mobility),
-        delay_csv=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_delays.csv",
+        delay_csv=lambda wildcards: expand("csv/sop/{constellation}-{mobility}_delays.csv",
                                     constellation=wildcards.constellation,
                                     mobility=wildcards.mobility)
     output:
@@ -728,9 +662,9 @@ rule plot_const_overlap_stats:
 rule satmod_csv:
     input:
         "../../scripts/plots/to_sat_csv.py",
-        in_csv="csv/vectors/" + get_orekit_path_option() + "{opp_config}_{coord_frame}_sorted.csv"
+        in_csv="csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
     output:
-        "csv/vectors/" + get_orekit_path_option() + "satmod/{opp_config}_{coord_frame}_{leo_modname}.csv"
+        "csv/vectors/satmod/{opp_config}_{coord_frame}_{leo_modname}.csv"
     shell:
         "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
 
@@ -739,15 +673,15 @@ def get_satmod_csv_paths(wildcards, same_config=True):
 
     # one config (= one mobility) -> one csv per satmod 
     if same_config:
-        base_path = "csv/vectors/" + get_orekit_path_option() +"satmod/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
+        base_path = "csv/vectors/satmod/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
         return [(base_path + modname + ".csv") for modname in leo_modnames]
 
     # tw0 configs (= two mobilities) -> two csvs per satmod 
     else:
         mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
         mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
-        mob1_base_path = "csv/vectors/" + get_orekit_path_option() + "satmod/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
-        mob2_base_path = "csv/vectors/" + get_orekit_path_option() + "satmod/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
+        mob1_base_path = "csv/vectors/satmod/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
+        mob2_base_path = "csv/vectors/satmod/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
         return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
     
 rule plot_orbs_of_mobility:
