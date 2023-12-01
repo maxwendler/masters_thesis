@@ -164,5 +164,5 @@ else:
         fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
         fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
 
-fig.write_image(output_path_base + ".png", width=1920, height=1080)
+fig.write_image(output_path_base + ".svg", width=1920, height=1080)
 fig.write_html(output_path_base + ".html")

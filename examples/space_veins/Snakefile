@@ -523,7 +523,7 @@ rule calc_omnet_coord_stats:
 
 rule plot_omnet_coord_stats:
     input:
-        script="../../scripts/plots/plot_sop_stats.py",
+        script="../../scripts/statistics/plot_sop_stats.py",
         tle_times="tles/{constellation}_times.json",
         angle_csvs=lambda wildcards: expand("csv/sop/" + get_orekit_path_option() + "{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
@@ -536,12 +536,25 @@ rule plot_omnet_coord_stats:
                                     mobility=["sgp4","kepler"])
     output:
         "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.html",
-        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.png"
+        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.svg"
     params:
         output_base_path = "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays"
     shell:
-        "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats png html"
+        "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
+def get_const_omnet_stats_plot_paths(wildcards):
+    return expand("plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
+                constellation=wildcards.constellation,  
+                modname=get_const_sat_mods(wildcards.constellation),
+                format=["svg", "html"])
+
+rule plot_const_omnet_coord_stats:
+    input:
+        get_const_omnet_stats_plot_paths
+    output:
+        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_angles_distances_delays.done"
+    shell:
+        "touch {output}"
 
 rule calc_omnet_stat_diffs:
     input:
@@ -559,14 +572,15 @@ rule plot_omnet_stat_diffs:
     input:
         script="../../scripts/statistics/plot_omnet_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
-        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv"
+        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
+        delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv"
     output:
-        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_{diffs_or_changes}_full.html",
-        png_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_{diffs_or_changes}_full.png"
+        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.html",
+        svg_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.svg"
     params:
         change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
     shell:
-        "python3 {input.script} {input.angles_csv} {input.distances_csv} {wildcards.modname} {output.png_out} {params.change_option}"
+        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option}"
 
 rule plot_local_omnet_stat_diffs:
     input:
@@ -577,25 +591,32 @@ rule plot_local_omnet_stat_diffs:
         comm_comp_json="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
     output:
         "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.html",
-        png_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.png"
+        svg_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.svg"
     params:
         change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
     shell:
-        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 {wildcards.modname} {output.png_out} {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
+        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
 
-def get_const_pos_omnet_stats_plot_paths(wildcards):
-    return expand("plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
-                constellation=wildcards.constellation,  
+
+def get_const_omnet_stat_diff_plot_paths(wildcards):
+    return expand("plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
+                constellation=wildcards.constellation,
+                ref_mobility=wildcards.ref_mobility,
+                new_mobility=wildcards.new_mobility,
                 modname=get_const_sat_mods(wildcards.constellation),
-                format=["png", "html"])
+                diffs_or_changes=["diffs", "changes"],
+                format={"svg", "html"},
+                local_option=["_local","_full"])
 
-rule plot_const_omnet_coord_stats:
+rule plot_const_omnet_stat_diffs:
     input:
-        get_const_pos_omnet_stats_plot_paths
+        get_const_omnet_stat_diff_plot_paths
     output:
-        "plots/sop/" + get_orekit_path_option() + "{constellation}/sgp4-kepler_angles_distances_delays.done"
+        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_distances_delays.done"
     shell:
         "touch {output}"
+
+
 
 rule calc_comm_period_info:
     input:
@@ -646,7 +667,7 @@ rule plot_communication_period_comparison:
         new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json",
         period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
     output:
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.png",
+        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.svg",
         "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
     shell:
         "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}'"

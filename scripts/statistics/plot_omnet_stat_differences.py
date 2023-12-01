@@ -27,7 +27,7 @@ parser.add_argument("distances_csv")
 parser.add_argument("delays_csv")
 parser.add_argument("sim_start_sec", type=int)
 parser.add_argument("modname")
-parser.add_argument("png_output_path")
+parser.add_argument("img_output_path")
 parser.add_argument("-c", "--changes", action="store_true")
 parser.add_argument("--comm_comp_json")
 args = parser.parse_args()
@@ -130,9 +130,9 @@ if args.comm_comp_json:
 
 else:
 
-    fig = make_subplots(rows=2, cols=1, subplot_titles=[f"{diff_or_change_str} of elevation angle from ref. mobility at sim. second", 
-                                                    f"{diff_or_change_str} of distance to SOP from ref. mobility at sim. second"])
-
+    fig = make_subplots(rows=3, cols=1, subplot_titles=[f"{diff_or_change_str} of elevation angle from ref. mobility at sim. second", 
+                                                    f"{diff_or_change_str} of distance to SOP from ref. mobility at sim. second",
+                                                    f"{diff_or_change_str} of delay to SOP from ref. mobility at sim. second"])
 
     fig.add_trace(
         go.Scatter(x=sec_range, 
@@ -146,6 +146,12 @@ else:
         row=2, col=1
     )
 
-fig.write_image(args.png_output_path)
-html_output_path = args.png_output_path.removesuffix("png") + "html"
+    fig.add_trace(
+        go.Scatter(x=sec_range, 
+            y=delay_diffs_or_changes),
+        row=3, col=1
+    )
+
+fig.write_image(args.img_output_path)
+html_output_path = args.img_output_path.removesuffix("png") + "html"
 fig.write_html(html_output_path)

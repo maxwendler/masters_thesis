@@ -4,8 +4,8 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import json
 import sys, os
-sys.path.append(os.path.join(sys.path[0],".","statistics"))
 from comm_period_info import get_communication_periods
+
 
 def parse_second_range_from_header(header: str):
     start_second = int(header[1])
@@ -18,7 +18,7 @@ parser.add_argument("--angles_csv_paths", nargs=2)
 parser.add_argument("--distances_csv_paths", nargs=2)
 parser.add_argument("--delays_csv_paths", nargs=2)
 parser.add_argument("output_base_path")
-parser.add_argument("--formats", choices=["png","html"], nargs="+")
+parser.add_argument("--formats", choices=["svg","html"], nargs="+")
 parser.add_argument("--min_angle", type=float)
 parser.add_argument("--tle_times_path")
 args = parser.parse_args()
@@ -225,7 +225,7 @@ if args.min_angle and args.angles_csv_paths:
     )
     """
 
-if "png" in formats:
-    fig.write_image(args.output_base_path + ".png", width=1920, height=1080)
+if "svg" in formats:
+    fig.write_image(args.output_base_path + ".svg", width=1920, height=1080)
 if "html" in formats:
     fig.write_html(args.output_base_path + ".html")
