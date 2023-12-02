@@ -1,5 +1,6 @@
 import argparse
 import os, sys
+sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.satname_to_modname import satname_to_modname
 import csv
 from math import dist

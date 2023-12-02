@@ -1,12 +1,12 @@
 import os
 import glob
 import sys
-sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "plots"))
-from satname_to_modname import satname_to_modname
+sys.path.append(os.path.join(sys.path[0],"..",".."))
+from scripts.utility.satname_to_modname import satname_to_modname
 sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10", "site-packages"))
-sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
-from tleparse import read
-from parseomnetini import parseomnetini
+# sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
+from scripts.keplertraces.tleparse import read
+from scripts.keplertraces.parseomnetini import parseomnetini
 
 configfile: "smk.config.yaml"
 
@@ -347,10 +347,10 @@ rule plot_diff_distributions:
         "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.svg",
         "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
     params:
-        output_dir="plots/pos_diff_distr/"
+        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_"
     shell:
         """
-        python3 {input.script} {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
+        python3 {input.script} {input.in_csv} {params.output_basepath}
         """
 
 rule calc_pos_diff_diffs_itrf_omnet:
@@ -383,7 +383,7 @@ def get_const_pos_diff_diffs_paths(wildcards):
     """
     Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
     """
-    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
                 constellation=wildcards.constellation,  
                 mobility1=wildcards.mobility1, 
                 mobility2=wildcards.mobility2,
@@ -606,8 +606,10 @@ rule plot_communication_period_comparison:
     output:
         "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.svg",
         "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
+    params:
+        output_basepath="plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison"
     shell:
-        "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}'"
+        "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}' '{params.output_basepath}'"
 
 def get_const_comm_comp_json_paths(wildcards):
     """
@@ -626,7 +628,7 @@ def get_const_comm_comp_plot_paths(wildcards):
     return expand("plots/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
             constellation=wildcards.constellation,  
             modname=get_const_sat_mods(wildcards.constellation),
-            format=["png", "html"])
+            format=["svg", "html"])
 
 rule plot_const_communication_period_comparisons:
     """
@@ -664,11 +666,11 @@ rule plot_const_overlap_stats:
         script="../../scripts/plots/plot_const_overlap_stats.py"
     output:
         "plots/compare_comm_periods/{constellation}_overlaps_plot.html",
-        png_out="stats/compare_comm_periods/{constellation}_overlaps_plot.svg"
+        svg_out="plots/compare_comm_periods/{constellation}_overlaps_plot.svg"
     params:
         comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
     shell:
-        "python3 {input.script} {params.comp_jsons_dir} {output.png_out}"
+        "python3 {input.script} {params.comp_jsons_dir} {output.svg_out}"
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS

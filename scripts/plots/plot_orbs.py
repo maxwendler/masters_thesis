@@ -1,11 +1,12 @@
 import argparse
-from scripts.utility.parse_coords_file import parse_coords_file
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import re
 import numpy as np
 from math import inf
-import os
+import os, sys
+sys.path.append(os.path.join(sys.path[0],"..",".."))
+from scripts.utility.parse_coords_file import parse_coords_file
 
 parser = argparse.ArgumentParser(prog="plot_orbs.py", 
                                  description="""Plots the orbits from the given coordinate CSVs and trace files using cartesian coordinates. 

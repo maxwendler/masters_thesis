@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 import os
 from orekit.pyhelpers import download_orekit_data_curdir, setup_orekit_curdir
 import sys 
+sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.satname_to_modname import satname_to_modname
 import json
 from pathlib import Path

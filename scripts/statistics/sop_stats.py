@@ -1,4 +1,6 @@
 import argparse
+import os, sys
+sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.statistics.positional_differences import parse_csv_coords
 from math import dist, acos
 import astropy.units as u

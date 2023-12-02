@@ -4,7 +4,8 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import json
 import sys, os
-from comm_period_info import get_communication_periods
+sys.path.append(os.path.join(sys.path[0],"..",".."))
+from scripts.statistics.comm_period_info import get_communication_periods
 
 
 def parse_second_range_from_header(header: str):

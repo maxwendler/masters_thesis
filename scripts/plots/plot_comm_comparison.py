@@ -3,32 +3,36 @@ import json
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-parser = argparse.ArgumentParser(prog="plot_comm_comparison.py", description="???")
-parser.add_argument("comm_periods_path")
-parser.add_argument("ref_mobility")
-parser.add_argument("ref_mobility_stats_path")
-parser.add_argument("new_mobility")
-parser.add_argument("new_mobility_stats_path")
+parser = argparse.ArgumentParser(prog="plot_comm_comparison.py", 
+                                 description="""Plots line plots for elevation angles, distances and delays relative to the SOP in the overlapping communication periods of the 
+                                specified reference mobility, alternative (new) mobility, constellation and satellite module name.\n
+                                Each plot contains a line for the reference mobility and one line for the alternative mobility. To clearly show where communication
+                                periods start and end, values outside of the respective periods are set to 0.""")
+parser.add_argument("comm_period_groups_path", help="Path of JSON that matches communication periods between reference mobility and alternative (new) mobility.")
+parser.add_argument("ref_mobility", help="Name of reference mobility.")
+parser.add_argument("ref_mobility_periods_path", help="Path of the JSON with communication periods of the reference mobility and their elevations angles, distances and delays relative to the SOP.")
+parser.add_argument("new_mobility", help="Name of the alternative (new) mobility.")
+parser.add_argument("new_mobility_periods_path", help="Path of the JSON with communication periods of the reference mobility and their elevations angles, distances and delays relative to the SOP.")
+parser.add_argument("output_basepath", help="Output path without format suffix.")
 args = parser.parse_args()
 
-output_path_base = args.comm_periods_path.removesuffix(".json")
-
+### load communication period statistics ###
 ref_mobility = args.ref_mobility
 ref_mobility_stats = None
-with open(args.ref_mobility_stats_path, "r") as in_json:
+with open(args.ref_mobility_periods_path, "r") as in_json:
     ref_mobility_stats = json.load(in_json)
-
 new_mobility = args.new_mobility
 new_mobility_stats = None
-with open(args.new_mobility_stats_path, "r") as in_json:
+with open(args.new_mobility_periods_path, "r") as in_json:
     new_mobility_stats = json.load(in_json)
 
+# load communication period comparison
 comm_periods = {}
-with open(args.comm_periods_path, "r") as in_json:
+with open(args.comm_period_groups_path, "r") as in_json:
     comm_periods = json.load(in_json)
 
 period_groups = comm_periods["period_groups"]
-
+# one row of plots of elvevation angles, distances and delays per overlapping period group
 row_num = len(period_groups)
 
 # nothing to display: just add that as text in figure
@@ -49,6 +53,7 @@ else:
     fig = make_subplots(rows=row_num, cols=3)   
     fig.update_layout(showlegend=False)
 
+    #annotations identifying plot line color with respective mobility
     fig.add_annotation(dict(font=dict(color="red",size=14),
                             x=0,
                             y=1.1,
@@ -74,15 +79,17 @@ else:
 
         ref_period_idx = period_group[ref_mobility]["period_idx"]
         new_period_idx = period_group[new_mobility]["period_idx"]
-
+        
+        # get range of simulation seconds as list (does not include warmup time)
         start_sec = min(period_group[ref_mobility]["period"][0], period_group[new_mobility]["period"][0])
         end_sec = max(period_group[ref_mobility]["period"][1], period_group[new_mobility]["period"][1])
         sec_range = list( range(start_sec, end_sec) )
         
+        # get lists of zeros to pad values of a communication period for range of the other overlapping period
         ref_vals_start_padding = []
         if period_group[ref_mobility]["period"][0] > period_group[new_mobility]["period"][0]:
             ref_vals_start_padding = [0] * (period_group[ref_mobility]["period"][0] - period_group[new_mobility]["period"][0]) 
-        
+
         ref_vals_end_padding = []
         if period_group[ref_mobility]["period"][1] < period_group[new_mobility]["period"][1]:
             ref_vals_end_padding = [0] * (period_group[new_mobility]["period"][1] - period_group[ref_mobility]["period"][1])
@@ -94,10 +101,10 @@ else:
         new_vals_end_padding = []
         if period_group[new_mobility]["period"][1] < period_group[ref_mobility]["period"][1]:
             new_vals_end_padding = [0] * (period_group[ref_mobility]["period"][1] - period_group[new_mobility]["period"][1])
-
+        
+        # validate paddings
         ref_vals_len = len(ref_vals_start_padding) + (period_group[ref_mobility]["period"][1] - period_group[ref_mobility]["period"][0]) + len(ref_vals_end_padding)
         new_vals_len = len(new_vals_start_padding) + (period_group[new_mobility]["period"][1] - period_group[new_mobility]["period"][0]) + len(new_vals_end_padding)
-
         if ref_vals_len != new_vals_len:
             raise ValueError(f"Array of reference mobility values with padding has different length than array of new mobility values with padding ({ref_vals_len} to {new_vals_len})")
 
@@ -164,5 +171,5 @@ else:
         fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
         fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
 
-fig.write_image(output_path_base + ".svg", width=1920, height=1080)
-fig.write_html(output_path_base + ".html")
+fig.write_image(args.output_basepath + ".svg", width=1920, height=1080)
+fig.write_html(args.output_basepath + ".html")

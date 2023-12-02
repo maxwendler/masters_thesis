@@ -23,8 +23,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="plot_difference_distributions", description="Plots sum histrogram of coordinate differences & difference box plot of each satellite.")
     parser.add_argument("difference_csv_path", help="Path of the csv of coordinate differences per satellite.")
-    parser.add_argument("output_dir", help="Directory where both plots will be saved.")
-    parser.add_argument("filename_prefix")
+    parser.add_argument("output_basepath", help="Directory where both plots will be saved.")
     args = parser.parse_args()
 
     difference_csv_path = args.difference_csv_path
@@ -39,16 +38,17 @@ if __name__ == "__main__":
     fig = px.bar(x=satnames, y=sat_distsums, labels={'x': f'Average difference: {round(avg_dist, 6)} km', 'y': "difference sum in km"})
     fig.add_hline(y=avg_distsum, annotation={"text": "avg sum"})
 
-    fig.write_image(args.output_dir + args.filename_prefix + "sum-histogram.png")
-    fig.write_html(args.output_dir + args.filename_prefix + "sum-histogram.html")
+    fig.write_image(args.output_basepath + "sum-histogram.svg")
+    fig.write_html(args.output_basepath + "sum-histogram.html")
 
-    satnames_for_df = []
+    # distances boxplot
+    satnames_list = []
     for name in satnames:
-        satnames_for_df += [name] * len(sat_distances[0]) 
-    distances_for_df = []
+        satnames_list += [name] * len(sat_distances[0]) 
+    distances_list = []
     for distance_list in sat_distances:
-        distances_for_df += distance_list
+        distances_list += distance_list
 
-    fig = px.box(x=satnames_for_df, y=distances_for_df, labels={'y': "difference in km"})
-    fig.write_image(args.output_dir + args.filename_prefix + "boxplot.png")
-    fig.write_html(args.output_dir + args.filename_prefix + "boxplot.html")
+    fig = px.box(x=satnames_list, y=distances_list, labels={'y': "difference in km"})
+    fig.write_image(args.output_basepath + "boxplot.svg")
+    fig.write_html(args.output_basepath + "boxplot.html")
