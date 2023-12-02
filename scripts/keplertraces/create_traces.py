@@ -9,8 +9,7 @@ from timeit import default_timer as timer
 import os
 from orekit.pyhelpers import download_orekit_data_curdir, setup_orekit_curdir
 import sys 
-sys.path.append("/workspaces/ma-max-wendler/scripts/plots")
-from satname_to_modname import satname_to_modname
+from scripts.utility.satname_to_modname import satname_to_modname
 import json
 from pathlib import Path
 from astropy.time import Time

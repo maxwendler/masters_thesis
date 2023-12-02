@@ -1,5 +1,5 @@
 import argparse
-from parse_coords_file import parse_coords_file
+from scripts.utility.parse_coords_file import parse_coords_file
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import re

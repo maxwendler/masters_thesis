@@ -5,8 +5,7 @@ from numpy import datetime64
 from astropy.time import Time
 import json
 import sys, os
-sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "plots"))
-from satname_to_modname import satname_to_modname
+from scripts.utility.satname_to_modname import satname_to_modname
 
 parser = argparse.ArgumentParser(prog="tletimes.py", description="Parses sim start time and TLE times of given TLE list into dict written to .json *_times.json at same location.")
 parser.add_argument("tles_path")

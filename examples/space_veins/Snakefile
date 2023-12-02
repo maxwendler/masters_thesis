@@ -237,7 +237,7 @@ rule calc_pos_diffs:
     and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
     """
     input:
-        script="../../scripts/plots/positional_differences.py",
+        script="../../scripts/statistics/positional_differences.py",
         mob1_csv="csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
         mob2_csv="csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
     output:
@@ -360,7 +360,7 @@ rule calc_pos_diff_diffs_itrf_omnet:
     input:
         "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_differences.csv",
         "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_differences.csv",
-        script="../../scripts/plots/diff_differences.py"
+        script="../../scripts/statistics/diff_differences.py"
     output:
         "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv" 
     shell:
@@ -404,14 +404,14 @@ rule plot_const_pos_diff_diffs:
 RULES TO CALCULATE AND PLOT STATISTICS RELATIVE TO SOP
 """
 
-rule calc_omnet_coord_stats:
+rule calc_sop_stats:
     """
     Calculates elevation angles, distances and delays to SOP at OMNeT coordinate 0,0,0 for the specified OMNeT configuration and outputs them
     to individual CSVs. In the CSVs, each row is a satellite module name + the list of values for each simulation second.
     """
     input:
         in_csv="csv/vectors/{oppConfig}_omnet_sorted.csv",
-        script="../../scripts/plots/sop_stats.py"
+        script="../../scripts/statistics/sop_stats.py"
     output:
         "csv/sop/{oppConfig}_distances.csv",
         "csv/sop/{oppConfig}_angles.csv",
@@ -421,12 +421,12 @@ rule calc_omnet_coord_stats:
     shell:
         "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
 
-rule plot_omnet_coord_stats:
+rule plot_sop_stats:
     """
     Plots elevation angles, distances and delays to SOP for specified constellation for SGP4 and Kepler mobility and the specified constellation and satellite module name.
     """
     input:
-        script="../../scripts/statistics/plot_sop_stats.py",
+        script="../../scripts/plots/plot_sop_stats.py",
         tle_times="tles/{constellation}_times.json",
         angle_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
@@ -445,7 +445,7 @@ rule plot_omnet_coord_stats:
     shell:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
-def get_const_omnet_stats_plot_paths(wildcards):
+def get_const_sop_stats_plot_paths(wildcards):
     """
     Returns all the paths of elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
     """
@@ -454,18 +454,18 @@ def get_const_omnet_stats_plot_paths(wildcards):
                 modname=get_const_sat_mods(wildcards.constellation),
                 format=["svg", "html"])
 
-rule plot_const_omnet_coord_stats:
+rule plot_const_sop_stats:
     """
     Plots all elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
     """
     input:
-        get_const_omnet_stats_plot_paths
+        get_const_sop_stats_plot_paths
     output:
         "plots/sop/{constellation}/sgp4-kepler_angles_distances_delays.done"
     shell:
         "touch {output}"
 
-rule calc_omnet_stat_diffs:
+rule calc_sop_stat_diffs:
     """
     Calculates differences or changes for elevation angles, distances or delays ('stat') relative to SOP for the specified reference mobility, 
     alternative (new) mobility and constellation and outputs them to a new CSV.
@@ -482,13 +482,13 @@ rule calc_omnet_stat_diffs:
     shell:
         "python3 {input.script} {input.ref_mobility_csv} {input.new_mobility_csv} {output} {params.change_option}"
 
-rule plot_omnet_stat_diffs:
+rule plot_sop_stat_diffs:
     """
     Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
     alternative (new) mobility, constellation and satellite module name. The plots span the whole simulation time.   
     """
     input:
-        script="../../scripts/statistics/plot_omnet_stat_differences.py",
+        script="../../scripts/plots/plot_omnet_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
         distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
         delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv"
@@ -500,7 +500,7 @@ rule plot_omnet_stat_diffs:
     shell:
         "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option}"
 
-rule plot_local_omnet_stat_diffs:
+rule plot_local_sop_stat_diffs:
     """
     Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
     alternative (new) mobility, constellation and satellite module name. The plots only show overlapping and unmatched communication periods of both
@@ -520,7 +520,7 @@ rule plot_local_omnet_stat_diffs:
     shell:
         "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
 
-def get_const_omnet_stat_diff_plot_paths(wildcards):
+def get_const_sop_stat_diff_plot_paths(wildcards):
     """
     Returns all paths for local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
     reference mobility, alternative (new) mobility and constellation specified in wildcards.
@@ -534,13 +534,13 @@ def get_const_omnet_stat_diff_plot_paths(wildcards):
                 format={"svg", "html"},
                 local_option=["_local","_full"])
 
-rule plot_const_omnet_stat_diffs:
+rule plot_const_sop_stat_diffs:
     """
     Plots all local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
     reference mobility, alternative (new) mobility and constellation specified in wildcards.
     """
     input:
-        get_const_omnet_stat_diff_plot_paths
+        get_const_sop_stat_diff_plot_paths
     output:
         "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_distances_delays.done"
     shell:
@@ -599,13 +599,13 @@ rule plot_communication_period_comparison:
     periods start and end, values outside of the respective periods are set to 0.
     """
     input:
-        script="../../scripts/statistics/plot_comm_comparison.py",
+        script="../../scripts/plots/plot_comm_comparison.py",
         ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
         new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json",
         period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
     output:
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.svg",
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
+        "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.svg",
+        "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
     shell:
         "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}'"
 
@@ -623,7 +623,7 @@ def get_const_comm_comp_plot_paths(wildcards):
     Returns all paths of the plots comparing elevation angles, distances and delays in the matched communication periods of the constellation specified in wildcards,
     currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
     """
-    return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
+    return expand("plots/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
             constellation=wildcards.constellation,  
             modname=get_const_sat_mods(wildcards.constellation),
             format=["png", "html"])
@@ -635,7 +635,7 @@ rule plot_const_communication_period_comparisons:
     input:
         get_const_comm_comp_plot_paths
     output:
-        "stats/compare_comm_periods/{constellation}_communication_comparisons.done"
+        "plots/compare_comm_periods/{constellation}_communication_comparisons.done"
     shell:
         "touch {output}"
 
@@ -661,10 +661,10 @@ rule plot_const_overlap_stats:
     """
     input:
         get_const_comm_comp_json_paths,
-        script="../../scripts/statistics/plot_const_overlap_stats.py"
+        script="../../scripts/plots/plot_const_overlap_stats.py"
     output:
-        "stats/compare_comm_periods/{constellation}_overlaps_plot.html",
-        png_out="stats/compare_comm_periods/{constellation}_overlaps_plot.png"
+        "plots/compare_comm_periods/{constellation}_overlaps_plot.html",
+        png_out="stats/compare_comm_periods/{constellation}_overlaps_plot.svg"
     params:
         comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
     shell:
@@ -680,12 +680,12 @@ rule satmod_csv:
     to an individual CSV file.
     """
     input:
-        "../../scripts/plots/to_sat_csv.py",
+        script="../../scripts/utility/to_sat_csv.py",
         in_csv="csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
     output:
         "csv/vectors/satmod/{opp_config}_{coord_frame}_{leo_modname}.csv"
     shell:
-        "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
 
 def get_satmod_csv_paths(wildcards, same_config=True):
     """
@@ -713,7 +713,7 @@ rule plot_orbs_of_mobility:
     Creates interactive plot of the orbits of the specified "leo_modnames" for the given coordinate frame and OMNeT configuration.
     """
     input:
-        "../../scripts/plots/plot_orbs.py",
+        script="../../scripts/plots/plot_orbs.py",
         coord_paths=get_satmod_csv_paths
     output:
         "plots/orbs/mobility/{opp_config}_{coord_frame}_{leo_modnames}.html"
@@ -721,7 +721,7 @@ rule plot_orbs_of_mobility:
         csv_paths= lambda wildcards, input: quote_strs(input.coord_paths)
     shell:
         """
-        python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -o '{output}' -e
+        python3 {input.script} -c {params.csv_paths} -o '{output}' -e
         """
 
 rule plot_orbs_of_mobilities:
@@ -730,11 +730,11 @@ rule plot_orbs_of_mobilities:
     for both mobilities. I.e. enables visual comparison of orbits.
     """
     input:
-        "../../scripts/plots/plot_orbs.py",
+        script="../../scripts/plots/plot_orbs.py",
         coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
     output:
         "plots/orbs/mobilities/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
     params:
         csv_paths= lambda wildcards, input: quote_strs(input.coord_paths),
     shell:
-        "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -o '{output}' -e"
+        "python3 {input.script} -c {params.csv_paths} -o '{output}' -e"
