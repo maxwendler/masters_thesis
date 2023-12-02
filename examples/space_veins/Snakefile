@@ -250,7 +250,7 @@ rule plot_pos_diffs:
     Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame and satellite module. 
     """
     input:
-        script="../../scripts/plots/plot_differences_both.py",
+        script="../../scripts/plots/plot_differences.py",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv",
         tle_times="tles/{constellation}_times.json"
     output:
@@ -288,7 +288,7 @@ rule plot_pos_diffs_with_ecdf:
     as well as ECDF plot of distances. 
     """
     input:
-        script="../../scripts/plots/plot_differences_both.py",
+        script="../../scripts/plots/plot_differences.py",
         tle_times="tles/{constellation}_times.json",
         in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
     output:
@@ -373,12 +373,12 @@ rule plot_pos_diff_diffs_with_ecdf:
     as well as ECDF plot of differences.
     """
     input:
-        script="../../scripts/plots/plot_differences_both.py",
+        script="../../scripts/plots/plot_differences.py",
         in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv"
     output:
         "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
     shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}' --ecdf"
 
 def get_const_pos_diff_diffs_paths(wildcards):
     """

@@ -5,7 +5,7 @@ import argparse
 import csv
 import json
 
-parser = argparse.ArgumentParser(prog="plot_differences_both.py", description="Plots the differences of specified satellite modules from specified CSV as line and ecdf plot.")
+parser = argparse.ArgumentParser(prog="plot_differences.py", description="Plots the differences of specified satellite modules from specified CSV as line and ecdf plot.")
 
 parser.add_argument("csv_path", help="Path of csv file with (distance SGP4/Kepler at sim. second) vectors per satellite module.")
 parser.add_argument('leo_modname', help='A satellite module name.')
