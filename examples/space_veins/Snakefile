@@ -1,6 +1,5 @@
 import os
 import glob
-import json
 import sys
 sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "plots"))
 from satname_to_modname import satname_to_modname
@@ -8,18 +7,23 @@ sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10"
 sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
 from tleparse import read
 from parseomnetini import parseomnetini
-from pathlib import Path
-import configparser
 
 configfile: "smk.config.yaml"
 
-def get_tle_path(constellation):
-    for fname in os.listdir("./tles/"):
-        if constellation in fname:
-            return "tles/" + fname
+def quote_strs(strs: list[str]):
+    """
+    Puts quotes around given strings, as snakemake requires path strings without additional quotes,
+    while python scripts occasionally required quoted paths.
+    """
+    return ['"' + in_str + '"' for in_str in strs]
 
 def get_tles_paths():
-    tles_fname_prefixes = config["tles_prefixes"]
+    """
+    Returns all paths of TLEs lists used according to the current snakemake configuration (-> constellations).
+
+    Used by rule 'update_omnetini'
+    """
+    tles_fname_prefixes = config["constellations"]
     tles_fpaths = [] 
     
     for fname in os.listdir("./tles/"):
@@ -28,37 +32,43 @@ def get_tles_paths():
     
     return tles_fpaths
 
-def quote_strs(tles_paths: list[str]):
-    return [str('"' + tle_path + '"') for tle_path in tles_paths]
 
-rule calc_tle_times:
-    input:
-        script="../../scripts/keplertraces/tletimes.py",
-        tles=lambda wildcards: get_tle_path(wildcards.constellation)
-    output:
-        "tles/{constellation}_times.json"
-    shell:
-        "python3 {input.script} {input.tles}"
+def get_debug_str():
+    """
+    Function for optionally including 'Debug-' prefix for simulation configuration names,
+    when debug_mode is set to true in snakemake config.
+    """
+    return "Debug-" if config["debug_mode"] else ""
+
+"""
+RULES FOR RUNNING THE SIMULATION
+"""
 
 rule update_omnetini:
+    """
+    Adds debug and non-debug configuration generated from the template at ../../scripts/keplertraces/config_template.txt,
+    for the different mobilities and constellation-dependent TLEs list files, trace directories and simulation start times.
+    omnetpp.ini.template is overwritten after [Config Debug] section. omnetpp.ini.template contains example configs after [Config Debug] section.
+    """
     input:
-        "../../scripts/keplertraces/updateomnetini.py",
+        script="../../scripts/keplertraces/updateomnetini.py",
         ini_template="omnetpp.ini.template",
         tles_paths=get_tles_paths()
     params:
         # as snakemake won't accept filepath strings containing quotes as input
-        # but updateomnetini.py requires them
+        # but call of python scripts requires them
         quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
     output:
         "omnetpp.ini"
     shell:
-        """python3 ../../scripts/keplertraces/updateomnetini.py {input.ini_template} traces/ {params.quoted_tles_paths}
+        """python3 {input.script} {input.ini_template} traces/ {params.quoted_tles_paths}
         
         cp backups/omnetpp.ini old/omnetpp.ini
 
         cp omnetpp.ini backups/omnetpp.ini
         """
 
+# do it like this?
 def config_params_changed(config: str) -> bool:
     inipath = "omnetpp.ini"
     old_inipath = "old/omnetpp.ini"
@@ -72,9 +82,10 @@ def config_params_changed(config: str) -> bool:
 
     return False    
 
+# do it like this?
 rule get_omnetini_traceparams:
     input:
-        "../../scripts/keplertraces/parseomnetini.py",
+        script="../../scripts/keplertraces/parseomnetini.py",
         ini="omnetpp.ini"
     output:
         "traces/params/{opp_config}_params.txt"
@@ -83,12 +94,16 @@ rule get_omnetini_traceparams:
     shell:
         # only touch output, so that only updates of params matter for rule create_traces
         """
-        python3 ../../scripts/keplertraces/parseomnetini.py {input.ini} {wildcards.opp_config} {output}
+        python3 {input.script} {input.ini} {wildcards.opp_config} {output}
         """
 
 rule create_traces:
+    """
+    Creates ITRF traces of a constellation for either the normal or the debug configuration in omnetpp.ini,
+    from which parameters are derived.
+    """
     input:
-        "../../scripts/keplertraces/create_traces.py",
+        script="../../scripts/keplertraces/create_traces.py",
         params_path=lambda wildcards: "traces/params/" + get_debug_str() + "{constellation}-kepler_params.txt",
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
     params:
@@ -99,88 +114,25 @@ rule create_traces:
         "traces/{constellation}_traces.done"
     shell:
         """
-        python3 ../../scripts/keplertraces/create_traces.py {input.params_path} {input.tles_path} traces/ -c {params.configname} -i -o
+        python3 {input.script} {input.params_path} {input.tles_path} traces/ -c {params.configname} -i -o
         date +%Y%m%d%H%M%S > {output}
         """
 
-rule make_makefiles:
-    input:
-        "../../Makefile"
-    output:
-        "../../src/Makefile"
-    shell:
-        "cd ../../ && make makefiles"
-
-rule build_space_veins_devcontainer:
-    input:
-        "../../Makefile",
-        "cleanall.done"
-    output:
-        "../../bin/space_veins_run",
-        temp("build_devcontainer.done")
-    #container:
-    #    "../../singularity/singularity-space_veins.sif"
-    threads:
-        workflow.cores
-    shell:
-        """
-        cd ../../
-        make makefiles
-        bear --append -- make all -j{threads}
-        cd examples/space_veins
-        touch "build_devcontainer.done"
-        """
-
-rule build_space_veins_singularity:
-    input:
-        "../../Makefile",
-        "cleanall.done"
-    output:
-        "../../bin/space_veins_run",
-        temp("build_singularity.done")
-    container:
-        "../../singularity/singularity-space_veins.sif"
-    threads:
-        workflow.cores
-    shell:
-        """
-        make makefiles
-        ucc make -j{threads} all
-        make bin/space_veins_run
-        touch "cleanall.done"
-        """
-
-rule cleanSpaceVeins:
-    input:
-        "../../Makefile",
-        "../../src/Makefile"
-    output:
-        temp("cleanall.done")
-    #container:
-    #    "../../singularity/singularity-space_veins.sif"
-    threads:
-        1
-    shell:
-        """
-        cd ../../ &&
-        make cleanall &&
-        cd examples/space_veins &&
-        touch "cleanall.done" 
-        """
-
-rule createRunmakerLogFile:
-    output:
-        "runs/{oppConfig}_runs.log"
-    shell:
-        "touch {output}"
-
 def get_trace_requirement(wildcards):
+    """
+    Returns traces as input requirement for rule createRunFile only for Kepler configurations. 
+    """
     if "kepler" in wildcards.oppConfig:
-        return "traces/" + get_const_from_config(wildcards.oppConfig) + "_traces.done"
+        config = config_str.replace("Debug-","")
+        constellation = config.split("-")[0]
+        return "/traces" + constellation + "_traces.done"
     else: 
         return []
 
 rule createRunFile:
+    """
+    Creates run files to run simulations with runmaker
+    """
     input:
         # only require trace files for Kepler-orbit-based runs
         # ---
@@ -199,27 +151,20 @@ rule createRunFile:
             echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
         """
 
-rule createRunmakerFiles:
-    input:
-        expand("runs/{optional_Debug}{constellation}-{mobility}_runs.log", 
-                optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                constellation=config["tles_prefixes"],
-                mobility=config["mobilities"]),
-        expand("runs/{optional_Debug}{constellation}-{mobility}_runs.txt", 
-                optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                constellation=config["tles_prefixes"],
-                mobility=config["mobilities"]),
+rule createRunmakerLogFile:
+    """
+    Creates .log file for running simulations with runmaker.
+    """
     output:
-        temp("runmaker.done")
+        "runs/{oppConfig}_runs.log"
     shell:
-        "touch runmaker.done"
+        "touch {output}"
 
-def get_const_from_config(config_str):
-    config = config_str.replace("Debug-","")
-    constellation = config.split("-")[0]
-    return constellation
 
 rule run:
+    """
+    Runs OMNeT++ simulation for a configuration from omnetpp.ini.
+    """
     input:
         logFile="runs/{oppConfig}_runs.log",
         runFile="runs/{oppConfig}_runs.txt"
@@ -235,18 +180,11 @@ rule run:
         date +%Y%m%d%H%M%S > {output}
         """
 
-rule runAll:
-    input:
-        expand("runs/{optional_Debug}{constellation}-{mobility}_done.txt", 
-                optional_Debug="Debug-" if config["debug_mode"] else "" ,
-                constellation=config["tles_prefixes"],
-                mobility=config["mobilities"])
-    output:
-        "runs/runall.done"
-    shell:
-        "touch runs/runall.done"
-
 def format_coord_vectors(wildcards):
+    """
+    Determines coordinate vectors that should be written from simulation results to a CSV by "../../lib/veins_scripts/eval/opp_vec2csv.pl",
+    depending on coordinate frame requested for rule vec2csv.
+    """
     if (wildcards.coordframe == "wgs84"):
         return ("--list -F " + "wgs84CoordLat:vector=wgs84CoordLat_vector" +
                                 " -F wgs84CoordLon:vector=wgs84CoordLon_vector " +
@@ -262,20 +200,21 @@ def format_coord_vectors(wildcards):
     else:
         raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
 
-def formatItervars(wildcards):
-    i = ""
-    for s in config["itervars"]:
-        i += "-I " + s + " "
-    return i
+"""
+RULES FOR EXTRACTING RELEVANT DATA FROM RESULTS
+"""
 
 rule vec2csv:
+    """
+    Parses coordinate vectors from simulation results to a 3D-coordinate CSV for specified coordinate frame.
+    Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
+    """
     input:
         "runs/{oppConfig}_done.txt",
-        "../../scripts/time_sort_csv.py"
+        sort_script="../../scripts/time_sort_csv.py"
     output:
         "csv/vectors/{oppConfig}_{coordframe}_sorted.csv"
     params:
-        itervars=formatItervars,
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
         unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv"
@@ -283,12 +222,83 @@ rule vec2csv:
         1
     shell:
         """
-        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {params.unsorted_path}
-        python3 ../../scripts/time_sort_csv.py {params.unsorted_path}  
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} results/{wildcards.oppConfig}*.vec > {params.unsorted_path}
+        python3 {input.sort_script} {params.unsorted_path}  
         rm {params.unsorted_path}
         """
 
+"""
+RULES TO CALCULATE AND PLOT POSITIONAL DIFFERENCES IN 3D COORDINATES
+"""
+
+rule calc_pos_diffs:
+    """
+    Calculates differences between 3D coordinate CSVs of the two specified mobilities and the specified coordinate frame, 
+    and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
+    """
+    input:
+        script="../../scripts/plots/positional_differences.py",
+        mob1_csv="csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+        mob2_csv="csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+    output:
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+    shell:
+        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
+
+rule plot_pos_diffs:
+    """
+    Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame and satellite module. 
+    """
+    input:
+        script="../../scripts/plots/plot_differences.py",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+    output:
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.svg"
+    shell:
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+
+def get_tle_path(constellation: str):
+    """
+    Returns path of TLEs list in tles/ for given constellation, which should start with given
+    constellation name. For options see config -> constellations.
+
+    Used by rule 'calc_tle_times.' 
+    """
+    for fname in os.listdir("./tles/"):
+        if constellation in fname:
+            return "tles/" + fname
+
+rule calc_tle_times:
+    """
+    Creates JSON with start time as well as epochs of a TLEs list in numpy datetime64 format,
+    as well as the offset of each epoch to the start time in days. 
+    """
+    input:
+        script="../../scripts/keplertraces/tletimes.py",
+        tles=lambda wildcards: get_tle_path(wildcards.constellation)
+    output:
+        "tles/{constellation}_times.json"
+    shell:
+        "python3 {input.script} {input.tles}"
+
+rule plot_pos_diffs_with_ecdf:
+    """
+    Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame, and satellite module,
+    as well as ECDF plot of distances. 
+    """
+    input:
+        script="../../scripts/plots/plot_differences_both.py",
+        tle_times="tles/{constellation}_times.json",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+    output:
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+    shell:
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
+
 def get_const_sat_mods(constellation: str):
+    """
+    Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
+    """
 
     const_tles_fname = filter( lambda tles_path: tles_path.startswith(constellation), os.listdir("./tles/")).__next__()
     tles = read("./tles/" + const_tles_fname)
@@ -299,79 +309,23 @@ def get_const_sat_mods(constellation: str):
     
     return sat_mods
 
-def get_debug_str():
-    return "Debug-" if config["debug_mode"] else ""
-
-def format_constellation_satvec_csvnames(wildcards):
-    config_name = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility 
-
-    files = []
-
-    for frame in config["coord_frames"]:
-        f = "csv/vectors/" + config_name + "_" + frame + "_sorted.csv"
-        files.append(f)
-    
-    return files
-
-rule sat_vec_to_csv_constellation:
-    input:
-        "runs/" + get_debug_str() + "{constellation}-{mobility}_done.txt",
-        format_constellation_satvec_csvnames
-    output:
-        "csv/" + get_debug_str() + "{constellation}-{mobility}_vecs.done"
-    shell:
-        "touch {output}"
-
-def get_coord_inputs(wildcards):
-        return ["csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
-                "csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"]
-
-rule calc_pos_diffs:
-    input:
-        "../../scripts/plots/positional_differences.py",
-        coord_csvs=get_coord_inputs
-    output:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    shell:
-        "python3 ../../scripts/plots/positional_differences.py {input.coord_csvs[0]} {input.coord_csvs[1]} {wildcards.coord_frame} -c > {output}"
-
-rule plot_pos_diffs:
-    input:
-        "../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.png"
-    shell:
-        "python3 ../../scripts/plots/plot_differences.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
-
-rule plot_pos_diffs_ecdf:
-    input:
-        "../../scripts/plots/plot_differences_ecdf.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_ecdf.png"
-    shell:
-        "python3 ../../scripts/plots/plot_differences_ecdf.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
-
-rule plot_pos_diffs_both:
-    input:
-        "../../scripts/plots/plot_differences_both.py",
-        tle_times="tles/{constellation}_times.json",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
-    output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
-    shell:
-        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
-
 def get_const_pos_diff_paths(wildcards):
-    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+    """
+    Returns all paths of 3D coordinate difference plots of the constellation, coordframe and the two mobilities specified in wildcards.
+    """
+    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances{with_or_without_ecdf}.svg",
                 constellation=wildcards.constellation, 
                 coord_frame=wildcards.coord_frame, 
                 mobility1=wildcards.mobility1, 
                 mobility2=wildcards.mobility2,
-                leo_modname=get_const_sat_mods(wildcards.constellation))
+                leo_modname=get_const_sat_mods(wildcards.constellation),
+                with_or_without_ecdf=["_with_ecdf",""])
 
 rule plot_const_pos_diffs:
+    """
+    Plots all line plots of 3D coordinate differences for the specified two mobilities and coordinate frame,
+    one file with ECDF plot, one file without it.
+    """
     input:
         get_const_pos_diff_paths
     output:
@@ -380,64 +334,65 @@ rule plot_const_pos_diffs:
         "touch {output}"
 
 rule plot_diff_distributions:
+    """
+    Plots sum histogram plot and box plot for the 3D coordinate differences of all satellite modules of the given constellation,
+    for the specified two mobilities and coordinate frame.  
+    """
     input:
-        "../../scripts/plots/plot_difference_distributions.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_distances.csv"
+        script="../../scripts/plots/plot_difference_distributions.py",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
     output:
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.png",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.svg",
         "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.png",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.svg",
         "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
     params:
         output_dir="plots/pos_diff_distr/"
     shell:
         """
-        python3 ../../scripts/plots/plot_difference_distributions.py {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
+        python3 {input.script} {input.in_csv} {params.output_dir} {wildcards.constellation}_{wildcards.coord_frame}_{wildcards.mobility1}-{wildcards.mobility2}_
         """
 
-rule plot_all_diff_distributions:
-    input:
-        "../../scripts/plots/plot_difference_distributions.py",
-        expand("plots/pos_diff_distr/{debug}{constellation}_itrf_sgp4-kepler_sum-histogram.png",
-                debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_sum-histogram.html",
-                debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.png",
-                debug=get_debug_str(), constellation=config["tles_prefixes"]),
-        expand("plots/pos_diff_distr/" + get_debug_str() + "{constellation}_itrf_sgp4-kepler_boxplot.html",
-                debug=get_debug_str(), constellation=config["tles_prefixes"])
-    output:
-        "plots/pos_diff_distr/.done"
-    shell:
-        "touch {output}"
-
 rule calc_pos_diff_diffs_itrf_omnet:
+    """
+    Calculates the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation.
+    """
     input:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_distances.csv",
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_distances.csv",
-        "../../scripts/plots/diff_differences.py"
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_differences.csv",
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_differences.csv",
+        script="../../scripts/plots/diff_differences.py"
     output:
-        "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv" 
+        "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv" 
     shell:
-        "python3 ../../scripts/plots/diff_differences.py '{input[0]}' '{input[1]}' > {output}"
+        "python3 {input.script} '{input[0]}' '{input[1]}' > {output}"
 
-rule plot_pos_diff_diffs_both:
+rule plot_pos_diff_diffs_with_ecdf:
+    """
+    Creates line plot the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities, constellation and satellite module name,
+    as well as ECDF plot of differences.
+    """
     input:
-        "../../scripts/plots/plot_differences_both.py",
-        in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_distances.csv"
+        script="../../scripts/plots/plot_differences_both.py",
+        in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv"
     output:
-        "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png"
+        "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
     shell:
-        "python3 ../../scripts/plots/plot_differences_both.py {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}'"
 
 def get_const_pos_diff_diffs_paths(wildcards):
-    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_both.png",
+    """
+    Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
+    """
+    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
                 constellation=wildcards.constellation,  
                 mobility1=wildcards.mobility1, 
                 mobility2=wildcards.mobility2,
                 leo_modname=get_const_sat_mods(wildcards.constellation))
 
 rule plot_const_pos_diff_diffs:
+    """
+    Plots all plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities.
+    """
     input:
         get_const_pos_diff_diffs_paths
     output:
@@ -445,7 +400,15 @@ rule plot_const_pos_diff_diffs:
     shell:
         "touch {output}"
 
+"""
+RULES TO CALCULATE AND PLOT STATISTICS RELATIVE TO SOP
+"""
+
 rule calc_omnet_coord_stats:
+    """
+    Calculates elevation angles, distances and delays to SOP at OMNeT coordinate 0,0,0 for the specified OMNeT configuration and outputs them
+    to individual CSVs. In the CSVs, each row is a satellite module name + the list of values for each simulation second.
+    """
     input:
         in_csv="csv/vectors/{oppConfig}_omnet_sorted.csv",
         script="../../scripts/plots/sop_stats.py"
@@ -459,6 +422,9 @@ rule calc_omnet_coord_stats:
         "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
 
 rule plot_omnet_coord_stats:
+    """
+    Plots elevation angles, distances and delays to SOP for specified constellation for SGP4 and Kepler mobility and the specified constellation and satellite module name.
+    """
     input:
         script="../../scripts/statistics/plot_sop_stats.py",
         tle_times="tles/{constellation}_times.json",
@@ -480,12 +446,18 @@ rule plot_omnet_coord_stats:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
 def get_const_omnet_stats_plot_paths(wildcards):
+    """
+    Returns all the paths of elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
+    """
     return expand("plots/sop/{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
                 constellation=wildcards.constellation,  
                 modname=get_const_sat_mods(wildcards.constellation),
                 format=["svg", "html"])
 
 rule plot_const_omnet_coord_stats:
+    """
+    Plots all elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
+    """
     input:
         get_const_omnet_stats_plot_paths
     output:
@@ -494,6 +466,11 @@ rule plot_const_omnet_coord_stats:
         "touch {output}"
 
 rule calc_omnet_stat_diffs:
+    """
+    Calculates differences or changes for elevation angles, distances or delays ('stat') relative to SOP for the specified reference mobility, 
+    alternative (new) mobility and constellation and outputs them to a new CSV.
+    In the CSV, each row is a satellite module name + the list of values for each simulation second.
+    """
     input:
         script="../../scripts/statistics/omnet_stat_differences.py",
         ref_mobility_csv="csv/sop/{constellation}-{ref_mobility}_{stat}.csv",
@@ -506,6 +483,10 @@ rule calc_omnet_stat_diffs:
         "python3 {input.script} {input.ref_mobility_csv} {input.new_mobility_csv} {output} {params.change_option}"
 
 rule plot_omnet_stat_diffs:
+    """
+    Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
+    alternative (new) mobility, constellation and satellite module name. The plots span the whole simulation time.   
+    """
     input:
         script="../../scripts/statistics/plot_omnet_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
@@ -520,6 +501,11 @@ rule plot_omnet_stat_diffs:
         "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option}"
 
 rule plot_local_omnet_stat_diffs:
+    """
+    Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
+    alternative (new) mobility, constellation and satellite module name. The plots only show overlapping and unmatched communication periods of both
+    mobilities. 
+    """
     input:
         script="../../scripts/statistics/plot_omnet_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
@@ -535,6 +521,10 @@ rule plot_local_omnet_stat_diffs:
         "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
 
 def get_const_omnet_stat_diff_plot_paths(wildcards):
+    """
+    Returns all paths for local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
+    reference mobility, alternative (new) mobility and constellation specified in wildcards.
+    """
     return expand("plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
                 constellation=wildcards.constellation,
                 ref_mobility=wildcards.ref_mobility,
@@ -545,6 +535,10 @@ def get_const_omnet_stat_diff_plot_paths(wildcards):
                 local_option=["_local","_full"])
 
 rule plot_const_omnet_stat_diffs:
+    """
+    Plots all local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
+    reference mobility, alternative (new) mobility and constellation specified in wildcards.
+    """
     input:
         get_const_omnet_stat_diff_plot_paths
     output:
@@ -553,6 +547,12 @@ rule plot_const_omnet_stat_diffs:
         "touch {output}"
 
 rule calc_comm_period_info:
+    """
+    Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
+    using minimum elevation angle 25 °.
+    Each JSON contains the minimum elevation angles, distances and delays relative to the SOP for each communication period,
+    as well as the offset to the used TLE's epoch.
+    """
     input:
         script="../../scripts/statistics/comm_period_info.py",
         tle_times="tles/{constellation}_times.json",
@@ -570,21 +570,18 @@ rule calc_comm_period_info:
     shell:
         "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
 
-def get_const_comm_period_info_paths(wildcards):
-    return expand("stats/comm_periods/{constellation}/{mobility}/{modname}_communication-periods.json",
-                constellation=wildcards.constellation,  
-                mobility=["sgp4","kepler"], 
-                modname=get_const_sat_mods(wildcards.constellation))
-
-rule calc_const_comm_period_info:
-    input:
-        get_const_comm_period_info_paths
-    output:
-        "stats/comm_periods/{constellation}.done"
-    shell:
-        "touch {output}"
-
 rule compare_comm_period_info:
+    """
+    Creates JSON of overlapping and non-overlapping communication periods of the reference mobility and alternative (new) mobility,
+    for the specified satellite module name of the specified constellation.
+    For each period group (overlap) and unmatched period, the JSON includes: 
+     - start and end times of the periods
+     - offset to the used TLE's epoch
+     - if there are multiple matches ??? 
+     - "ref_coverage" statistic: How much of the reference period is covered by the period of the alternative mobility.
+     - "new_excluded" statistic: How much of the period of the alternative mobility is included in the reference period.
+     - "excluded_time_to_ref_time" statistic: Ratio of the time that's not included in the reference period to the time of the reference period.
+    """
     input:
         script="../../scripts/statistics/compare_comm_period_info.py",
         ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
@@ -595,6 +592,12 @@ rule compare_comm_period_info:
         "python3 {input.script} '{input.ref_stats}' '{input.new_stats}' '{output}'"
 
 rule plot_communication_period_comparison:
+    """
+    Plots line plots for elevation angles, distances and delays relative to the SOP in the overlapping communication periods of the 
+    specified reference mobility, alternative (new) mobility, constellation and satellite module name.
+    Each plot contains a line for the reference mobility and one line for the alternative mobility. To clearly show where communication
+    periods start and end, values outside of the respective periods are set to 0.
+    """
     input:
         script="../../scripts/statistics/plot_comm_comparison.py",
         ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
@@ -607,17 +610,28 @@ rule plot_communication_period_comparison:
         "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}'"
 
 def get_const_comm_comp_json_paths(wildcards):
+    """
+    Returns all paths of JSONs containing the matched periods of the constellation specified in wildcards,
+    currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
+    """
     return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.json",
             constellation=wildcards.constellation,  
             modname=get_const_sat_mods(wildcards.constellation))
 
 def get_const_comm_comp_plot_paths(wildcards):
+    """
+    Returns all paths of the plots comparing elevation angles, distances and delays in the matched communication periods of the constellation specified in wildcards,
+    currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
+    """
     return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
             constellation=wildcards.constellation,  
             modname=get_const_sat_mods(wildcards.constellation),
             format=["png", "html"])
 
 rule plot_const_communication_period_comparisons:
+    """
+    Plots all plots comparing elevation angles, distances and delays for the matched communication periods of the constellation specified in wildcards.
+    """
     input:
         get_const_comm_comp_plot_paths
     output:
@@ -625,18 +639,12 @@ rule plot_const_communication_period_comparisons:
     shell:
         "touch {output}"
 
-rule plot_communication_period_comparison_overlaps:
-    input:
-        script="../../scripts/statistics/plot_sat_overlap_stats.py",
-        period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
-    output:
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_overlaps.png"
-    shell:
-        """
-        python3 {input.script} '{input.period_groups}'
-        """
-
 rule calc_communication_period_comparison_summary:
+    """
+    Calculates summary, i.e. averages, of overlap statistics for all communication period comparisons of the specified reference mobility, alternative (new) mobility
+    and constellation, i.e. for the statistics "ref_coverage", "new_excluded" and "excluded_time_to_ref_time". 
+    For explanation, see rule 'compare_comm_period_info'.
+    """
     input:
         get_const_comm_comp_json_paths,
         script="../../scripts/statistics/summarize_comm_comp_info.py"
@@ -648,6 +656,9 @@ rule calc_communication_period_comparison_summary:
         "python3 {input.script} {params.comp_jsons_dir} {output}"
 
 rule plot_const_overlap_stats:
+    """
+    Plots bar plot with two bars for each satellite module in the specified constellation, one for "avg_ref_coverage" and "excluded_time_to_ref_time".
+    """
     input:
         get_const_comm_comp_json_paths,
         script="../../scripts/statistics/plot_const_overlap_stats.py"
@@ -659,7 +670,15 @@ rule plot_const_overlap_stats:
     shell:
         "python3 {input.script} {params.comp_jsons_dir} {output.png_out}"
 
+"""
+RULES FOR PLOTTING SATELLITE ORBITS
+"""
+
 rule satmod_csv:
+    """
+    Writes 3D coordinates in the specified coordinate frame for the specified satellite module of the specified OMNeT configuration
+    to an individual CSV file.
+    """
     input:
         "../../scripts/plots/to_sat_csv.py",
         in_csv="csv/vectors/{opp_config}_{coord_frame}_sorted.csv"
@@ -669,6 +688,11 @@ rule satmod_csv:
         "python3 ../../scripts/plots/to_sat_csv.py {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
 
 def get_satmod_csv_paths(wildcards, same_config=True):
+    """
+    Returns the paths of the CSVs of individual 3D coordinate for the satellite modules of the wildcards list "leo_modnames" of the specified constellation,
+    for the specified coordinate frame and either one or two OMNeT configurations, for (1) plotting orbits of one mobility and (2) comparative plot of the 
+    orbits of two mobilities.
+    """    
     leo_modnames = wildcards.leo_modnames.split("+")
 
     # one config (= one mobility) -> one csv per satmod 
@@ -685,6 +709,9 @@ def get_satmod_csv_paths(wildcards, same_config=True):
         return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
     
 rule plot_orbs_of_mobility:
+    """
+    Creates interactive plot of the orbits of the specified "leo_modnames" for the given coordinate frame and OMNeT configuration.
+    """
     input:
         "../../scripts/plots/plot_orbs.py",
         coord_paths=get_satmod_csv_paths
@@ -698,6 +725,10 @@ rule plot_orbs_of_mobility:
         """
 
 rule plot_orbs_of_mobilities:
+    """
+    Creates interactive plot of the orbits of the specfiied "leo_modnames" for the given coordinate frame, with one orbit per satellite module
+    for both mobilities. I.e. enables visual comparison of orbits.
+    """
     input:
         "../../scripts/plots/plot_orbs.py",
         coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
@@ -707,28 +738,3 @@ rule plot_orbs_of_mobilities:
         csv_paths= lambda wildcards, input: quote_strs(input.coord_paths),
     shell:
         "python3 ../../scripts/plots/plot_orbs.py -c {params.csv_paths} -o '{output}' -e"
-
-rule make_symbolic_link_and_hidden_data:
-    input:
-        "omnetpp.ini"
-    output:
-        "test.txt"
-    #shell:
-    #    """
-    #    touch {output}
-    #    touch old/{output}
-    #    """
-    run:
-        os.makedirs("./old", exist_ok=True)
-        if Path("./old/test.txt").exists():
-            print("old test txt exists")
-        else:
-            print("old test txt does not exist")
-
-        #with open(output[0], "w") as output_f:
-        #    output_f.write(" ")
-        
-        with open("old/" + output[0], "w") as output_f_copy:
-            output_f_copy.write("huasefuiasdiufhasidfhiasdhfiashui")
-        
-        os.symlink("old/" + output[0], output[0])

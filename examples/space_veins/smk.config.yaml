@@ -1,14 +1,6 @@
-# tles_dir: "tles/"
-tles_prefixes: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
-traces_dir: "traces/"
-
+# constellations that are processed
+constellations: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
+# determines if debug configs from omnetpp.ini are used
 debug_mode: false
-mobilities: ["sgp4", "kepler"]
-itervars: [
-  #"warmupPeriod", 
-  #"simTimeLimit", 
-  #"nodeXPos"
-  ]
-sat_mod_regex_base: "SatelliteExampleScenario.leo.vehicleStatistics"
-
+# determines coordinate frames for which sat. pos. csvs will be created
 coord_frames: ["itrf", "omnet"] # "wgs84"]
