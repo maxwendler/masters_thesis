@@ -431,18 +431,18 @@ rule plot_sop_stats:
         tle_times="tles/{constellation}_times.json",
         angle_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=["sgp4","kepler"]),
+                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility]),
         dist_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_distances.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=["sgp4","kepler"]),
+                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility]),
         delay_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_delays.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=["sgp4","kepler"])
+                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility])
     output:
-        "plots/sop/" + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.html",
-        "plots/sop/" + "{constellation}/sgp4-kepler_{modname}_angles_distances_delays.svg"
+        "plots/sop/" + "{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.html",
+        "plots/sop/" + "{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.svg"
     params:
-        output_base_path = "plots/sop/{constellation}/sgp4-kepler_{modname}_angles_distances_delays"
+        output_base_path = "plots/sop/{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays"
     shell:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
@@ -450,9 +450,11 @@ def get_const_sop_stats_plot_paths(wildcards):
     """
     Returns all the paths of elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
     """
-    return expand("plots/sop/{constellation}/sgp4-kepler_{modname}_angles_distances_delays.{format}",
+    return expand("plots/sop/{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.{format}",
                 constellation=wildcards.constellation,  
                 modname=get_const_sat_mods(wildcards.constellation),
+                ref_mobility=wildcards.ref_mobility,
+                new_mobility=wildcards.new_mobility,
                 format=["svg", "html"])
 
 rule plot_const_sop_stats:
@@ -462,7 +464,7 @@ rule plot_const_sop_stats:
     input:
         get_const_sop_stats_plot_paths
     output:
-        "plots/sop/{constellation}/sgp4-kepler_angles_distances_delays.done"
+        "plots/sop/{constellation}/{ref_mobility}-{new_mobility}_angles_distances_delays.done"
     shell:
         "touch {output}"
 
@@ -489,7 +491,7 @@ rule plot_sop_stat_diffs:
     alternative (new) mobility, constellation and satellite module name. The plots span the whole simulation time.   
     """
     input:
-        script="../../scripts/plots/plot_omnet_stat_differences.py",
+        script="../../scripts/plots/plot_sop_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
         distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
         delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv"
@@ -508,7 +510,7 @@ rule plot_local_sop_stat_diffs:
     mobilities. 
     """
     input:
-        script="../../scripts/statistics/plot_omnet_stat_differences.py",
+        script="../../scripts/statistics/plot_sop_stat_differences.py",
         angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
         distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
         delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv",
