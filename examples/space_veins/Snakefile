@@ -250,12 +250,13 @@ rule plot_pos_diffs:
     Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame and satellite module. 
     """
     input:
-        script="../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+        script="../../scripts/plots/plot_differences_both.py",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv",
+        tle_times="tles/{constellation}_times.json"
     output:
         "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.svg"
     shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}'"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
 
 def get_tle_path(constellation: str):
     """
@@ -293,7 +294,7 @@ rule plot_pos_diffs_with_ecdf:
     output:
         "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
     shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}' --ecdf"
 
 def get_const_sat_mods(constellation: str):
     """
