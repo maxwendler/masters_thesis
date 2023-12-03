@@ -12,6 +12,8 @@ args = parser.parse_args()
 ref_stats = {}
 ref_column_num = 0
 new_header = ""
+
+# parse values from CSVs
 with open(args.ref_mobility_csv_path, "r") as stat_f:
     row_reader = csv.reader(stat_f)
     header = row_reader.__next__()
@@ -37,6 +39,7 @@ with open(args.new_mobility_csv_path, "r") as stat_f:
 
 new_csv_lines = [new_header]
 
+# calculate differences or changes
 for modname in ref_stats.keys():
     
     stat_diffs_or_changes = []
@@ -46,7 +49,7 @@ for modname in ref_stats.keys():
         new_val = new_stats[modname][i]
 
         if args.change:
-            stat_diffs_or_changes.append( new_val -  ref_val)        
+            stat_diffs_or_changes.append( new_val -  ref_val )        
         else:
             stat_diffs_or_changes.append( abs(new_val - ref_val) )
     

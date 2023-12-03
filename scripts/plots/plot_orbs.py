@@ -6,7 +6,7 @@ import numpy as np
 from math import inf
 import os, sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
-from scripts.utility.parse_coords_file import parse_coords_file
+from scripts.utility.parse_csvs import parse_coords_csv_to_list
 
 parser = argparse.ArgumentParser(prog="plot_orbs.py", 
                                  description="""Plots the orbits from the given coordinate CSVs using cartesian coordinates.""")
@@ -59,7 +59,7 @@ if csv_paths:
     # plot orbits of each satellite module
     for csv_p in csv_paths:
         
-        coords, csv_start_second = parse_coords_file(csv_p, "csv")
+        coords, csv_start_second = parse_coords_csv_to_list(csv_p)
         
         if not start_second:
             start_second = csv_start_second

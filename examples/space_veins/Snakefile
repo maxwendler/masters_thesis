@@ -475,7 +475,7 @@ rule calc_sop_stat_diffs:
     In the CSV, each row is a satellite module name + the list of values for each simulation second.
     """
     input:
-        script="../../scripts/statistics/omnet_stat_differences.py",
+        script="../../scripts/statistics/sop_stat_differences.py",
         ref_mobility_csv="csv/sop/{constellation}-{ref_mobility}_{stat}.csv",
         new_mobility_csv="csv/sop/{constellation}-{new_mobility}_{stat}.csv"
     output:

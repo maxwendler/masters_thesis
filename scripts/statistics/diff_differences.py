@@ -34,6 +34,7 @@ test_key = list(diffs1.keys())[0]
 if len( diffs1[test_key] ) != len( diffs2[test_key] ):
     raise ValueError(f"{csv_path1} has more difference values per statistic ({len(diffs1[test_key])}) than {csv_path2} ({len(diffs2[test_key])})!")
 
+# calculate differences for each satellite module
 sorted_stat_names = sorted(diffs1.keys())
 diff_diffs_lines = []
 for stat_name in sorted_stat_names:
@@ -43,6 +44,7 @@ for stat_name in sorted_stat_names:
         new_line += "," + str(diffs_d)
     diff_diffs_lines.append(new_line)
 
+# copy header from one of the csvs
 header = ""
 with open(csv_path1, "r") as csv_f:
     header = csv_f.readline().removesuffix("\n")

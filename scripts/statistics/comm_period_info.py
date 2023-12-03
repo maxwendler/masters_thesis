@@ -1,10 +1,14 @@
 import argparse
-import csv
 import json
-import os
+import sys, os
+sys.path.append(os.path.join(sys.path[0],"..",".."))
+from scripts.utility.parse_csvs import get_mod_row 
 
 def get_communication_periods(angles: list[float], min_angle: float, start_sec: float, step: float) -> list[tuple[float, float]]:
-    
+    """
+    Calculates list of periods of simulation seconds when communication is possible because the elevation angle exceeds the minimum elevation angle.
+    """
+
     comm_periods = []
     per_start_sec = None
     per_end_sec = None
@@ -36,55 +40,39 @@ def get_communication_periods(angles: list[float], min_angle: float, start_sec: 
     
     return comm_periods
 
-def get_mod_csv_row_vals(csv_path: str, modname: str) -> tuple[list[float], list[int]]:
-    with open(csv_path, "r") as csv_f:
-        
-        row_reader = csv.reader(csv_f)
-        
-        header = row_reader.__next__()
-        start_second = int(header[1])
-        end_second = int(header[-1])
-        second_range = list(range(start_second, end_second + 1))
-
-        vals = None
-        for row in row_reader:
-            if row[0] == modname:
-                vals = [ float(v) for v in row[1:] ]
-                break
-        
-        if not vals:
-            raise NameError(f"No values for satellite module {modname} could be found!")
-
-        return vals, second_range
-
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog="comm_period_info", description="Isolates the elevation angle, distance and delay w.r.t. SOP from the given csvs and writes them to a JSON.")
-    parser.add_argument("angles_csv_path")
-    parser.add_argument("distances_csv_path")
-    parser.add_argument("delays_csv_path")
-    parser.add_argument("tle_times_path")
-    parser.add_argument("modname")
-    parser.add_argument("min_angle", type=float)
+    parser = argparse.ArgumentParser(prog="comm_period_info", 
+                                     description="""Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
+                                    using minimum elevation angle 25 °.
+                                    Each JSON contains the minimum elevation angles, distances and delays relative to the SOP for each communication period,
+                                    as well as the offset to the used TLE's epoch.""")
+    parser.add_argument("angles_csv_path", help="Path of CSV with elevation angles to SOP of the satellite module.")
+    parser.add_argument("distances_csv_path", help="Path of CSV with distances to SOP of the satellite module.")
+    parser.add_argument("delays_csv_path", help="Path of CSV with delays to SOP of the satellite module.")
+    parser.add_argument("tle_times_path", help="Path of JSON with simulation start time and epoch times of TLEs in numpy's datetime64 format.")
+    parser.add_argument("modname", help="Name of a satellite module.")
+    parser.add_argument("min_angle", type=float, help="Minimum elevation angle determining if communication is possible.")
     parser.add_argument("output_path")
     args = parser.parse_args()
 
+    # calculate offset of used TLE's epoch to simulation start time in seconds
     tle_times = None
     with open(args.tle_times_path, "r") as times_f:
         tle_times = json.load(times_f) 
     mod_epoch_to_start_offset_days = float(tle_times["sat_times"][args.modname]["offset_to_start"])
     mod_epoch_to_start_offset_secs = mod_epoch_to_start_offset_days * 86400
 
-    angles, second_range = get_mod_csv_row_vals(args.angles_csv_path, args.modname)
+    angles, second_range = get_mod_row(args.angles_csv_path, args.modname)
     periods = get_communication_periods(angles, args.min_angle, second_range[0], 1)
-    distances, second_range = get_mod_csv_row_vals(args.distances_csv_path, args.modname)
-    delays, second_range = get_mod_csv_row_vals(args.delays_csv_path, args.modname)
+    distances, second_range = get_mod_row(args.distances_csv_path, args.modname)
+    delays, second_range = get_mod_row(args.delays_csv_path, args.modname)
 
+    # create lists of lists with values for each communication period
     periods_angles = []
     periods_delays = []
     periods_distances = []
     period_start_offsets = []
-
     for p in periods:
         
         start_sec = p[0]

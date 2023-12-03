@@ -1,8 +1,10 @@
 import argparse
-import csv
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import json
+import sys, os
+sys.path.append(os.path.join(sys.path[0],"..",".."))
+from scripts.utility.parse_csvs import get_mod_row 
 
 def get_period_start(period_group_or_period_dict: dict, ref_mobility, new_mobility):
 
@@ -26,22 +28,6 @@ def get_period_end(period_group_or_period_dict: dict, ref_mobility, new_mobility
         else:
             return period_group_or_period_dict[new_mobility]["period"][1]
 
-def get_mod_row(csv_path, modname):
-    """
-    Reads row of values for given satellite module name.
-    """
-    with open(csv_path, "r") as diff_f:
-
-        row_reader = csv.reader(diff_f)
-        header = row_reader.__next__()
-        sec_range = list( range( int(header[1]), int(header[-1]) + 1) )
-
-        for row in row_reader:
-            if row[0] == modname:
-                return sec_range, [ float(val) for val in row[1:] ]
-        
-        raise NameError(f"No entries for module {modname} could be found!")
-
 parser = argparse.ArgumentParser(prog="plot_omnet_stat_differences",
                                  description="""Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
                                 alternative (new) mobility, constellation and satellite module name. With a communcation comparison JSON path, the plots only show overlapping and unmatched communication 
@@ -56,9 +42,9 @@ parser.add_argument("-c", "--changes", action="store_true", help="Plots positive
 parser.add_argument("--comm_comp_json", help="Path of a communication comparison JSON with which only overlapping and unmatched communication periods are plotted.")
 args = parser.parse_args()
 
-sec_range, angle_diffs_or_changes = get_mod_row(args.angles_csv, args.modname) 
-sec_range, distance_diffs_or_changes = get_mod_row(args.distances_csv, args.modname)
-sec_range, delay_diffs_or_changes = get_mod_row(args.delays_csv, args.modname)
+angle_diffs_or_changes, sec_range = get_mod_row(args.angles_csv, args.modname) 
+distance_diffs_or_changes, sec_range = get_mod_row(args.distances_csv, args.modname)
+delay_diffs_or_changes, sec_range = get_mod_row(args.delays_csv, args.modname)
 diff_or_change_str = "change" if args.changes else "difference"
 
 # local plots

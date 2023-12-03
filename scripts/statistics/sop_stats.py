@@ -1,7 +1,7 @@
 import argparse
 import os, sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
-from scripts.statistics.positional_differences import parse_csv_coords
+from scripts.statistics.positional_differences import parse_coords_csv_to_dict
 from math import dist, acos
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -15,10 +15,12 @@ args = parser.parse_args()
 output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
 output_base_fname = args.csv_path.split("/")[-1].removesuffix("_omnet_sorted.csv")
 
-sat_coord_dict, start_second, _coord_field_names = parse_csv_coords(args.csv_path, frame="omnet")
+# load coordinates from csv
+sat_coord_dict, start_second, _coord_field_names = parse_coords_csv_to_dict(args.csv_path, frame="omnet")
 min_eval_angle = args.eval_angle
 sop_coord = args.sop_coord
 
+# create header for all values of a module in a row
 header = "modname"
 for i in range(start_second, start_second + len(list(sat_coord_dict.values())[0])):
     header += "," + str(i)
@@ -27,6 +29,7 @@ distance_csv_lines = [header]
 elev_angles_csv_lines = [header]
 propagation_delay_csv_lines = [header]
 
+# calculate elevation angles, distances and delays to SOP 
 for satname in sat_coord_dict.keys():
     
     sop_sat_distances = [] 
@@ -60,6 +63,7 @@ for satname in sat_coord_dict.keys():
             delay = distance * 1000 / 299792.458
         sat_propagation_delays.append(delay)
 
+    # create rows for new CSVs
     new_line = satname
     for d in sop_sat_distances:
         new_line += "," + str(d)
