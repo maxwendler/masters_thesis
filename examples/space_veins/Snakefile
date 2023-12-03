@@ -123,9 +123,10 @@ def get_trace_requirement(wildcards):
     Returns traces as input requirement for rule createRunFile only for Kepler configurations. 
     """
     if "kepler" in wildcards.oppConfig:
+        config_str = wildcards.oppConfig
         config = config_str.replace("Debug-","")
         constellation = config.split("-")[0]
-        return "/traces" + constellation + "_traces.done"
+        return "traces/" + constellation + "_traces.done"
     else: 
         return []
 
@@ -300,8 +301,7 @@ def get_const_sat_mods(constellation: str):
     """
     Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
     """
-
-    const_tles_fname = filter( lambda tles_path: tles_path.startswith(constellation), os.listdir("./tles/")).__next__()
+    const_tles_fname = filter( lambda tles_fname: tles_fname.startswith(constellation) and tles_fname.endswith(".txt"), os.listdir("./tles/")).__next__()
     tles = read("./tles/" + const_tles_fname)
 
     sat_mods = set()
@@ -580,7 +580,7 @@ rule compare_comm_period_info:
     For each period group (overlap) and unmatched period, the JSON includes: 
      - start and end times of the periods
      - offset to the used TLE's epoch
-     - if there are multiple matches ??? 
+     - if there are multiple matches of the reference period or new period of a group
      - "ref_coverage" statistic: How much of the reference period is covered by the period of the alternative mobility.
      - "new_excluded" statistic: How much of the period of the alternative mobility is included in the reference period.
      - "excluded_time_to_ref_time" statistic: Ratio of the time that's not included in the reference period to the time of the reference period.

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(prog="compare_comm_period_info.py",
     For each period group (overlap) and unmatched period, the JSON includes: 
      - start and end times of the periods
      - offset to the used TLE's epoch
-     - if there are multiple matches ??? 
+     - if there are multiple matches of the reference period or new period of a group
      - "ref_coverage" statistic: How much of the reference period is covered by the period of the alternative mobility.
      - "new_excluded" statistic: How much of the period of the alternative mobility is included in the reference period.
      - "excluded_time_to_ref_time" statistic: Ratio of the time that's not included in the reference period to the time of the reference period.
@@ -73,10 +73,10 @@ for ref_period_idx in range(0, len(ref_periods)):
 
         if len(ref_p_period_groups) > 1:
             for g in ref_p_period_groups:
-                g["multiple_matches"] = True
+                g["multiple_matches_ref_p"] = True
         else:
             for g in ref_p_period_groups:
-                g["multiple_matches"] = False
+                g["multiple_matches_ref_p"] = False
         
         for g in ref_p_period_groups:
             period_groups.append(g)
@@ -117,6 +117,20 @@ for g in period_groups:
     g["ref_coverage"] = coverage
     g["new_excluded"] = excluded_perc
     g["excluded_time_to_ref_time"] = excluded_time_to_ref_time
+
+for matched_new_mobility_p in matched_new_mobility_periods:
+    match_num = 0
+    multiple_matches = False
+    
+    for p_group in period_groups:
+        if p_group[new_mobility]["period"] == matched_new_mobility_p:
+            match_num += 1
+        if match_num > 1:
+            multiple_matches = True
+    
+    for p_group in period_groups:
+        if p_group[new_mobility]["period"] == matched_new_mobility_p:
+            p_group["multiple_matches_new_p"] = multiple_matches
 
 # find unmatched periods of alternative (new) mobility
 for new_period_idx in range(0, len(new_periods)):
