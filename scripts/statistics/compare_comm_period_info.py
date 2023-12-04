@@ -41,6 +41,7 @@ excluded_time_total_sum = 0
 
 for ref_period_idx in range(0, len(ref_periods)):
     ref_p = ref_periods[ref_period_idx]
+    ref_zenith_time = ref_mobility_periods_stats["zenith_times"][ref_period_idx]
     ref_p_start = ref_p[0]
     ref_p_end = ref_p[1]
 
@@ -58,9 +59,11 @@ for ref_period_idx in range(0, len(ref_periods)):
         # match found
         # new_start in ref_period | new_end end ref_period | ref_period in new_period
         if (new_p_start >= ref_p_start and new_p_start <= ref_p_end) or (new_p_end >= ref_p_start and new_p_end <= ref_p_end) or (new_p_start <= ref_p_start and new_p_end >= ref_p_end):
+            new_zenith_time = new_mobility_periods_stats["zenith_times"][new_period_idx]
             ref_p_period_groups.append( {ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, 
                                          new_mobility: {"period_idx": new_period_idx, "period": new_p},
-                                         "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx]} 
+                                         "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx],
+                                         "zenith_shift": new_zenith_time - ref_zenith_time} 
                                       )
             matched_new_mobility_periods.append(new_p)
             match_found = True

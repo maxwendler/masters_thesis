@@ -73,13 +73,27 @@ if __name__ == "__main__":
     periods_delays = []
     periods_distances = []
     period_start_offsets = []
+    zenith_times = []
     for p in periods:
         
         start_sec = p[0]
         end_sec = p[1]
         period_start_to_epoch_offset = start_sec - mod_epoch_to_start_offset_secs
 
-        periods_angles.append(angles[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
+        period_angles = angles[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])]
+        periods_angles.append(period_angles)
+
+        # find zenith and index
+        max_angle = 0
+        zenith_idx = -1
+        for angle_idx in range(len(period_angles)):
+            angle = period_angles[angle_idx]
+            if angle > max_angle:
+                max_angle = angle
+                zenith_idx = angle_idx
+        
+        # calc zenith time
+        zenith_times.append(start_sec + zenith_idx)
         periods_distances.append(distances[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
         periods_delays.append(delays[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
         period_start_offsets.append(period_start_to_epoch_offset)
@@ -88,10 +102,11 @@ if __name__ == "__main__":
     communication_period_dict = {"modname": args.modname, 
                                 "mobility": mobility, 
                                 "periods": periods, 
-                                "period_start_to_epoch_offsets": period_start_offsets, 
+                                "period_start_to_epoch_offsets": period_start_offsets,
+                                "zenith_times": zenith_times, 
                                 "angles": periods_angles,
                                 "distances": periods_distances, 
-                                "delays": periods_delays }
+                                "delays": periods_delays}
 
     output_dir = "/".join(args.output_path.split("/")[:-1])
     os.makedirs(output_dir, exist_ok=True)

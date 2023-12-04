@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from statistics import median
 
 parser = argparse.ArgumentParser(prog="summarize_comm_comp_info.py")
 parser.add_argument("comp_info_dir", help="Path of directory with all the *_communication_comparison.json files of a constellation.")
@@ -17,6 +18,7 @@ new_mobility = mobilities[1]
 
 coverages = []
 exclusions = []
+zenith_shifts = []
 total_excluded_time_to_ref_times = []
 
 # collect coverage, exclusion and excluded_time_to_ref_time values for averaging
@@ -29,6 +31,7 @@ for path in info_json_paths:
     for period_group in comm_periods["period_groups"]:
         coverages.append(period_group["ref_coverage"])
         exclusions.append(period_group["new_excluded"])
+        zenith_shifts.append(period_group["zenith_shift"])
 
     for unmatched_period in comm_periods["unmatched_periods"]:
         if ref_mobility in unmatched_period.keys():
@@ -43,9 +46,17 @@ for path in info_json_paths:
 avg_coverage = sum(coverages) / len(coverages)
 avg_exlusion = sum(exclusions) / len(exclusions)
 avg_excluded_to_ref = sum(total_excluded_time_to_ref_times) / len(total_excluded_time_to_ref_times)
+min_zenith_shift = min(zenith_shifts)
+max_zenith_shift = max(zenith_shifts)
+avg_zenith_shift = sum(zenith_shifts) / len(zenith_shifts)
+median_zenith_shift = median(zenith_shifts)
 output = {"avg_ref_coverage": avg_coverage,
           "avg_new_exclusion": avg_exlusion,
-          "avg_excluded_time_to_ref_time": avg_excluded_to_ref}
+          "avg_excluded_time_to_ref_time": avg_excluded_to_ref,
+          "min_zenith_shift": min_zenith_shift,
+          "max_zenith_shift": max_zenith_shift,
+          "avg_zenith_shift": avg_zenith_shift,
+          "median_zenith_shift": median_zenith_shift}
 
 with open(args.output_path, "w") as output_f:
-    json.dump(output, output_f)
+    json.dump(output, output_f, indent=4)

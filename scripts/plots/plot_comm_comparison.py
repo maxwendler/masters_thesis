@@ -79,7 +79,7 @@ else:
 
         ref_period_idx = period_group[ref_mobility]["period_idx"]
         new_period_idx = period_group[new_mobility]["period_idx"]
-        
+
         # get range of simulation seconds as list (does not include warmup time)
         start_sec = min(period_group[ref_mobility]["period"][0], period_group[new_mobility]["period"][0])
         end_sec = max(period_group[ref_mobility]["period"][1], period_group[new_mobility]["period"][1])
@@ -128,6 +128,36 @@ else:
 
         fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
         fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
+
+        # add zenith markers and shift annotation to angles plot
+        ref_zenith_time = ref_mobility_stats["zenith_times"][ref_period_idx]
+        new_zenith_time = new_mobility_stats["zenith_times"][new_period_idx]
+        zenith_shift = new_zenith_time - ref_zenith_time
+
+        # vertical ref. zenith line
+        fig.add_shape(
+            type="line",
+            x0=ref_zenith_time, y0=0, x1=ref_zenith_time, y1=90,
+            line=dict(color="Red", width=1, dash="dash"),
+            row=plot_row_idx, col=1
+        )
+
+        # vertical new. zenith line
+        fig.add_shape(
+            type="line",
+            x0=new_zenith_time, y0=0, x1=new_zenith_time, y1=90,
+            line=dict(color="Blue", width=1, dash="dash"),
+            row=plot_row_idx, col=1
+        )
+
+        # shift amount annotation
+        fig.add_annotation(
+            x= (new_zenith_time + ref_zenith_time) / 2 , y=-1,
+            text=f"{zenith_shift} s shift",
+            showarrow=False,
+            font=dict(size=10, color="Blue"),
+            row=plot_row_idx, col=1
+        )   
 
         # line plots of distances
         ref_distances = ref_vals_start_padding + ref_mobility_stats["distances"][ref_period_idx] + ref_vals_end_padding
