@@ -40,6 +40,27 @@ def get_communication_periods(angles: list[float], min_angle: float, start_sec: 
     
     return comm_periods
 
+def get_local_max_idx(angles, start_sec, zenith_time):
+    zenith_idx = zenith_time - start_sec
+    
+    if zenith_idx == 0:
+        return 0 
+        
+    local_max_idx = -1
+    for i in range(zenith_idx):
+        
+        if i == 0:
+            if angles[i] > angles[i + 1]:
+                local_max_idx += 1
+        elif i == zenith_idx - 1:
+            pass            
+        else:
+            if angles[i - 1] < angles[i] and angles[i + 1] < angles[i]:
+                local_max_idx += 1
+    
+    # +1 as iteration ends before zenith idx
+    return local_max_idx + 1
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="comm_period_info", 
@@ -74,6 +95,7 @@ if __name__ == "__main__":
     periods_distances = []
     period_start_offsets = []
     zenith_times = []
+    local_max_idxs = []
     for p in periods:
         
         start_sec = p[0]
@@ -93,7 +115,12 @@ if __name__ == "__main__":
                 zenith_idx = angle_idx
         
         # calc zenith time
-        zenith_times.append(start_sec + zenith_idx)
+        zenith_time = start_sec + zenith_idx
+        zenith_times.append(zenith_time)
+
+        # calculate n for: zenith is n-th local maximum of angles
+        local_max_idxs.append(get_local_max_idx(angles, second_range[0], zenith_time))
+
         periods_distances.append(distances[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
         periods_delays.append(delays[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])])
         period_start_offsets.append(period_start_to_epoch_offset)
@@ -103,7 +130,8 @@ if __name__ == "__main__":
                                 "mobility": mobility, 
                                 "periods": periods, 
                                 "period_start_to_epoch_offsets": period_start_offsets,
-                                "zenith_times": zenith_times, 
+                                "zenith_times": zenith_times,
+                                "local_max_idxs": local_max_idxs, 
                                 "angles": periods_angles,
                                 "distances": periods_distances, 
                                 "delays": periods_delays}

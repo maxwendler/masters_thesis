@@ -47,7 +47,7 @@ for ref_period_idx in range(0, len(ref_periods)):
 
     ref_time_total_sum += ref_p_end - ref_p_start
 
-    match_found = False
+    overlap_found = False
     ref_p_period_groups = []
 
     # find a matching communication period of alternative (new) mobility
@@ -63,14 +63,38 @@ for ref_period_idx in range(0, len(ref_periods)):
             ref_p_period_groups.append( {ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, 
                                          new_mobility: {"period_idx": new_period_idx, "period": new_p},
                                          "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx],
-                                         "zenith_shift": new_zenith_time - ref_zenith_time} 
+                                         "zenith_shift": new_zenith_time - ref_zenith_time,
+                                         "overlap": True}
                                       )
             matched_new_mobility_periods.append(new_p)
-            match_found = True
+            overlap_found = True
     
-    if not match_found:
+    if not overlap_found:
         
-        unmatched_periods.append({ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, "ref_coverage": 0, "new_excluded": 0, "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx]})
+        # match might be shifted so much that no overlap occurs 
+        # => match by idx of local maximum
+        ref_local_max_idx = ref_mobility_periods_stats["local_max_idxs"][ref_period_idx]
+        
+        try:
+            # raises error if not matching local maximum index can be found
+            new_period_idx_for_local_max_idx = new_mobility_periods_stats["local_max_idxs"].index(ref_local_max_idx)
+            # below: matching local maximum has been found
+
+            new_p = new_mobility_periods_stats["periods"][new_period_idx_for_local_max_idx]
+            new_zenith_time = new_mobility_periods_stats["zenith_times"][new_period_idx_for_local_max_idx]
+
+            # associate non-overlapping periods
+            ref_p_period_groups.append( {ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, 
+                                         new_mobility: {"period_idx": new_period_idx_for_local_max_idx, "period": new_p},
+                                         "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx],
+                                         "zenith_shift": new_zenith_time - ref_zenith_time,
+                                         "overlap": False} 
+                                      )
+            matched_new_mobility_periods.append(new_p)
+
+        # no period of new mobility with local max idx found
+        except ValueError:
+            unmatched_periods.append({ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, "ref_coverage": 0, "new_excluded": 0, "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx]})
 
     else:
 
