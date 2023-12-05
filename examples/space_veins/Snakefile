@@ -549,6 +549,47 @@ rule plot_const_sop_stat_diffs:
     shell:
         "touch {output}"
 
+rule calc_and_plot_aligned_local_sop_stat_diffs:
+    input:
+        script="../../scripts/statistics/aligned_period_sop_stat_differences.py",
+        comm_comp="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json",
+        ref_mob_period_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        new_mob_period_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json"
+    output:
+        json="stats/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+        plot="plots/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
+    params:
+        changes_option=lambda wildcards: "--changes" if wildcards.diffs_or_changes == "changes" else ""
+    shell:
+        "python3 {input.script} '{input.comm_comp}' {wildcards.ref_mobility} '{input.ref_mob_period_stats}' {wildcards.new_mobility} '{input.new_mob_period_stats}' '{output.json}' '{output.plot}' {params.changes_option}"
+
+def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
+    paths = expand("stats/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+                    constellation=wildcards.constellation,
+                    ref_mobility="sgp4",
+                    new_mobility="kepler",
+                    modname=get_const_sat_mods(wildcards.constellation),
+                    diffs_or_changes=["differences", "changes"])
+    paths += expand("plots/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
+                    constellation=wildcards.constellation,
+                    ref_mobility="sgp4",
+                    new_mobility="kepler",
+                    modname=get_const_sat_mods(wildcards.constellation),
+                    diffs_or_changes=["differences", "changes"])
+    return paths
+            
+rule calc_and_plot_const_aligned_local_sop_statt_diffs:
+    input:
+        get_const_aligned_local_sop_stat_diffs_jsons_and_plots
+    output:
+        "stats/aligned_sop_diffs/{constellation}.done",
+        "plots/aligned_sop_diffs/{constellation}.done"
+    shell:
+        """
+        touch {output[0]}
+        touch {output[1]}
+        """
+
 rule calc_comm_period_info:
     """
     Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
