@@ -90,6 +90,7 @@ if __name__ == "__main__":
     delays, second_range = get_mod_row(args.delays_csv_path, args.modname)
 
     # create lists of lists with values for each communication period
+    durations = []
     periods_angles = []
     periods_delays = []
     periods_distances = []
@@ -100,6 +101,7 @@ if __name__ == "__main__":
         
         start_sec = p[0]
         end_sec = p[1]
+        durations.append(end_sec - start_sec)
         period_start_to_epoch_offset = start_sec - mod_epoch_to_start_offset_secs
 
         period_angles = angles[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])]
@@ -128,7 +130,8 @@ if __name__ == "__main__":
     mobility = args.output_path.split("/")[-2]
     communication_period_dict = {"modname": args.modname, 
                                 "mobility": mobility, 
-                                "periods": periods, 
+                                "periods": periods,
+                                "durations": durations,
                                 "period_start_to_epoch_offsets": period_start_offsets,
                                 "zenith_times": zenith_times,
                                 "local_max_idxs": local_max_idxs, 

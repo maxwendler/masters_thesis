@@ -44,6 +44,7 @@ for ref_period_idx in range(0, len(ref_periods)):
     ref_zenith_time = ref_mobility_periods_stats["zenith_times"][ref_period_idx]
     ref_p_start = ref_p[0]
     ref_p_end = ref_p[1]
+    ref_p_duration = ref_p_end - ref_p_start
 
     ref_time_total_sum += ref_p_end - ref_p_start
 
@@ -55,6 +56,7 @@ for ref_period_idx in range(0, len(ref_periods)):
         new_p = new_periods[new_period_idx]
         new_p_start = new_p[0]
         new_p_end = new_p[1]
+        new_p_duration = new_p_end - new_p_start
 
         # match found
         # new_start in ref_period | new_end end ref_period | ref_period in new_period
@@ -62,6 +64,7 @@ for ref_period_idx in range(0, len(ref_periods)):
             new_zenith_time = new_mobility_periods_stats["zenith_times"][new_period_idx]
             ref_p_period_groups.append( {ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, 
                                          new_mobility: {"period_idx": new_period_idx, "period": new_p},
+                                         "duration_change": new_p_duration - ref_p_duration,
                                          "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx],
                                          "zenith_shift": new_zenith_time - ref_zenith_time,
                                          "overlap": True}
@@ -81,11 +84,13 @@ for ref_period_idx in range(0, len(ref_periods)):
             # below: matching local maximum has been found
 
             new_p = new_mobility_periods_stats["periods"][new_period_idx_for_local_max_idx]
+            new_p_duration = new_p[1] - new_p[0]
             new_zenith_time = new_mobility_periods_stats["zenith_times"][new_period_idx_for_local_max_idx]
 
             # associate non-overlapping periods
             ref_p_period_groups.append( {ref_mobility: {"period_idx": ref_period_idx, "period": ref_p}, 
                                          new_mobility: {"period_idx": new_period_idx_for_local_max_idx, "period": new_p},
+                                         "duration_change": new_p_duration - ref_p_duration,
                                          "ref_start_to_epoch_offset": ref_mobility_periods_stats["period_start_to_epoch_offsets"][ref_period_idx],
                                          "zenith_shift": new_zenith_time - ref_zenith_time,
                                          "overlap": False} 
@@ -138,7 +143,7 @@ for g in period_groups:
         excluded_perc = 0
     new_excluded_sum += excluded_perc
 
-    #  calc excluded time to ref time
+    # calc excluded time to ref time
     excluded_time_to_ref_time = excluded_sum / ( g[ref_mobility]["period"][1] - g[ref_mobility]["period"][0] ) 
 
     g["ref_coverage"] = coverage
