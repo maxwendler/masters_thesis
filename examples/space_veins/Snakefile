@@ -4,9 +4,9 @@ import sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.satname_to_modname import satname_to_modname
 sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10", "site-packages"))
-# sys.path.append(os.path.join(sys.path[0],"..","..","scripts", "keplertraces"))
 from scripts.keplertraces.tleparse import read
 from scripts.keplertraces.parseomnetini import parseomnetini
+import json
 
 configfile: "smk.config.yaml"
 
@@ -715,6 +715,55 @@ rule plot_const_overlap_stats:
         comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
     shell:
         "python3 {input.script} {params.comp_jsons_dir} {output.svg_out}"
+
+rule plot_zenith_shifts:
+    input:
+        script="../../scripts/plots/plot_sat_period_zenith_shifts.py",
+        comm_comp="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+    output:
+        "plots/zenith_shifts/{constellation}/{ref_mobility}-{new_mobility}_{modname}_zenith_shifts.svg"
+    shell:
+        "python3 {input.script} '{input.comm_comp}' '{output}'"
+
+def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
+    
+    multiple_overlapping_periods_modnames = []
+    for comm_comp_fname in filter( lambda fname: fname.endswith("communication_comparison.json"), 
+                                    os.listdir(f"stats/compare_comm_periods/{wildcards.constellation}") ):
+        
+        with open(f"stats/compare_comm_periods/{wildcards.constellation}/" + comm_comp_fname) as json_f:
+            comm_comp = json.load(json_f)
+
+        if len(comm_comp["period_groups"]) > 1:
+            multiple_overlapping_periods_modnames.append(comm_comp["modname"])
+    
+    return expand("plots/zenith_shifts/{constellation}/{ref_mobility}-{new_mobility}_{modname}_zenith_shifts.svg",
+                    constellation=wildcards.constellation,
+                    ref_mobility=wildcards.ref_mobility,
+                    new_mobility=wildcards.new_mobility,
+                    modname=multiple_overlapping_periods_modnames)
+
+
+rule plot_const_multiple_overlapping_periods_zenith_shifts:
+    input:
+        get_const_multiple_overlapping_periods_zenith_shift_paths
+    output:
+        "plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}.done"
+    shell:
+        "touch {output}"
+
+
+rule plot_const_periods_zenith_shifts_in_one:
+    input:
+        script="../../scripts/plots/plot_const_period_zenith_shifts.py",
+        comm_comp_dir="stats/compare_comm_periods/{constellation}"
+    output:
+        "plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}_all_{differences_or_changes}.html",
+        svg_out="plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}_all_{differences_or_changes}.svg"
+    params:
+        difference_option=lambda wildcards: "--differences" if wildcards.differences_or_changes == "differences" else ""
+    shell:
+        "python3 {input.script} {input.comm_comp_dir} {output.svg_out} {params.difference_option}"
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS
