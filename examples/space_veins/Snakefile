@@ -556,21 +556,21 @@ rule calc_and_plot_aligned_local_sop_stat_diffs:
         ref_mob_period_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
         new_mob_period_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json"
     output:
-        json="stats/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
-        plot="plots/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
+        json="stats/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+        plot="plots/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
     params:
         changes_option=lambda wildcards: "--changes" if wildcards.diffs_or_changes == "changes" else ""
     shell:
         "python3 {input.script} '{input.comm_comp}' {wildcards.ref_mobility} '{input.ref_mob_period_stats}' {wildcards.new_mobility} '{input.new_mob_period_stats}' '{output.json}' '{output.plot}' {params.changes_option}"
 
 def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
-    paths = expand("stats/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+    paths = expand("stats/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
                     constellation=wildcards.constellation,
                     ref_mobility="sgp4",
                     new_mobility="kepler",
                     modname=get_const_sat_mods(wildcards.constellation),
                     diffs_or_changes=["differences", "changes"])
-    paths += expand("plots/aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
+    paths += expand("plots/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
                     constellation=wildcards.constellation,
                     ref_mobility="sgp4",
                     new_mobility="kepler",
@@ -578,17 +578,53 @@ def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
                     diffs_or_changes=["differences", "changes"])
     return paths
             
-rule calc_and_plot_const_aligned_local_sop_statt_diffs:
+rule calc_and_plot_const_aligned_local_sop_stat_diffs:
     input:
         get_const_aligned_local_sop_stat_diffs_jsons_and_plots
     output:
-        "stats/aligned_sop_diffs/{constellation}.done",
-        "plots/aligned_sop_diffs/{constellation}.done"
+        "stats/local_aligned_sop_diffs/{constellation}.done",
+        "plots/local_aligned_sop_diffs/{constellation}.done"
     shell:
         """
         touch {output[0]}
         touch {output[1]}
         """
+
+rule plot_sop_stat_diffs_or_changes_at_offset:
+    input:
+        script="../../scripts/plots/plot_aligned_sop_stats_at_offset.py",
+        stats="stats/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json"
+    output:
+        "plots/aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_{stat}_aligned_{diffs_or_changes}_{avg_or_max}.svg"
+    shell:
+        "python3 {input.script} '{input.stats}' {wildcards.stat} {wildcards.avg_or_max} '{output}'"
+
+def get_const_aligned_sop_stat_diffs_or_changes_plots(wildcards):
+    return expand("plots/aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_{stat}_aligned_{diffs_or_changes}_{avg_or_max}.svg",
+                    constellation=wildcards.constellation,
+                    new_mobility="kepler",
+                    modname=get_const_sat_mods(wildcards.constellation),
+                    stat=["angle", "delay"],
+                    diffs_or_changes=["differences", "changes"],
+                    avg_or_max=["avg", "max"])
+
+rule plot_const_sop_stat_diffs_or_changes_at_offset:
+    input:
+        get_const_aligned_sop_stat_diffs_or_changes_plots
+    output:
+        "plots/aligned_sop_diffs/{constellation}.done"
+    shell:
+        "touch {output}"
+
+rule plot_const_sop_stat_diffs_at_offset_in_one:
+    input:
+        get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
+        script="../../scripts/plots/plot_const_aligned_sop_stats_at_offset.py",
+        aligned_diffs_dir="stats/local_aligned_sop_diffs/{constellation}"
+    output:
+        svg_out="plots/aligned_sop_diffs/{constellation}_sgp4-{new_mobility}_all_{stat}_{avg_or_max}_differences.svg"
+    shell:
+        "python3 {input.script} {input.aligned_diffs_dir} {wildcards.stat} {wildcards.avg_or_max} {output.svg_out}"
 
 rule calc_comm_period_info:
     """
@@ -752,9 +788,9 @@ rule plot_const_multiple_overlapping_periods_zenith_shifts:
     shell:
         "touch {output}"
 
-
 rule plot_const_periods_zenith_shifts_in_one:
     input:
+        get_const_comm_comp_json_paths,
         script="../../scripts/plots/plot_const_period_zenith_shifts.py",
         comm_comp_dir="stats/compare_comm_periods/{constellation}"
     output:

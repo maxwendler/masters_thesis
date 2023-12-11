@@ -1,6 +1,6 @@
 import argparse
 import json
-import numpy as np
+import os
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
@@ -89,9 +89,10 @@ for p_group_idx in range(len(period_groups)):
     ref_sec_range = list(range(p_group[ref_mobility]["period"][0], p_group[ref_mobility]["period"][1] + 1))
     aligned_new_sec_range = list(range(p_group[new_mobility]["period"][0] - p_group["zenith_shift"], p_group[new_mobility]["period"][1] - p_group["zenith_shift"] + 1))
 
-    # copy period start and end and mobility period idx
+    # copy period start and end and mobility period idx for mobilities, and offset to TLE epoch of ref
     new_p_group_dict = {ref_mobility: p_group[ref_mobility],
-                        new_mobility: p_group[new_mobility]}
+                        new_mobility: p_group[new_mobility],
+                        "ref_start_to_epoch_offset": p_group["ref_start_to_epoch_offset"]}
 
     # angles  
     ref_angles = ref_mobility_stats["angles"][ p_group[ref_mobility]["period_idx"] ]
@@ -103,11 +104,6 @@ for p_group_idx in range(len(period_groups)):
         diff_start_idx += 1
         duration_difference -= 1
     diff_start_idx += int(duration_difference / 2)
-    
-    print(len(ref_angles))
-    print(len(new_angles))
-    print(diff_start_idx)
-    print(len(ref_angles) - int(duration_difference/2) + 1)
 
     # only calc differences / changes in overlapping duration
     # i.e. starting at idx duration_difference/2 (+1 for odd difference to len - duration_difference/2
@@ -148,11 +144,18 @@ for p_group_idx in range(len(period_groups)):
             else:
                 angle_diffs_or_changes.append( abs(new_angles[i] - ref_angles[i]) )
 
+    angle_diffs_or_changes_avg = sum(angle_diffs_or_changes) / len(angle_diffs_or_changes)
+    angle_diffs_or_changes_max = max(angle_diffs_or_changes)
+
     if args.changes:
         new_p_group_dict["angle_changes"] = angle_diffs_or_changes
+        new_p_group_dict["angle_changes_avg"] = angle_diffs_or_changes_avg
+        new_p_group_dict["angle_changes_max"] = angle_diffs_or_changes_max
     else:
         new_p_group_dict["angle_differences"] = angle_diffs_or_changes
-
+        new_p_group_dict["angle_differences_avg"] = angle_diffs_or_changes_avg
+        new_p_group_dict["angle_differences_max"] = angle_diffs_or_changes_max
+    
     fig.add_trace(
         go.Scatter(x=ref_sec_range, 
                 y=ref_angles,
@@ -207,10 +210,17 @@ for p_group_idx in range(len(period_groups)):
             else:
                 distance_diffs_or_changes.append( abs(new_distances[i] - ref_distances[i]) )
 
+    distance_diffs_or_changes_avg = sum(distance_diffs_or_changes) / len(distance_diffs_or_changes)
+    distance_diffs_or_changes_max = max(distance_diffs_or_changes)
+
     if args.changes:
         new_p_group_dict["distance_changes"] = distance_diffs_or_changes
+        new_p_group_dict["distance_changes_avg"] = distance_diffs_or_changes_avg
+        new_p_group_dict["distance_changes_max"] = distance_diffs_or_changes_max
     else:
         new_p_group_dict["distance_differences"] = distance_diffs_or_changes
+        new_p_group_dict["distance_differences_avg"] = distance_diffs_or_changes_avg
+        new_p_group_dict["distance_differences_max"] = distance_diffs_or_changes_max
 
     fig.add_trace(
         go.Scatter(x=ref_sec_range, 
@@ -267,10 +277,17 @@ for p_group_idx in range(len(period_groups)):
             else:
                 delay_diffs_or_changes.append( abs(new_delays[i] - ref_delays[i]) )
 
+    delay_diffs_or_changes_avg = sum(delay_diffs_or_changes) / len(delay_diffs_or_changes)
+    delay_diffs_or_changes_max = max(delay_diffs_or_changes)
+
     if args.changes:
         new_p_group_dict["delay_changes"] = delay_diffs_or_changes
+        new_p_group_dict["delay_changes_avg"] = delay_diffs_or_changes_avg
+        new_p_group_dict["delay_changes_max"] = delay_diffs_or_changes_max
     else:
         new_p_group_dict["delay_differences"] = delay_diffs_or_changes
+        new_p_group_dict["delay_differences_avg"] = delay_diffs_or_changes_avg
+        new_p_group_dict["delay_differences_max"] = delay_diffs_or_changes_max
 
     fig.add_trace(
         go.Scatter(x=ref_sec_range, 
@@ -297,6 +314,9 @@ for p_group_idx in range(len(period_groups)):
     fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
 
     output["period_groups"].append(new_p_group_dict)
+
+os.makedirs("/".join(args.output_path.split("/")[:-1]), exist_ok=True)
+os.makedirs("/".join(args.plot_path.split("/")[:-1]), exist_ok=True)
 
 with open(args.output_path, "w") as out_f:
     json.dump(output, out_f, indent=4)
