@@ -666,6 +666,17 @@ rule const_comm_periods_csv:
     shell:
         "python3 {input.script} {input.period_infos_dir} {output}"
 
+rule plot_const_comm_periods:
+    input:
+        script="../../scripts/plots/plot_const_comm_periods.py",
+        periods_csv="csv/comm_periods/{constellation}_{mobility}_all_periods.csv"
+    output:
+        "plots/comm_periods/{constellation}_{mobility}_all_periods.svg"
+    shell:
+        """
+        python3 {input.script} {input.periods_csv} 15 86400 {output}
+        """
+
 rule const_comm_period_intervals_csvs:
     input:
         get_const_comm_period_infos,
