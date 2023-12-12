@@ -53,6 +53,7 @@ with open(args.periods_csv, "r") as periods_csv:
         mod_comm_period_idx = None
         if row[0] in mod_comm_periods_idxs.keys():
             mod_comm_period_idx = mod_comm_periods_idxs[row[0]]
+            mod_comm_periods_idxs[row[0]] += 1
         else:
             mod_comm_period_idx = 0
             mod_comm_periods_idxs[row[0]] = 1
