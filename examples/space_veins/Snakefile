@@ -650,6 +650,34 @@ rule calc_comm_period_info:
     shell:
         "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
 
+def get_const_comm_period_infos(wildcards):
+    return expand("stats/comm_periods/{constellation}/{mobility}/{modname}_communication-periods.json",
+                    constellation=wildcards.constellation,
+                    mobility=wildcards.mobility,
+                    modname=get_const_sat_mods(wildcards.constellation))
+
+rule const_comm_periods_csv:
+    input:
+        get_const_comm_period_infos,
+        script="../../scripts/statistics/all_const_periods.py",
+        period_infos_dir="stats/comm_periods/{constellation}/{mobility}/"
+    output:
+        "csv/comm_periods/{constellation}_{mobility}_all_periods.csv"
+    shell:
+        "python3 {input.script} {input.period_infos_dir} {output}"
+
+rule const_comm_period_intervals_csvs:
+    input:
+        get_const_comm_period_infos,
+        script="../../scripts/statistics/const_period_intervals.py",
+        all_periods="csv/comm_periods/{constellation}_{mobility}_all_periods.csv",
+        period_infos_dir="stats/comm_periods/{constellation}/{mobility}/"
+    output:
+        period_intervals="csv/comm_period_intervals/{constellation}_{mobility}_period_intervals.csv",
+        zenith_intervals="csv/comm_period_intervals/{constellation}_{mobility}_zenith_intervals.csv"
+    shell:
+        "python3 {input.script} {input.all_periods} {input.period_infos_dir} 86400 {output.period_intervals} {output.zenith_intervals}"
+
 rule compare_comm_period_info:
     """
     Creates JSON of overlapping and non-overlapping communication periods of the reference mobility and alternative (new) mobility,
