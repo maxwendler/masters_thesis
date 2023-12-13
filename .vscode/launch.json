@@ -23,17 +23,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/const_period_interval_differences.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/eccentric_sgp4_all_periods.csv",
-                "/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/eccentric_kepler_all_periods.csv",
-                    "output_path"],          
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",

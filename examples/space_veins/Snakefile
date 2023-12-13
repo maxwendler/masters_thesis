@@ -689,6 +689,16 @@ rule const_comm_period_intervals_csvs:
     shell:
         "python3 {input.script} {input.all_periods} {input.period_infos_dir} 86400 {output.period_intervals} {output.zenith_intervals}"
 
+rule const_comm_period_interval_changes:
+    input:
+        ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
+        new_periods="csv/comm_periods/{constellation}_{new_mobility}_all_periods.csv",
+        script="../../scripts/statistics/const_period_interval_changes.py"
+    output:
+        "stats/comm_period_interval_changes/{constellation}_sgp4-{new_mobility}_interval_changes.json"
+    shell:
+        "python3 {input.script} {input.ref_periods} {input.new_periods} 86400 {output}"
+
 rule compare_comm_period_info:
     """
     Creates JSON of overlapping and non-overlapping communication periods of the reference mobility and alternative (new) mobility,
