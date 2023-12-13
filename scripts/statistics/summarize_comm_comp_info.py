@@ -21,6 +21,8 @@ exclusions = []
 duration_changes = []
 zenith_shifts = []
 total_excluded_time_to_ref_times = []
+unmatched_ref_periods_num = 0
+unmatched_new_periods_num = 0
 
 # collect coverage, exclusion and excluded_time_to_ref_time values for averaging
 for path in info_json_paths:
@@ -38,9 +40,11 @@ for path in info_json_paths:
     for unmatched_period in comm_periods["unmatched_periods"]:
         if ref_mobility in unmatched_period.keys():
             coverages.append(period_group["ref_coverage"])
-        
+            unmatched_ref_periods_num += 1
+
         if new_mobility in unmatched_period.keys():
             exclusions.append(period_group["new_excluded"])
+            unmatched_new_periods_num += 1
 
     total_excluded_time_to_ref_times.append(comm_periods["total_excluded_time_to_ref_time"])
 
@@ -60,6 +64,8 @@ median_duration_change = median(duration_changes)
 output = {"avg_ref_coverage": avg_coverage,
           "avg_new_exclusion": avg_exlusion,
           "avg_excluded_time_to_ref_time": avg_excluded_to_ref,
+          "unmatched_ref_periods": unmatched_ref_periods_num,
+          "unmatched_new_periods": unmatched_new_periods_num,
           "min_zenith_shift": min_zenith_shift,
           "max_zenith_shift": max_zenith_shift,
           "avg_zenith_shift": avg_zenith_shift,
