@@ -23,20 +23,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/const_period_zenith_interval_changes.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/iridiumNEXT_sgp4_all_periods.csv", 
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/iridiumNEXT/sgp4", 
-            "/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/iridiumNEXT_kepler_all_periods.csv", 
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/iridiumNEXT/kepler", 
-            "86400", 
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_period_zenith_interval_changes/iridiumNEXT_sgp4-kepler_zenith_interval_changes.json"],          
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",

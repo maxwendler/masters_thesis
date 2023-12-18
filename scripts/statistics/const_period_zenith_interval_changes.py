@@ -31,6 +31,7 @@ with open(args.ref_periods_csv, "r") as csv_f:
         modname_to_id_num += 1
 
 ref_periods_zeniths = {}
+ref_periods_offsets = {}
 for period_json_fname in filter(lambda fname: fname.endswith("communication-periods.json"), os.listdir(ref_periods_jsons_dir)):
 
     with open(ref_periods_jsons_dir + period_json_fname, "r") as json_f:
@@ -41,8 +42,10 @@ for period_json_fname in filter(lambda fname: fname.endswith("communication-peri
 
     for zenith_idx in range(len(modname_period_names)):
         zenith = comm_periods["zenith_times"][zenith_idx]
+        offset_to_epoch = comm_periods["period_start_to_epoch_offsets"][zenith_idx]
         period_name = modname_period_names[zenith_idx]
         ref_periods_zeniths[period_name] = zenith
+        ref_periods_offsets[period_name] = offset_to_epoch
 
 new_period_names = []
 with open(args.new_periods_csv, "r") as csv_f:
@@ -69,6 +72,7 @@ for period_json_fname in filter(lambda fname: fname.endswith("communication-peri
 
 new_period_idx = 0
 same_periods_interval_differences = {}
+same_periods_interval_abs_offset_sums = {}
 consecutive_missing_periods = []
 current_consecutive_missing_periods = {
     "period_list": [],
@@ -80,7 +84,7 @@ current_consecutive_missing_periods = {
 }
 consecutive_added_periods = []
 prev_ref_zenith = 0
-prev_ref_p_modname = "start"
+prev_ref_period_name = "start"
 prev_new_zenith = 0
 
 for ref_period_idx in range(len(ref_period_names)):
@@ -91,7 +95,7 @@ for ref_period_idx in range(len(ref_period_names)):
     if new_period_idx >= len(new_period_names):
         if len(current_consecutive_missing_periods["period_list"]) == 0:
             current_consecutive_missing_periods["prev_missing_new_zenith"] = prev_new_zenith
-            current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_p_modname
+            current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_period_name
         current_consecutive_missing_periods["period_list"].append(ref_period_name)
         if ref_period_idx == len(ref_period_names) - 1:
             current_consecutive_missing_periods["after_missing_new_zenith"] = args.sim_time_limit
@@ -106,6 +110,11 @@ for ref_period_idx in range(len(ref_period_names)):
     new_period_zenith = new_periods_zeniths[new_period_name]
 
     ref_interval = ref_period_zenith - prev_ref_zenith
+    abs_ref_offsets_sum	= None
+    if prev_ref_period_name == "start":
+        abs_ref_offsets_sum = abs(ref_periods_offsets[ref_period_name])
+    else:
+        abs_ref_offsets_sum = abs(ref_periods_offsets[ref_period_name]) + abs(ref_periods_offsets[prev_ref_period_name])
 
     if ref_period_name == (new_period_name.split("]")[0] + "]" + str( int(new_period_name.split("]")[1]) + new_periods_num_in_name_offset )):
         # same interval -> simply calculate difference
@@ -127,8 +136,9 @@ for ref_period_idx in range(len(ref_period_names)):
         new_interval = new_period_zenith - prev_new_zenith
         prev_new_zenith = new_period_zenith
 
-        same_periods_interval_differences[ f"{prev_ref_p_modname}-{ref_period_name}" ] = new_interval - ref_interval
-        prev_ref_p_modname = ref_period_name
+        same_periods_interval_differences[ f"{prev_ref_period_name}-{ref_period_name}" ] = new_interval - ref_interval
+        same_periods_interval_abs_offset_sums[ f"{prev_ref_period_name}-{ref_period_name}" ] = abs_ref_offsets_sum
+        prev_ref_period_name = ref_period_name
         prev_ref_zenith = ref_period_zenith
         new_period_idx += 1
 
@@ -139,7 +149,7 @@ for ref_period_idx in range(len(ref_period_names)):
         related_new_period_zenith = None
         potentially_added_periods = {"period_list": [new_period_name],
                                      "prev_added_new_zenith": prev_new_zenith,
-                                     "prev_added_period_name": prev_ref_p_modname,
+                                     "prev_added_period_name": prev_ref_period_name,
                                      "after_added_period_name": ref_period_name,
                                      "original_interval": ref_interval}
         for new_period_search_idx in range(new_period_idx + 1, len(new_period_names)):
@@ -183,17 +193,18 @@ for ref_period_idx in range(len(ref_period_names)):
             new_interval = related_new_period_zenith - prev_new_zenith
             prev_new_zenith = related_new_period_zenith
 
-            same_periods_interval_differences[f"{prev_ref_p_modname}-{ref_period_name}"] = new_interval - ref_interval            
+            same_periods_interval_differences[f"{prev_ref_period_name}-{ref_period_name}"] = new_interval - ref_interval
+            same_periods_interval_abs_offset_sums[ f"{prev_ref_period_name}-{ref_period_name}" ] = abs_ref_offsets_sum            
 
             new_period_idx += added_periods_num + 1
-            prev_ref_p_modname = ref_period_name
+            prev_ref_period_name = ref_period_name
             prev_ref_zenith = ref_period_zenith
 
         # comparison with new period not confirmed -> lost period -> skip ref_period
         else:
             if len(current_consecutive_missing_periods["period_list"]) == 0:
                 current_consecutive_missing_periods["prev_missing_new_zenith"] = prev_new_zenith
-                current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_p_modname
+                current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_period_name
             current_consecutive_missing_periods["period_list"].append(ref_period_name)
 
 # added period at end of new list
@@ -204,7 +215,7 @@ if new_period_idx < len(new_periods_zeniths):
 
     consecutive_added_periods.append({"period_list": period_list,
         "prev_added_new_zenith": prev_new_zenith,
-        "prev_added_period_name": prev_ref_p_modname,
+        "prev_added_period_name": prev_ref_period_name,
         "after_added_period_name": "end",
         "after_added_new_zenith": args.sim_time_limit,
         "original_interval": args.sim_time_limit - prev_ref_zenith
@@ -300,6 +311,7 @@ for current_consecutive_added_periods in consecutive_added_periods:
 
 output = {
     "same_periods_changes": same_periods_interval_differences,
+    "same_periods_abs_offset_sums": same_periods_interval_abs_offset_sums,
     "consecutive_missing_periods_changes": consecutive_missing_periods_changes,
     "consecutive_added_periods_changes": consecutive_added_periods_changes
 }

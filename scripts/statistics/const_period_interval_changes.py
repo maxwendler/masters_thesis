@@ -51,7 +51,7 @@ current_consecutive_missing_periods = {
 }
 consecutive_added_periods = []
 prev_ref_end_sec = 0
-prev_ref_p_modname = "start"
+prev_ref_period_name = "start"
 prev_new_end_sec = 0
 
 for ref_period_idx in range(len(ref_period_names)):
@@ -62,7 +62,7 @@ for ref_period_idx in range(len(ref_period_names)):
     if new_period_idx >= len(new_periods):
         if len(current_consecutive_missing_periods["period_list"]) == 0:
             current_consecutive_missing_periods["prev_missing_new_end_sec"] = prev_new_end_sec
-            current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_p_modname
+            current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_period_name
         current_consecutive_missing_periods["period_list"].append(ref_period_name)
         if ref_period_idx == len(ref_periods) - 1:
             current_consecutive_missing_periods["after_missing_new_start_sec"] = args.sim_time_limit
@@ -98,8 +98,8 @@ for ref_period_idx in range(len(ref_period_names)):
         new_interval = new_period[0] - prev_new_end_sec
         prev_new_end_sec = new_period[1]
 
-        same_periods_interval_differences[ f"{prev_ref_p_modname}-{ref_period_name}" ] = new_interval - ref_interval
-        prev_ref_p_modname = ref_period_name
+        same_periods_interval_differences[ f"{prev_ref_period_name}-{ref_period_name}" ] = new_interval - ref_interval
+        prev_ref_period_name = ref_period_name
         prev_ref_end_sec = ref_period[1]
         new_period_idx += 1
 
@@ -110,7 +110,7 @@ for ref_period_idx in range(len(ref_period_names)):
         related_new_period = None
         potentially_added_periods = {"period_list": [new_period_name],
                                      "prev_added_new_end_sec": prev_new_end_sec,
-                                     "prev_added_period_name": prev_ref_p_modname,
+                                     "prev_added_period_name": prev_ref_period_name,
                                      "after_added_period_name": ref_period_name,
                                      "original_interval": ref_interval}
         for new_period_search_idx in range(new_period_idx + 1, len(new_period_names)):
@@ -154,17 +154,17 @@ for ref_period_idx in range(len(ref_period_names)):
             new_interval = related_new_period[0] - prev_new_end_sec
             prev_new_end_sec = related_new_period[1]
 
-            same_periods_interval_differences[f"{prev_ref_p_modname}-{ref_period_name}"] = new_interval - ref_interval            
+            same_periods_interval_differences[f"{prev_ref_period_name}-{ref_period_name}"] = new_interval - ref_interval            
 
             new_period_idx += added_periods_num + 1
-            prev_ref_p_modname = ref_period_name
+            prev_ref_period_name = ref_period_name
             prev_ref_end_sec = ref_period[1]
 
         # comparison with new period not confirmed -> lost period -> skip ref_period
         else:
             if len(current_consecutive_missing_periods["period_list"]) == 0:
                 current_consecutive_missing_periods["prev_missing_new_end_sec"] = prev_new_end_sec
-                current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_p_modname
+                current_consecutive_missing_periods["prev_missing_ref_period"] = prev_ref_period_name
             current_consecutive_missing_periods["period_list"].append(ref_period_name)
 
 # added period at end of new list
@@ -175,7 +175,7 @@ if new_period_idx < len(new_periods):
 
     consecutive_added_periods.append({"period_list": period_list,
         "prev_added_new_end_sec": prev_new_end_sec,
-        "prev_added_period_name": prev_ref_p_modname,
+        "prev_added_period_name": prev_ref_period_name,
         "after_added_period_name": "end",
         "after_added_new_start_sec": args.sim_time_limit,
         "original_interval": args.sim_time_limit - prev_ref_end_sec
