@@ -71,8 +71,7 @@ for period_json_fname in filter(lambda fname: fname.endswith("communication-peri
         new_periods_zeniths[period_name] = zenith
 
 new_period_idx = 0
-same_periods_interval_differences = {}
-same_periods_interval_abs_offset_sums = {}
+same_periods_interval_changes = {}
 consecutive_missing_periods = []
 current_consecutive_missing_periods = {
     "period_list": [],
@@ -110,11 +109,17 @@ for ref_period_idx in range(len(ref_period_names)):
     new_period_zenith = new_periods_zeniths[new_period_name]
 
     ref_interval = ref_period_zenith - prev_ref_zenith
+    
     abs_ref_offsets_sum	= None
+    abs_offset_ref_dif = None
+    start_offset = 0 if prev_ref_period_name == "start" else ref_periods_offsets[prev_ref_period_name]
+    end_offset = ref_periods_offsets[ref_period_name]
     if prev_ref_period_name == "start":
-        abs_ref_offsets_sum = abs(ref_periods_offsets[ref_period_name])
+        abs_ref_offsets_sum = abs(end_offset)
+        abs_offset_ref_dif = 0
     else:
-        abs_ref_offsets_sum = abs(ref_periods_offsets[ref_period_name]) + abs(ref_periods_offsets[prev_ref_period_name])
+        abs_ref_offsets_sum = abs(end_offset) + abs(start_offset)
+        abs_offset_ref_dif = abs(abs(end_offset) - abs(start_offset))
 
     if ref_period_name == (new_period_name.split("]")[0] + "]" + str( int(new_period_name.split("]")[1]) + new_periods_num_in_name_offset )):
         # same interval -> simply calculate difference
@@ -136,8 +141,14 @@ for ref_period_idx in range(len(ref_period_names)):
         new_interval = new_period_zenith - prev_new_zenith
         prev_new_zenith = new_period_zenith
 
-        same_periods_interval_differences[ f"{prev_ref_period_name}-{ref_period_name}" ] = new_interval - ref_interval
-        same_periods_interval_abs_offset_sums[ f"{prev_ref_period_name}-{ref_period_name}" ] = abs_ref_offsets_sum
+        same_periods_interval_changes[f"{prev_ref_period_name}-{ref_period_name}"] = {
+            "difference": new_interval - ref_interval,
+            "start_offset": start_offset,
+            "end_offset": end_offset,
+            "abs_offset_sum": abs_ref_offsets_sum,
+            "abs_offset_diff": abs_offset_ref_dif
+        }
+
         prev_ref_period_name = ref_period_name
         prev_ref_zenith = ref_period_zenith
         new_period_idx += 1
@@ -193,8 +204,13 @@ for ref_period_idx in range(len(ref_period_names)):
             new_interval = related_new_period_zenith - prev_new_zenith
             prev_new_zenith = related_new_period_zenith
 
-            same_periods_interval_differences[f"{prev_ref_period_name}-{ref_period_name}"] = new_interval - ref_interval
-            same_periods_interval_abs_offset_sums[ f"{prev_ref_period_name}-{ref_period_name}" ] = abs_ref_offsets_sum            
+            same_periods_interval_changes[f"{prev_ref_period_name}-{ref_period_name}"] = {
+                "difference": new_interval - ref_interval,
+                "start_offset": start_offset,
+                "end_offset": end_offset,
+                "abs_offset_sum": abs_ref_offsets_sum,
+                "abs_offset_diff": abs_offset_ref_dif
+            }            
 
             new_period_idx += added_periods_num + 1
             prev_ref_period_name = ref_period_name
@@ -310,15 +326,15 @@ for current_consecutive_added_periods in consecutive_added_periods:
     }
 
 output = {
-    "same_periods_changes": same_periods_interval_differences,
-    "same_periods_abs_offset_sums": same_periods_interval_abs_offset_sums,
+    "same_periods_changes": same_periods_interval_changes,
     "consecutive_missing_periods_changes": consecutive_missing_periods_changes,
     "consecutive_added_periods_changes": consecutive_added_periods_changes
 }
 
-min_same_interval_diff = min(same_periods_interval_differences.values())
-max_same_interval_diff = max(same_periods_interval_differences.values())
-avg_same_interval_diff = sum(same_periods_interval_differences.values()) / len(same_periods_interval_differences)
+same_periods_interval_differences = [interval_dict["difference"] for interval_dict in same_periods_interval_changes.values()]
+min_same_interval_diff = min(same_periods_interval_differences)
+max_same_interval_diff = max(same_periods_interval_differences)
+avg_same_interval_diff = sum(same_periods_interval_differences) / len(same_periods_interval_differences)
 
 missing_interval_changes = []
 for consecutive_missing_periods_change in consecutive_missing_periods_changes.values():

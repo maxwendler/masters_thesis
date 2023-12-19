@@ -40,4 +40,4 @@ with open(tles_path, "r") as tles_f:
 constellation = tles_fname.split("_")[0]
 output_path = tles_path.removesuffix(tles_fname) + constellation + "_times.json"
 with open(output_path, "w") as dict_f:
-    json.dump(times_dict, dict_f)    
+    json.dump(times_dict, dict_f, indent=4)    
