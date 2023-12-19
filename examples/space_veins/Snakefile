@@ -699,6 +699,27 @@ rule const_comm_period_interval_changes:
     shell:
         "python3 {input.script} {input.ref_periods} {input.new_periods} 86400 {output}"
 
+rule sat_comm_period_zenith_interval_changes:
+    input:
+        ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
+        ref_periods_json="stats/comm_periods/{constellation}/sgp4/{modname}_communication-periods.json",
+        new_periods="csv/comm_periods/{constellation}_{new_mobility}_all_periods.csv",
+        new_periods_json="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json",
+        script="../../scripts/statistics/sat_period_zenith_interval_changes.py"
+    output:
+        "stats/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json"
+    shell:
+        "python3 {input.script} '{wildcards.modname}' {input.ref_periods} '{input.ref_periods_json}' {input.new_periods} '{input.new_periods_json}' 86400 '{output}'"    
+
+rule plot_sat_comm_period_zenith_interval_changes:
+    input:
+        zenith_interval_changes = "stats/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json",
+        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_stat.py"
+    output:
+        "plots/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
+    shell:
+        "python3 {input.script} '{input.zenith_interval_changes}' {wildcards.offset_sum_or_offset_diff} '{output}'"    
+
 rule const_comm_period_zenith_interval_changes:
     input:
         ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
@@ -707,7 +728,7 @@ rule const_comm_period_zenith_interval_changes:
         new_periods_jsons_dir="stats/comm_periods/{constellation}/{new_mobility}",
         script="../../scripts/statistics/const_period_zenith_interval_changes.py"
     output:
-        "stats/comm_period_zenith_interval_changes/{constellation}_sgp4-{new_mobility}_zenith_interval_changes.json"
+        "stats/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_changes.json"
     shell:
         "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} 86400 {output}"
         
@@ -716,7 +737,7 @@ rule plot_const_comm_period_zenith_interval_changes_at_offset_stat:
         zenith_interval_changes = "stats/comm_period_zenith_interval_changes/{constellation}_sgp4-{new_mobility}_zenith_interval_changes.json",
         script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_stat.py"
     output:
-        "plots/comm_period_zenith_interval_changes/{constellation}_sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
+        "plots/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
     shell:
         "python3 {input.script} {input.zenith_interval_changes} {wildcards.offset_sum_or_offset_diff} {output}"
 
