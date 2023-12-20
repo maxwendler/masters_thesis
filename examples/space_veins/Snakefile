@@ -590,6 +590,16 @@ rule calc_and_plot_const_aligned_local_sop_stat_diffs:
         touch {output[1]}
         """
 
+rule group_const_aligned_local_sop_stat_diffs:
+    input:
+        script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
+        ref_comm_periods_dir="stats/comm_periods/{constellation}/sgp4",
+        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{constellation}"
+    output:
+        "stats/local_aligned_sop_diffs/{constellation}_groups.json"
+    shell:
+        """python3 {input.script} {input.ref_comm_periods_dir} {input.aligned_stat_diffs_dir} 5 {output}"""
+
 rule plot_sop_stat_diffs_or_changes_at_offset:
     input:
         script="../../scripts/plots/plot_aligned_sop_stats_at_offset.py",
@@ -695,7 +705,7 @@ rule const_comm_period_interval_changes:
         new_periods="csv/comm_periods/{constellation}_{new_mobility}_all_periods.csv",
         script="../../scripts/statistics/const_period_interval_changes.py"
     output:
-        "stats/comm_period_interval_changes/{constellation}_sgp4-{new_mobility}_interval_changes.json"
+        "stats/comm_period_interval_changes/{constellation}/sgp4-{new_mobility}_interval_changes.json"
     shell:
         "python3 {input.script} {input.ref_periods} {input.new_periods} 86400 {output}"
 

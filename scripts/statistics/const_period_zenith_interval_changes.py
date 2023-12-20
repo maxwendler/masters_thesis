@@ -88,8 +88,11 @@ prev_new_zenith = 0
 
 for ref_period_idx in range(len(ref_period_names)):
 
-    new_periods_num_in_name_offset = ref_period_idx - new_period_idx
+    new_periods_num_in_name_offset = ref_period_idx - new_period_idx    
 
+    ref_period_name = ref_period_names[ref_period_idx]
+    ref_period_zenith = ref_periods_zeniths[ref_period_name]
+    
     # missing periods at the end of the ref list
     if new_period_idx >= len(new_period_names):
         if len(current_consecutive_missing_periods["period_list"]) == 0:
@@ -101,15 +104,13 @@ for ref_period_idx in range(len(ref_period_names)):
             current_consecutive_missing_periods["after_missing_period"] = "end"
             current_consecutive_missing_periods["after_missing_period_is_added_and_new"] = False
             consecutive_missing_periods.append(current_consecutive_missing_periods)
-        continue        
-
-    ref_period_name = ref_period_names[ref_period_idx]
-    ref_period_zenith = ref_periods_zeniths[ref_period_name]
+        continue
+    
     new_period_name = new_period_names[new_period_idx]
     new_period_zenith = new_periods_zeniths[new_period_name]
 
-    ref_interval = ref_period_zenith - prev_ref_zenith
-    
+    ref_interval = ref_period_zenith - prev_ref_zenith    
+
     abs_ref_offsets_sum	= None
     abs_offset_ref_dif = None
     start_offset = 0 if prev_ref_period_name == "start" else ref_periods_offsets[prev_ref_period_name]
@@ -278,7 +279,11 @@ if len(consecutive_missing_periods) > 0:
                         intervals_including_missing.append(current_zenith - prev_end_zenith)
                         prev_end_zenith = current_zenith
 
-                    after_missing_ref_period_zenith = ref_periods_zeniths[ref_period_names[ref_period_subidx + 1 + len(current_consecutive_missing_periods_period_list)]]
+                    after_missing_ref_period_zenith = None
+                    if current_consecutive_missing_periods["after_missing_period"] == "end":
+                        after_missing_ref_period_zenith = args.sim_time_limit
+                    else:
+                        after_missing_ref_period_zenith = ref_periods_zeniths[ref_period_names[ref_period_subidx + 1 + len(current_consecutive_missing_periods_period_list)]]
                     intervals_including_missing.append(after_missing_ref_period_zenith - prev_end_zenith)
                     ref_period_idx = ref_period_subidx + 2
                     break
