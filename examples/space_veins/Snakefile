@@ -636,6 +636,21 @@ rule plot_const_sop_stat_diffs_at_offset_in_one:
     shell:
         "python3 {input.script} {input.aligned_diffs_dir} {wildcards.stat} {wildcards.avg_or_max} {output.svg_out}"
 
+rule plot_anglegroup_delay_duration_diffs_at_offset:
+    input:
+        script="../../scripts/plots/plot_anglegroup_sop_stats_at_offset.py",
+        grouped_periods="stats/local_aligned_sop_diffs/{constellation}_groups.json"
+    params:
+        delay_output_dir="plots/grouped_aligned_delay_diffs/{constellation}",
+        duration_output_dir="plots/grouped_aligned_duration_diffs/{constellation}"
+    output:
+        "plots/grouped_aligned_delay_diffs/{constellation}.done",
+        "plots/grouped_aligned_duration_diffs/{constellation}.done"
+    shell:
+        """python3 {input.script} {input.grouped_periods} 5 kepler {params.delay_output_dir} {params.duration_output_dir}
+        touch {output[0]}
+        touch {output[1]}"""
+
 rule calc_comm_period_info:
     """
     Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
