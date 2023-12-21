@@ -917,6 +917,35 @@ rule plot_const_periods_zenith_shifts_in_one:
     shell:
         "python3 {input.script} {input.comm_comp_dir} {output.svg_out} {params.difference_option}"
 
+rule available_sats:
+    input:
+        get_const_comm_period_infos,
+        script="../../scripts/statistics/available_sats_at_simtime.py",
+        comm_period_info_dir="stats/comm_periods/{constellation}/{mobility}"
+    output:
+        "stats/available_sats/{constellation}_{mobility}_available_sats.json"
+    shell:
+        "python3 {input.script} {input.comm_period_info_dir} 15 86400 {output}"
+
+rule available_sat_diffs:
+    input:
+        script="../../scripts/statistics/available_sats_diffs.py",
+        ref_availables="stats/available_sats/{constellation}_sgp4_available_sats.json",
+        new_availables="stats/available_sats/{constellation}_{new_mobility}_available_sats.json"
+    output:
+        "stats/available_sats/diffs/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
+    shell:
+        "python3 {input.script} {input.ref_availables} {input.new_availables} {output}"
+
+rule plot_available_sats_diffs:
+    input:
+        script="../../scripts/plots/plot_available_sats_diffs.py",
+        availables_diffs="stats/available_sats/diffs/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
+    output:
+        "plots/available_sats_diffs/{constellation}_sgp4-{new_mobility}_available_sat_diffs.svg"
+    shell:
+        "python3 {input.script} {input.availables_diffs} {output}"
+
 """
 RULES FOR PLOTTING SATELLITE ORBITS
 """
