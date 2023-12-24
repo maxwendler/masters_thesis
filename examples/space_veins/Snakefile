@@ -714,16 +714,6 @@ rule const_comm_period_intervals_csvs:
     shell:
         "python3 {input.script} {input.all_periods} {input.period_infos_dir} 86400 {output.period_intervals} {output.zenith_intervals}"
 
-rule const_comm_period_interval_changes:
-    input:
-        ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
-        new_periods="csv/comm_periods/{constellation}_{new_mobility}_all_periods.csv",
-        script="../../scripts/statistics/const_period_interval_changes.py"
-    output:
-        "stats/comm_period_interval_changes/{constellation}/sgp4-{new_mobility}_interval_changes.json"
-    shell:
-        "python3 {input.script} {input.ref_periods} {input.new_periods} 86400 {output}"
-
 rule sat_comm_period_zenith_interval_changes:
     input:
         ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
@@ -744,18 +734,6 @@ rule plot_sat_comm_period_zenith_interval_changes:
         "plots/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
     shell:
         "python3 {input.script} '{input.zenith_interval_changes}' {wildcards.offset_sum_or_offset_diff} '{output}'"    
-
-rule const_comm_period_zenith_interval_changes:
-    input:
-        ref_periods="csv/comm_periods/{constellation}_sgp4_all_periods.csv",
-        ref_periods_jsons_dir="stats/comm_periods/{constellation}/sgp4",
-        new_periods="csv/comm_periods/{constellation}_{new_mobility}_all_periods.csv",
-        new_periods_jsons_dir="stats/comm_periods/{constellation}/{new_mobility}",
-        script="../../scripts/statistics/const_period_zenith_interval_changes.py"
-    output:
-        "stats/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_changes.json"
-    shell:
-        "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} 86400 {output}"
 
 rule const_comm_period_all_interval_changes:
     input:
