@@ -934,11 +934,14 @@ rule available_sat_diffs:
     input:
         script="../../scripts/statistics/available_sats_diffs.py",
         ref_availables="stats/available_sats/{constellation}_sgp4_available_sats.json",
-        new_availables="stats/available_sats/{constellation}_{new_mobility}_available_sats.json"
+        ref_comm_periods_dir="stats/comm_periods/{constellation}/sgp4",
+        new_availables="stats/available_sats/{constellation}_{new_mobility}_available_sats.json",
+        new_comm_periods_dir="stats/comm_periods/{constellation}/kepler",
+        all_interval_changes="stats/comm_period_all_interval_changes/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
     output:
         "stats/available_sats/diffs/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
     shell:
-        "python3 {input.script} {input.ref_availables} {input.new_availables} {output}"
+        "python3 {input.script} {input.ref_availables} {input.new_availables} {input.all_interval_changes} {input.ref_comm_periods_dir} {input.new_comm_periods_dir} {output}"
 
 rule plot_available_sats_diffs:
     input:
