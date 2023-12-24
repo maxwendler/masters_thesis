@@ -23,6 +23,7 @@ for comm_period_json_fname in os.listdir(comm_periods_jsons_dir):
         comm_period_dicts.append({"modname": modname, "period": period})
 
 available_sats = []
+availability_num_times = {}
 for sim_time in range(args.measurement_start_time, args.sim_time_limit + 1):
     
     current_available_sats = []
@@ -31,11 +32,27 @@ for sim_time in range(args.measurement_start_time, args.sim_time_limit + 1):
         if period[0] <= sim_time and sim_time <= period[1]:
             current_available_sats.append(comm_period_dict["modname"])
     
+    sat_num = len(current_available_sats)
+    if sat_num in availability_num_times.keys():
+        availability_num_times[sat_num] += 1
+    else:
+        availability_num_times[sat_num] = 1
+
     available_sats.append({
         "sim_time": sim_time,
         "sat_num": len(current_available_sats),
         "sats": current_available_sats
     })
 
+availability_num_ratios = {}
+for availability_num_time in availability_num_times.items():
+    availability_num_ratios[availability_num_time[0]] = availability_num_time[1] / args.sim_time_limit
+
+output = {
+    "availability_num_times": availability_num_times,
+    "availability_num_ratios": availability_num_ratios,
+    "available_sats": available_sats
+}
+
 with open(args.ouput_path, "w") as out_json:
-    json.dump(available_sats, out_json, indent=4)
+    json.dump(output, out_json, indent=4)

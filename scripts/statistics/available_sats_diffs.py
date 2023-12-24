@@ -8,21 +8,21 @@ parser.add_argument("output_path")
 args = parser.parse_args()
 
 with open(args.ref_mobility_availables_json, "r") as json_f:
-    ref_available_sats = json.load(json_f)
+    ref_availability_stats = json.load(json_f)
 
 with open(args.new_mobility_availables_json, "r") as json_f:
-    new_available_sats = json.load(json_f)
+    new_availability_stats = json.load(json_f)
 
-measurement_start_time = ref_available_sats[0]["sim_time"]
+measurement_start_time = ref_availability_stats["available_sats"][0]["sim_time"]
 
 available_sat_diffs = []
 abs_diff_sum = 0
 times_with_num_diff = 0
-for sim_time_idx in range(len(ref_available_sats)):
+for sim_time_idx in range(len(ref_availability_stats["available_sats"])):
     sim_time = measurement_start_time + sim_time_idx
     
-    ref_current_available = ref_available_sats[sim_time_idx]
-    new_current_availabe = new_available_sats[sim_time_idx]
+    ref_current_available = ref_availability_stats["available_sats"][sim_time_idx]
+    new_current_availabe = new_availability_stats["available_sats"][sim_time_idx]
 
     ref_sorted_sats = sorted(ref_current_available["sats"])
     new_sorted_sats = sorted(new_current_availabe["sats"])
@@ -58,10 +58,32 @@ for sim_time_idx in range(len(ref_available_sats)):
             "added_sats": []
         })
 
+availability_num_time_diffs = {}
+for availability_num in ref_availability_stats["availability_num_times"].keys():
+    ref_availability_num_time = ref_availability_stats["availability_num_times"][availability_num]
+    new_availability_num_time = new_availability_stats["availability_num_times"][availability_num] if availability_num in new_availability_stats["availability_num_times"].keys() else 0
+    availability_num_time_diffs[availability_num] = new_availability_num_time - ref_availability_num_time
+
+for availability_num in new_availability_stats["availability_num_times"].keys():
+    if availability_num not in availability_num_time_diffs.keys():
+        availability_num_time_diffs[availability_num] = new_availability_stats["availability_num_times"][availability_num]
+
+availability_num_ratio_diffs = {}
+for availability_num in ref_availability_stats["availability_num_ratios"].keys():
+    ref_availability_num_ratio = ref_availability_stats["availability_num_ratios"][availability_num]
+    new_availability_num_ratio = new_availability_stats["availability_num_ratios"][availability_num] if availability_num in new_availability_stats["availability_num_ratios"].keys() else 0
+    availability_num_ratio_diffs[availability_num] = new_availability_num_ratio - ref_availability_num_ratio
+
+for availability_num in new_availability_stats["availability_num_ratios"].keys():
+    if availability_num not in availability_num_ratio_diffs.keys():
+        availability_num_ratio_diffs[availability_num] = new_availability_stats["availability_num_ratios"][availability_num]
+
 output = {
     "avg_abs_sat_num_diff": abs_diff_sum / len(available_sat_diffs),
     "time_with_num_diff_to_total_time": times_with_num_diff / len(available_sat_diffs),
-    "available_sat_diffs": available_sat_diffs,
+    "availability_num_time_diffs": availability_num_time_diffs,
+    "availability_num_ratio_diffs": availability_num_ratio_diffs,
+    "available_sat_diffs": available_sat_diffs
 }
 
 with open(args.output_path, "w") as out_json:
