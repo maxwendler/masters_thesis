@@ -267,7 +267,7 @@ for ref_pname in ref_period_relations.keys():
     current_new_p_props = new_periods_properties[new_pname]
 
     # compare overlap periods
-    overlap_changes = {}
+    overlap_changes = []
     for overlap_p_idx in range(len(current_ref_p_relations["overlap_periods"])):
         
         ref_overlap_pname = current_ref_p_relations["overlap_periods"][overlap_p_idx]
@@ -285,7 +285,8 @@ for ref_pname in ref_period_relations.keys():
         new_time_distance = newp_end_to_overlap_p_start_interval if newp_end_to_overlap_p_start_interval > 0 else 0
         newp_to_overlap_zenith_interval = new_overlap_p_props["zenith"] - current_new_p_props["zenith"]
 
-        overlap_changes[f"{ref_pname}-{ref_overlap_pname}"] = {
+        overlap_changes.append({
+            "name": f"{ref_pname}-{ref_overlap_pname}",
             "original_end_to_start_interval": refp_end_to_overlap_p_start_interval,
             "new_end_to_start_interval": newp_end_to_overlap_p_start_interval,
             "end_to_start_interval_difference": newp_end_to_overlap_p_start_interval - refp_end_to_overlap_p_start_interval,
@@ -295,7 +296,7 @@ for ref_pname in ref_period_relations.keys():
             "start_offset_to_epoch": ref_periods_properties[ref_pname]["epoch_offset"],
             "end_offset_to_epoch": ref_periods_properties[ref_overlap_pname]["epoch_offset"],
             "abs_offset_difference": abs(abs(ref_periods_properties[ref_pname]["epoch_offset"]) - abs(ref_periods_properties[ref_overlap_pname]["epoch_offset"]))
-        }
+        })
 
     ref_next_nonoverlap_pname = current_ref_p_relations["next_nonoverlap_period"]
     ref_next_nonoverlap_p_props = ref_periods_properties[ref_next_nonoverlap_pname]
@@ -311,17 +312,16 @@ for ref_pname in ref_period_relations.keys():
     new_time_distance = newp_end_to_nonoverlap_p_start_interval if newp_end_to_nonoverlap_p_start_interval > 0 else 0
 
     next_nonoverlap_changes = {
-        f"{ref_pname}-{ref_next_nonoverlap_pname}":{
-            "original_end_to_start_interval": refp_end_to_nonoverlap_p_start_interval,
-            "new_end_to_start_interval": newp_end_to_nonoverlap_p_start_interval,
-            "end_to_start_interval_difference": newp_end_to_nonoverlap_p_start_interval - refp_end_to_nonoverlap_p_start_interval,
-            "new_overlap_time": new_overlap_time,
-            "new_time_distance": new_time_distance,
-            "zenith_interval_difference": newp_to_nonoverlap_zenith_interval - refp_to_nonoverlap_zenith_interval,
-            "start_offset_to_epoch": ref_periods_properties[ref_pname]["epoch_offset"],
-            "end_offset_to_epoch": ref_periods_properties[ref_next_nonoverlap_pname]["epoch_offset"],
-            "abs_offset_difference": abs(abs(ref_periods_properties[ref_pname]["epoch_offset"]) - abs(ref_periods_properties[ref_next_nonoverlap_pname]["epoch_offset"]))
-        }
+        "name": f"{ref_pname}-{ref_next_nonoverlap_pname}",
+        "original_end_to_start_interval": refp_end_to_nonoverlap_p_start_interval,
+        "new_end_to_start_interval": newp_end_to_nonoverlap_p_start_interval,
+        "end_to_start_interval_difference": newp_end_to_nonoverlap_p_start_interval - refp_end_to_nonoverlap_p_start_interval,
+        "new_overlap_time": new_overlap_time,
+        "new_time_distance": new_time_distance,
+        "zenith_interval_difference": newp_to_nonoverlap_zenith_interval - refp_to_nonoverlap_zenith_interval,
+        "start_offset_to_epoch": ref_periods_properties[ref_pname]["epoch_offset"],
+        "end_offset_to_epoch": ref_periods_properties[ref_next_nonoverlap_pname]["epoch_offset"],
+        "abs_offset_difference": abs(abs(ref_periods_properties[ref_pname]["epoch_offset"]) - abs(ref_periods_properties[ref_next_nonoverlap_pname]["epoch_offset"]))
     }
 
     same_periods_changes[ref_pname] = {

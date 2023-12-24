@@ -756,16 +756,6 @@ rule const_comm_period_zenith_interval_changes:
         "stats/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_changes.json"
     shell:
         "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} 86400 {output}"
-        
-rule plot_const_comm_period_zenith_interval_changes_at_offset_stat:
-    input:
-        zenith_interval_changes = "stats/comm_period_zenith_interval_changes/{constellation}_sgp4-{new_mobility}_zenith_interval_changes.json",
-        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_stat.py"
-    output:
-        "plots/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
-    shell:
-        "python3 {input.script} {input.zenith_interval_changes} {wildcards.offset_sum_or_offset_diff} {output}"
-
 
 rule const_comm_period_all_interval_changes:
     input:
@@ -778,6 +768,15 @@ rule const_comm_period_all_interval_changes:
         "stats/comm_period_all_interval_changes/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
     shell:
         "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} 86400 {output}"
+
+rule plot_const_comm_period_zenith_interval_changes_at_offset_diff:
+    input:
+        all_interval_changes = "stats/comm_period_all_interval_changes/{constellation}/sgp4-{new_mobility}_all_interval_changes.json",
+        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_diff.py"
+    output:
+        "plots/comm_period_zenith_interval_changes/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_offset_difference.svg"
+    shell:
+        "python3 {input.script} {input.all_interval_changes} {output}"
 
 rule compare_comm_period_info:
     """
