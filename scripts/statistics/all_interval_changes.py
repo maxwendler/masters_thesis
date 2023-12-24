@@ -364,10 +364,116 @@ for current_consecutive_added_periods in consecutive_added_periods:
         })
     consecutive_added_periods_out.append(current_consecutive_added_periods_out)
 
+all_overlap_interval_diffs = []
+lost_overlaps = []
+all_overlap_zenith_interval_diffs = []
+for overlap_changes in [changes_dict["overlap_changes"] for changes_dict in same_periods_changes.values()]:
+    for overlap_relation in overlap_changes:
+        all_overlap_interval_diffs.append(overlap_relation["end_to_start_interval_difference"])
+        all_overlap_zenith_interval_diffs.append(overlap_relation["zenith_interval_difference"])
+        if overlap_relation["new_time_distance"] > 0:
+            lost_overlaps.append({
+                "name": overlap_relation["name"],
+                "original_end_to_start_interval": overlap_relation["original_end_to_start_interval"],
+                "end_to_start_interval_difference": overlap_relation["end_to_start_interval_difference"],
+                "new_time_distance": overlap_relation["new_time_distance"]
+            })
+
+all_abs_overlap_interval_diffs = [abs(d) for d in all_overlap_interval_diffs]
+all_abs_overlap_zenith_interval_diffs = [abs(d) for d in all_overlap_zenith_interval_diffs]
+
+all_nonoverlap_interval_diffs = []
+new_overlaps = []
+all_nonoverlap_zenith_interval_diffs = []
+for nonoverlap_changes in [changes_dict["next_nonoverlap_changes"] for changes_dict in same_periods_changes.values()]:
+    all_nonoverlap_interval_diffs.append(nonoverlap_changes["end_to_start_interval_difference"])
+    all_nonoverlap_zenith_interval_diffs.append(nonoverlap_changes["zenith_interval_difference"])
+    if nonoverlap_changes["new_overlap_time"] > 0:
+        new_overlaps.append({
+            "name": nonoverlap_changes["name"],
+            "original_end_to_start_interval": nonoverlap_changes["original_end_to_start_interval"],
+            "end_to_start_interval_difference": nonoverlap_changes["end_to_start_interval_difference"],
+            "new_overlap_time": nonoverlap_changes["new_overlap_time"]
+        })
+
+all_abs_nonoverlap_interval_diffs = [abs(d) for d in all_nonoverlap_interval_diffs]
+all_abs_nonoverlap_zenith_interval_diffs = [abs(d) for d in all_nonoverlap_zenith_interval_diffs]
+
+all_interval_diffs = all_overlap_interval_diffs + all_nonoverlap_interval_diffs
+all_zenith_interval_diffs = all_overlap_zenith_interval_diffs + all_nonoverlap_zenith_interval_diffs
+all_abs_interval_diffs = all_abs_overlap_interval_diffs + all_abs_nonoverlap_interval_diffs
+all_abs_zenith_interval_diffs = all_abs_overlap_zenith_interval_diffs + all_abs_nonoverlap_zenith_interval_diffs
+
+summary = {
+    "overlap_intervals": {
+        "end_to_start_intervals": {
+            "min": min(all_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "max": max(all_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "avg": sum(all_overlap_interval_diffs) / len(all_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "min_abs": min(all_abs_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_overlap_interval_diffs) / len(all_abs_overlap_interval_diffs) if len(all_overlap_interval_diffs) > 0 else None,
+            "lost_overlaps": {
+                "num": len(lost_overlaps),
+                "instances": lost_overlaps
+            }
+        },
+        "zenith_intervals": {
+            "min": min(all_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None,
+            "max": max(all_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None,
+            "avg": sum(all_overlap_zenith_interval_diffs) / len(all_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None, 
+            "min_abs": min(all_abs_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_overlap_zenith_interval_diffs) / len(all_abs_overlap_zenith_interval_diffs) if len(all_overlap_zenith_interval_diffs) > 0 else None
+        }
+    },
+    "next_nonoverlap_intervals": {
+        "start_to_end_intervals": {
+            "min": min(all_nonoverlap_interval_diffs),
+            "max": max(all_nonoverlap_interval_diffs),
+            "avg": sum(all_nonoverlap_interval_diffs) / len(all_nonoverlap_interval_diffs),
+            "min_abs": min(all_abs_nonoverlap_interval_diffs),
+            "max_abs": max(all_abs_nonoverlap_interval_diffs),
+            "avg_abs": sum(all_abs_nonoverlap_interval_diffs) / len(all_abs_nonoverlap_interval_diffs),
+            "new_overlaps": {
+                "num": len(new_overlaps),
+                "instances": new_overlaps
+            }
+        },
+        "zenith_intervals": {
+            "min": min(all_nonoverlap_zenith_interval_diffs),
+            "max": max(all_nonoverlap_zenith_interval_diffs),
+            "avg": sum(all_nonoverlap_zenith_interval_diffs) / len(all_nonoverlap_zenith_interval_diffs),
+            "min_abs": min(all_abs_nonoverlap_zenith_interval_diffs),
+            "max_abs": max(all_abs_nonoverlap_zenith_interval_diffs),
+            "avg_abs": sum(all_abs_nonoverlap_zenith_interval_diffs) / len(all_abs_nonoverlap_zenith_interval_diffs)
+        }
+    },
+    "all_intervals": {
+        "start_to_end_intervals": {
+            "min": min(all_interval_diffs),
+            "max": max(all_interval_diffs),
+            "avg": sum(all_interval_diffs) / len(all_interval_diffs),
+            "min_abs": min(all_abs_interval_diffs),
+            "max_abs": max(all_abs_interval_diffs),
+            "avg_abs": sum(all_abs_interval_diffs) / len(all_abs_interval_diffs)  
+        },
+        "zenith_intervals": {
+            "min": min(all_zenith_interval_diffs),
+            "max": max(all_zenith_interval_diffs),
+            "avg": sum(all_zenith_interval_diffs) / len(all_zenith_interval_diffs),
+            "min_abs": min(all_abs_zenith_interval_diffs),
+            "max_abs": max(all_abs_zenith_interval_diffs),
+            "avg_abs": sum(all_abs_zenith_interval_diffs) / len(all_abs_zenith_interval_diffs)
+        }
+    }
+}
+
 output = {
+    "summary": summary,
     "same_periods_changes": same_periods_changes,
     "consecutive_lost_periods": consecutive_lost_periods_out,
-    "consecutive_added_periods": consecutive_added_periods_out
+    "consecutive_added_periods": consecutive_added_periods_out,
 }
 
 with open(args.output_path, "w") as out_json:
