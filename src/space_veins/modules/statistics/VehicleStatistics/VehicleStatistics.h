@@ -61,6 +61,10 @@ class SPACE_VEINS_API VehicleStatistics : public cSimpleModule
         static const simsignal_t itrfCoordY;
         static const simsignal_t itrfCoordZ;
 
+        static const simsignal_t temeCoordX;
+        static const simsignal_t temeCoordY;
+        static const simsignal_t temeCoordZ;
+
         // Application layer
 
         static const simsignal_t sendSatellitePackets;
@@ -91,6 +95,7 @@ class SPACE_VEINS_API VehicleStatistics : public cSimpleModule
         void recordWGS84CartCoord(const PJ_COORD c);
         void recordSopRelativeCoord(const veins::Coord c);
         void recordItrfCoord(const veins::Coord c);
+        void recordTemeCoord(const veins::Coord c);
 
         void recordSendSatellitePackets();
         void recordReceivedSatellitePackets();

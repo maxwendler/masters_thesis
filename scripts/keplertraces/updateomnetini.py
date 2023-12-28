@@ -60,6 +60,16 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str):
         sgp4_config_lines.pop(7)
         new_lines += sgp4_config_lines
 
+        # circular config, needs path of TLE list
+        circular_config_str = str(config_str)
+        circular_config_str = circular_config_str.replace("$CONSTELLATION$", constellations[i] + "-circular")
+        circular_config_str = circular_config_str.replace("$MOBILITY_TYPE$", f'"Circular"')
+        circular_config_str = circular_config_str.replace("$MOBILITY_CLASS$", f'"CircularMobility"')
+        circular_config_str = circular_config_str.replace("$TLE_PATH$", f'"{tles_paths[i]}"')
+        circular_config_lines = circular_config_str.splitlines(keepends=True)
+        circular_config_lines.pop(7)
+        new_lines += circular_config_lines
+
     input_ini_fname = ini_path.split("/")[-1] 
     with open(ini_path.removesuffix(input_ini_fname) + "omnetpp.ini", "w") as new_ini_f:
         new_ini_f.writelines(new_lines)

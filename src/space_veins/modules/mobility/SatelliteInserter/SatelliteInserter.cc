@@ -37,6 +37,7 @@
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"
 #include "space_veins/modules/mobility/SGP4Mobility/SGP4Mobility.h"
+#include "space_veins/modules/mobility/CircularMobility/CircularMobility.h"
 
 using namespace space_veins;
 
@@ -50,7 +51,7 @@ void SatelliteInserter::initialize(int stage)
         case 0:
             mobilityType = par("mobilityType").stringValue();
             ASSERT(mobilityType != "None");
-            if (mobilityType == "SGP4") pathToTleFile = par("pathToTleFile").stringValue();
+            if (mobilityType == "SGP4" || mobilityType == "Circular") pathToTleFile = par("pathToTleFile").stringValue();
             if (mobilityType == "Kepler") pathToTracesDir = par("pathToTracesDir").stringValue();
 
             satelliteModuleType = par("satelliteModuleType").stringValue();
@@ -60,7 +61,7 @@ void SatelliteInserter::initialize(int stage)
             break;
 
         case 98:
-            if (mobilityType == "SGP4") parseTleFile(pathToTleFile);
+            if (mobilityType == "SGP4" || mobilityType == "Circular") parseTleFile(pathToTleFile);
             if (mobilityType == "Kepler")
             {           
                 openTraceFiles(pathToTracesDir);
@@ -240,12 +241,26 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
 
     mod->finalizeParameters();
     mod->buildInside();
-    std::vector<SGP4Mobility*> sgp4Mobility = veins::getSubmodulesOfType<SGP4Mobility>(mod);
-    if (sgp4Mobility.size() == 0){
-        throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to SGP4Mobility?");
+    if (mobilityType == "SGP4"){
+        std::vector<SGP4Mobility*> tleMobility = veins::getSubmodulesOfType<SGP4Mobility>(mod);
+        if (tleMobility.size() == 0){
+            throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to SGP4Mobility?");
+        }
+        for (SGP4Mobility* sm : tleMobility){
+            sm->preInitialize(tle, wall_clock_sim_start_time_utc);
+        }
     }
-    for (auto sm : sgp4Mobility) {
-        sm->preInitialize(tle, wall_clock_sim_start_time_utc);
+    else if (mobilityType == "Circular") {
+        std::vector<CircularMobility*> tleMobility = veins::getSubmodulesOfType<CircularMobility>(mod);
+        if (tleMobility.size() == 0){
+            throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to CircularMobility?");
+        }
+        for (CircularMobility* sm : tleMobility){
+            sm->preInitialize(tle, wall_clock_sim_start_time_utc);
+        }
+    }
+    else{
+        throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to CircularMobility or SGP4Mobility?");   
     }
     mod->scheduleStart(simTime());
     mod->callInitialize();

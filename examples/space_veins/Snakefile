@@ -198,6 +198,10 @@ def format_coord_vectors(wildcards):
         return ("--list -F " + "omnetCoordX:vector=omnetCoordX_vector" +
                                 " -F omnetCoordY:vector=omnetCoordY_vector" +
                                 " -F omnetCoordZ:vector=omnetCoordZ_vector")
+    elif (wildcards.coordframe == "teme"):
+        return ("--list -F " + "temeCoordX:vector=temeCoordX_vector" +
+                                " -F temeCoordY:vector=temeCoordY_vector" +
+                                " -F temeCoordZ:vector=temeCoordZ_vector")
     else:
         raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
 

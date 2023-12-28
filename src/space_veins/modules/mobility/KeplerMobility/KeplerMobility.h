@@ -44,8 +44,7 @@ class SPACE_VEINS_API KeplerMobility : public inet::MovingMobilityBase {
         {
         }
 
-        // Sets ifstream to read trace coordinates.
-        void preInitialize(std::ifstream* pTraceFile);
+        // Sets ifstream to read trace coordinates
         void preInitialize(std::string traceFilePath);
         
         // from SGP4Mobility

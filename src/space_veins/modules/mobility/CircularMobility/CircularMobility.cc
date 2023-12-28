@@ -1,47 +1,39 @@
-//
-// Copyright (C) 2006-2012 Christoph Sommer <christoph.sommer@uibk.ac.at>
-// Copyright (C) 2021 Mario Franke <research@m-franke.net>
-//
-// Documentation for these modules is at http://sat.car2x.org/
-//
-// SPDX-License-Identifier: GPL-2.0-or-later
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-//
-#include "space_veins/modules/mobility/SGP4Mobility/SGP4Mobility.h"
+#include "space_veins/modules/mobility/CircularMobility/CircularMobility.h"
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <math.h>
+#include <proj.h>
+#include <string>
+#include <tuple>
+#include <vector>
+#include "inet/common/geometry/common/Coord.h"
+#include "space_veins/modules/mobility/CircularMobility/CirclePlane.h"
+#include "space_veins/modules/utility/WGS84Coord.h"
+
 #include "space_veins/modules/mobility/SGP4Mobility/TEME2ITRF.h"
 #include "veins/base/utils/Coord.h"
 
 using namespace space_veins;
 
-Define_Module(space_veins::SGP4Mobility);
+Define_Module(space_veins::CircularMobility);
 
-void SGP4Mobility::setInitialPosition()
+// Not used atm to model SGP4 mobility, which also does not set initial position
+void CircularMobility::setInitialPosition()
 {
-    EV_DEBUG << "SGP4Mobility setInitialPosition()" << std::endl;
-    // not possible at the moment because of dependencies in the initialize phase
+    EV_DEBUG << "CircularMobility setInitialPosition()" << std::endl;
+    //AS WRITTEN IN SGP4Mobility: 
+    //not possible at the moment because of dependencies in the initialize phase
     //updateSatellitePosition();
 }
 
-void SGP4Mobility::initializePosition()
+void CircularMobility::initializePosition()
 {
     EV_DEBUG << "SGP4Mobility initialPosition()" << std::endl;
     MovingMobilityBase::initializePosition();
 }
 
-void SGP4Mobility::preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc)
+void CircularMobility::preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc)
 {
     EV_DEBUG << "SGP4Mobility preInitialize()" << std::endl;
     tle = pTle;
@@ -49,7 +41,7 @@ void SGP4Mobility::preInitialize(TLE pTle, std::string pWall_clock_sim_start_tim
     isPreInitialized = true;
 }
 
-void SGP4Mobility::initialize(int stage)
+void CircularMobility::initialize(int stage)
 {
     EV_DEBUG << "SGP4Mobility stage: " << stage << std::endl;
     MovingMobilityBase::initialize(stage);
@@ -158,6 +150,7 @@ void SGP4Mobility::initialize(int stage)
         // 3. Calculate elapsed time in minutes
         diffTleEpochWctMin = (wall_clock_sim_start_time_jd - tle_epoch_jd) * 1440 + (wall_clock_sim_start_time_frac - tle_epoch_frac) * 1440;
         EV_DEBUG << "diffTleEpochWctMin: " << diffTleEpochWctMin << " min" << std::endl;
+
     }
     if (stage == 4) {
         // has to be done after the SOP stage in which the sop_omnet_coord is retrieved from its mobility
@@ -171,17 +164,37 @@ void SGP4Mobility::initialize(int stage)
         EV_DEBUG << "SGP4Mobility: ss_proj: " << ss_proj.str() << std::endl;
         // geocentric to topocentric projection
         wgs84cartesian_to_topocentric_projection = proj_create(pj_ctx, ss_proj.str().c_str());
+        
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // CIRCLE SETUP
+        // Circle setup (1): get simulation start point in TEME
+        std::pair<std::vector<double>, std::vector<double>> sec0TEME = calcSatellitePositionTEME(0);
+        std::vector<double> rTEME0 = sec0TEME.first;
+
+        // Circle setup (2): get another point in TEME, forming circular plane in TEME
+        std::pair<std::vector<double>, std::vector<double>> sec60TEME = calcSatellitePositionTEME(1);
+        std::vector<double> rTEME60 = sec60TEME.first;
+
+        // Circle setup (3): initialize circle with those points and radius of first point
+        double radius = sqrt(pow(rTEME0[0], 2) + pow(rTEME0[1], 2) + pow(rTEME0[2], 2));
+        
+        std::string meanMotionStr = tle.get_tle_line2().substr(52, 11);
+        double meanMotionRevPerDay = std::stod(meanMotionStr); 
+        double meanMotionRevPerSec = meanMotionRevPerDay / 86400;
+        double meanMotionRadPerSec = meanMotionRevPerSec * 2 * M_PI;
+
+        circlePlane = CirclePlane(veins::Coord(rTEME0[0], rTEME0[1], rTEME0[2]), veins::Coord(rTEME60[0], rTEME60[1], rTEME60[2]), radius, meanMotionRadPerSec);
 
         // Statistics
         vehicleStatistics = VehicleStatisticsAccess().get(getParentModule());
     }
 }
 
-void SGP4Mobility::updateSatellitePosition()
+std::pair<std::vector<double>, std::vector<double>> CircularMobility::calcSatellitePositionTEME(double simTimeMinutes)
 {
     // add simTime() to diffTleEpochWctMin to calculate the satellite position according to the current simulation time
-    EV_TRACE << "simTime in minutes: " << simTime().dbl() / 60 << " min" << std::endl;
-    double t = diffTleEpochWctMin + simTime().dbl() / 60;
+    EV_TRACE << "simTime in minutes: " << simTimeMinutes << " min" << std::endl;
+    double t = diffTleEpochWctMin + simTimeMinutes;
     EV_TRACE << "t: " << t << " min" << std::endl;
 
     // Calculate satellite position using SGP4 in TEME coodinate system
@@ -196,8 +209,19 @@ void SGP4Mobility::updateSatellitePosition()
     int n = sizeof(r_array) / sizeof(r_array[0]);
     std::vector<double> r_TEME(r_array, r_array + n);
     std::vector<double> v_TEME(v_array, v_array + n);
-    vehicleStatistics->recordTemeCoord(veins::Coord(r_TEME[0], r_TEME[1], r_TEME[2]));
     EV_TRACE << "TEME x: " << r_TEME[0] << ", y: " << r_TEME[1] << ", z: " << r_TEME[2] << std::endl;
+
+    return std::pair<std::vector<double>, std::vector<double>>(r_TEME, v_TEME);
+}
+
+void CircularMobility::updateSatellitePosition()
+{   
+    
+    veins::Coord r_TEMECoord = circlePlane.getPointAtSecond(simTime().dbl());
+    std::vector<double> r_TEME = {r_TEMECoord.x, r_TEMECoord.y, r_TEMECoord.z};
+    std::vector<double> v_TEME = {0, 0, 0};
+    vehicleStatistics->recordTemeCoord(r_TEMECoord);
+    EV_TRACE << "TEME x: " << r_TEMECoord.x << ", y: " << r_TEMECoord.y << ", z: " << r_TEMECoord.z << std::endl;
 
     // Calculate the current wall clock time as julian date for TEME to ITRF conversion
     // ignore leap seconds for now
@@ -246,22 +270,22 @@ void SGP4Mobility::updateSatellitePosition()
     vehicleStatistics->recordOmnetCoord(lastPositionKm);
 }
 
-void SGP4Mobility::handleSelfMessage(cMessage* message)
+void CircularMobility::handleSelfMessage(cMessage* message)
 {
     MovingMobilityBase::handleSelfMessage(message);
 }
 
-void SGP4Mobility::move()
+void CircularMobility::move()
 {
     updateSatellitePosition();
-    lastVelocity = inet::Coord();                       // TODO: Consider the speed returned by the SGP4 model
-    //lastOrientation = inet::Quaternion(0, 0, 0, 0);     // TODO: Currently there are no values for the direction of the satellite
+    //lastVelocity = inet::Coord();                       // TODO from SGP4Mobility: Consider the speed returned by the SGP4 model
+    //lastOrientation = inet::Quaternion(0, 0, 0, 0);     // TODO from SGP4Mobility: Currently there are no values for the direction of the satellite
 
-    EV_DEBUG << "MARIO: SGP4Mobility move! SimTime: " << simTime() << std::endl;
+    EV_DEBUG << "MARIO: CircularMobility move! SimTime: " << simTime() << std::endl;
     updateDisplayStringFromMobilityState();
 }
 
-void SGP4Mobility::finish()
+void CircularMobility::finish()
 {
     MovingMobilityBase::finish();
 }

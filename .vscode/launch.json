@@ -37,12 +37,12 @@
             "justMyCode": true
         },
         {
-            "name": "Python: overlap_zenith_interval_changes.py eccentric",
+            "name": "Python to_sat_csv",
             "type": "python",
             "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/overlap_zenith_interval_changes.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/eccentric_sgp4_all_periods.csv", 
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/eccentric/sgp4"],
+            "program": "/workspaces/ma-max-wendler/scripts/utility/to_sat_csv.py",
+            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-circular_teme_sorted.csv",
+            "leoIRIDIUM[169]"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

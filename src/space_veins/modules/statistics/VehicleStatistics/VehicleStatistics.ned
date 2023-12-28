@@ -63,6 +63,13 @@ simple VehicleStatistics
         @statistic[itrfCoordY](source=space_veins_vehicleStatistics_itrfCoordY; record=vector);
         @statistic[itrfCoordZ](source=space_veins_vehicleStatistics_itrfCoordZ; record=vector);
 
+        @signal[space_veins_vehicleStatistics_temeCoordX](type=double);
+        @signal[space_veins_vehicleStatistics_temeCoordY](type=double);
+        @signal[space_veins_vehicleStatistics_temeCoordZ](type=double);
+        @statistic[temeCoordX](source=space_veins_vehicleStatistics_temeCoordX; record=vector);
+        @statistic[temeCoordY](source=space_veins_vehicleStatistics_temeCoordY; record=vector);
+        @statistic[temeCoordZ](source=space_veins_vehicleStatistics_temeCoordZ; record=vector);
+
         @signal[space_veins_vehicleStatistics_sendSatellitePackets](type=long);
         @signal[space_veins_vehicleStatistics_receivedSatellitePackets](type=long);
         @statistic[sendSatellitePackets](source=space_veins_vehicleStatistics_sendSatellitePackets; record=count, vector);

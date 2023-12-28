@@ -59,5 +59,10 @@ with open(csv_path, "r") as csv_f:
             # was not reading / nothing to read yet
             else:
                 pass
-
+            
+# satmod_lines need to be created here when csv only contains rows for one specified module
+# or it is in the last rows
+            
+if len(mod_rows) > 0 and len(satmod_lines) == 0:
+    satmod_lines = [header] + mod_rows
 print("\n".join(satmod_lines))
