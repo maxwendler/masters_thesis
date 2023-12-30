@@ -245,10 +245,10 @@ rule calc_pos_diffs:
     """
     input:
         script="../../scripts/statistics/positional_differences.py",
-        mob1_csv="csv/vectors/{constellation}-{mobility1}_{coord_frame}_sorted.csv",
+        mob1_csv="csv/vectors/{constellation}-sgp4_{coord_frame}_sorted.csv",
         mob2_csv="csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
     output:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
     shell:
         "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
 
@@ -258,10 +258,10 @@ rule plot_pos_diffs:
     """
     input:
         script="../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv",
         tle_times="tles/{constellation}_times.json"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances.svg"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances.svg"
     shell:
         "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
 
@@ -297,9 +297,9 @@ rule plot_pos_diffs_with_ecdf:
     input:
         script="../../scripts/plots/plot_differences.py",
         tle_times="tles/{constellation}_times.json",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
     shell:
         "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}' --ecdf"
 
@@ -320,13 +320,13 @@ def get_const_pos_diff_paths(wildcards):
     """
     Returns all paths of 3D coordinate difference plots of the constellation, coordframe and the two mobilities specified in wildcards.
     """
-    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_{leo_modname}_distances{with_or_without_ecdf}.svg",
+    return expand("plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances{with_or_without_ecdf}.svg",
                 constellation=wildcards.constellation, 
                 coord_frame=wildcards.coord_frame, 
-                mobility1=wildcards.mobility1, 
                 mobility2=wildcards.mobility2,
                 leo_modname=get_const_sat_mods(wildcards.constellation),
                 with_or_without_ecdf=["_with_ecdf",""])
+
 
 rule plot_const_pos_diffs:
     """
@@ -336,7 +336,7 @@ rule plot_const_pos_diffs:
     input:
         get_const_pos_diff_paths
     output:
-        "plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_{mobility1}-{mobility2}_distances.done"
+        "plots/pos_diff/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_distances.done"
     shell:
         "touch {output}"
 
@@ -347,14 +347,14 @@ rule plot_diff_distributions:
     """
     input:
         script="../../scripts/plots/plot_difference_distributions.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_differences.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
     output:
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.svg",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.svg",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_boxplot.html"
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.svg",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.html"
     params:
-        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_"
+        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_"
     shell:
         """
         python3 {input.script} {input.in_csv} {params.output_basepath}
@@ -365,11 +365,11 @@ rule calc_pos_diff_diffs_itrf_omnet:
     Calculates the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation.
     """
     input:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_{mobility1}-{mobility2}_differences.csv",
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_{mobility1}-{mobility2}_differences.csv",
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_itrf_sgp4-{mobility2}_differences.csv",
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_omnet_sgp4-{mobility2}_differences.csv",
         script="../../scripts/statistics/diff_differences.py"
     output:
-        "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv" 
+        "csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv" 
     shell:
         "python3 {input.script} '{input[0]}' '{input[1]}' > {output}"
 
@@ -380,19 +380,20 @@ rule plot_pos_diff_diffs_with_ecdf:
     """
     input:
         script="../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_{mobility1}-{mobility2}_differences.csv"
+        in_csv="csv/pos_diff_diffs/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv"
+    params:
+        tle_times="tles/{constellation}_times.json"
     output:
-        "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+        "plots/pos_diff_diffs/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
     shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' '{output}' --ecdf"
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {params.tle_times} '{output}' --ecdf"
 
 def get_const_pos_diff_diffs_paths(wildcards):
     """
     Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
     """
-    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
-                constellation=wildcards.constellation,  
-                mobility1=wildcards.mobility1, 
+    return expand("plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
+                constellation=wildcards.constellation,   
                 mobility2=wildcards.mobility2,
                 leo_modname=get_const_sat_mods(wildcards.constellation))
 
@@ -403,7 +404,7 @@ rule plot_const_pos_diff_diffs:
     input:
         get_const_pos_diff_diffs_paths
     output:
-        "plots/pos_diff_diffs{constellation}/" + get_debug_str() + "itrf2omnet_{mobility1}-{mobility2}_distances.done"
+        "plots/pos_diff_diffs/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done"
     shell:
         "touch {output}"
 
@@ -437,18 +438,18 @@ rule plot_sop_stats:
         tle_times="tles/{constellation}_times.json",
         angle_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_angles.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility]),
+                                    mobility=["sgp4", wildcards.new_mobility]),
         dist_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_distances.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility]),
+                                    mobility=["sgp4", wildcards.new_mobility]),
         delay_csvs=lambda wildcards: expand("csv/sop/" + "{constellation}-{mobility}_delays.csv",
                                     constellation=wildcards.constellation,
-                                    mobility=[wildcards.ref_mobility, wildcards.new_mobility])
+                                    mobility=["sgp4", wildcards.new_mobility])
     output:
-        "plots/sop/" + "{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.html",
-        "plots/sop/" + "{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.svg"
+        "plots/sop/" + "{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.html",
+        "plots/sop/" + "{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.svg"
     params:
-        output_base_path = "plots/sop/{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays"
+        output_base_path = "plots/sop/{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays"
     shell:
         "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
 
@@ -456,10 +457,9 @@ def get_const_sop_stats_plot_paths(wildcards):
     """
     Returns all the paths of elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
     """
-    return expand("plots/sop/{constellation}/{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays.{format}",
+    return expand("plots/sop/{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.{format}",
                 constellation=wildcards.constellation,  
                 modname=get_const_sat_mods(wildcards.constellation),
-                ref_mobility=wildcards.ref_mobility,
                 new_mobility=wildcards.new_mobility,
                 format=["svg", "html"])
 
@@ -470,7 +470,7 @@ rule plot_const_sop_stats:
     input:
         get_const_sop_stats_plot_paths
     output:
-        "plots/sop/{constellation}/{ref_mobility}-{new_mobility}_angles_distances_delays.done"
+        "plots/sop/{constellation}/sgp4-{new_mobility}_angles_distances_delays.done"
     shell:
         "touch {output}"
 
@@ -482,10 +482,10 @@ rule calc_sop_stat_diffs:
     """
     input:
         script="../../scripts/statistics/sop_stat_differences.py",
-        ref_mobility_csv="csv/sop/{constellation}-{ref_mobility}_{stat}.csv",
+        ref_mobility_csv="csv/sop/{constellation}-sgp4_{stat}.csv",
         new_mobility_csv="csv/sop/{constellation}-{new_mobility}_{stat}.csv"
     output:
-        "csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{stat}_{diffs_or_changes}.csv"
+        "csv/sop_diffs/{constellation}_sgp4-{new_mobility}_{stat}_{diffs_or_changes}.csv"
     params:
         change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
     shell:
@@ -498,12 +498,12 @@ rule plot_sop_stat_diffs:
     """
     input:
         script="../../scripts/plots/plot_sop_stat_differences.py",
-        angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
-        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
-        delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv"
+        angles_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_angles_{diffs_or_changes}.csv",
+        distances_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_distances_{diffs_or_changes}.csv",
+        delays_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_delays_{diffs_or_changes}.csv"
     output:
-        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.html",
-        svg_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.svg"
+        "plots/sop_diffs/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.html",
+        svg_out="plots/sop_diffs/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.svg"
     params:
         change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
     shell:
@@ -516,14 +516,14 @@ rule plot_local_sop_stat_diffs:
     mobilities. 
     """
     input:
-        script="../../scripts/statistics/plot_sop_stat_differences.py",
-        angles_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_{diffs_or_changes}.csv",
-        distances_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_distances_{diffs_or_changes}.csv",
-        delays_csv="csv/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_delays_{diffs_or_changes}.csv",
-        comm_comp_json="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+        script="../../scripts/plots/plot_sop_stat_differences.py",
+        angles_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_angles_{diffs_or_changes}.csv",
+        distances_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_distances_{diffs_or_changes}.csv",
+        delays_csv="csv/sop_diffs/{constellation}_sgp4-{new_mobility}_delays_{diffs_or_changes}.csv",
+        comm_comp_json="stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
     output:
-        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.html",
-        svg_out="plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.svg"
+        "plots/sop_diffs/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.html",
+        svg_out="plots/sop_diffs/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.svg"
     params:
         change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
     shell:
@@ -534,9 +534,8 @@ def get_const_sop_stat_diff_plot_paths(wildcards):
     Returns all paths for local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
     reference mobility, alternative (new) mobility and constellation specified in wildcards.
     """
-    return expand("plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
+    return expand("plots/sop_diffs/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
                 constellation=wildcards.constellation,
-                ref_mobility=wildcards.ref_mobility,
                 new_mobility=wildcards.new_mobility,
                 modname=get_const_sat_mods(wildcards.constellation),
                 diffs_or_changes=["diffs", "changes"],
@@ -551,35 +550,33 @@ rule plot_const_sop_stat_diffs:
     input:
         get_const_sop_stat_diff_plot_paths
     output:
-        "plots/sop_diffs/{constellation}_{ref_mobility}-{new_mobility}_angles_distances_delays.done"
+        "plots/sop_diffs/{constellation}_sgp4-{new_mobility}_angles_distances_delays.done"
     shell:
         "touch {output}"
 
 rule calc_and_plot_aligned_local_sop_stat_diffs:
     input:
         script="../../scripts/statistics/aligned_period_sop_stat_differences.py",
-        comm_comp="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json",
-        ref_mob_period_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        comm_comp="stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
+        ref_mob_period_stats="stats/comm_periods/{constellation}/sgp4/{modname}_communication-periods.json",
         new_mob_period_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json"
     output:
-        json="stats/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
-        plot="plots/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
+        json="stats/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+        plot="plots/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
     params:
         changes_option=lambda wildcards: "--changes" if wildcards.diffs_or_changes == "changes" else ""
     shell:
-        "python3 {input.script} '{input.comm_comp}' {wildcards.ref_mobility} '{input.ref_mob_period_stats}' {wildcards.new_mobility} '{input.new_mob_period_stats}' '{output.json}' '{output.plot}' {params.changes_option}"
+        "python3 {input.script} '{input.comm_comp}' sgp4 '{input.ref_mob_period_stats}' {wildcards.new_mobility} '{input.new_mob_period_stats}' '{output.json}' '{output.plot}' {params.changes_option}"
 
 def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
-    paths = expand("stats/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+    paths = expand("stats/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
                     constellation=wildcards.constellation,
-                    ref_mobility="sgp4",
-                    new_mobility="kepler",
+                    new_mobility=["circular", "kepler"],
                     modname=get_const_sat_mods(wildcards.constellation),
                     diffs_or_changes=["differences", "changes"])
-    paths += expand("plots/local_aligned_sop_diffs/{constellation}/{ref_mobility}-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
+    paths += expand("plots/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
                     constellation=wildcards.constellation,
-                    ref_mobility="sgp4",
-                    new_mobility="kepler",
+                    new_mobility=["circular", "kepler"],
                     modname=get_const_sat_mods(wildcards.constellation),
                     diffs_or_changes=["differences", "changes"])
     return paths
@@ -596,17 +593,7 @@ rule calc_and_plot_const_aligned_local_sop_stat_diffs:
         touch {output[1]}
         """
 
-rule group_const_aligned_local_sop_stat_diffs:
-    input:
-        script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
-        ref_comm_periods_dir="stats/comm_periods/{constellation}/sgp4",
-        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{constellation}"
-    output:
-        "stats/local_aligned_sop_diffs/{constellation}_groups.json"
-    shell:
-        """python3 {input.script} {input.ref_comm_periods_dir} {input.aligned_stat_diffs_dir} 5 {output}"""
-
-rule plot_sop_stat_diffs_or_changes_at_offset:
+rule plot_aligned_sop_stat_diffs_or_changes_at_offset:
     input:
         script="../../scripts/plots/plot_aligned_sop_stats_at_offset.py",
         stats="stats/local_aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json"
@@ -618,13 +605,13 @@ rule plot_sop_stat_diffs_or_changes_at_offset:
 def get_const_aligned_sop_stat_diffs_or_changes_plots(wildcards):
     return expand("plots/aligned_sop_diffs/{constellation}/sgp4-{new_mobility}_{modname}_{stat}_aligned_{diffs_or_changes}_{avg_or_max}.svg",
                     constellation=wildcards.constellation,
-                    new_mobility="kepler",
+                    new_mobility=["circular","kepler"],
                     modname=get_const_sat_mods(wildcards.constellation),
                     stat=["angle", "delay"],
                     diffs_or_changes=["differences", "changes"],
                     avg_or_max=["avg", "max"])
 
-rule plot_const_sop_stat_diffs_or_changes_at_offset:
+rule plot_const_aligned_sop_stat_diffs_or_changes_at_offset:
     input:
         get_const_aligned_sop_stat_diffs_or_changes_plots
     output:
@@ -632,7 +619,7 @@ rule plot_const_sop_stat_diffs_or_changes_at_offset:
     shell:
         "touch {output}"
 
-rule plot_const_sop_stat_diffs_at_offset_in_one:
+rule plot_const_aligned_sop_stat_diffs_at_offset_in_one:
     input:
         get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
         script="../../scripts/plots/plot_const_aligned_sop_stats_at_offset.py",
@@ -640,35 +627,46 @@ rule plot_const_sop_stat_diffs_at_offset_in_one:
     output:
         svg_out="plots/aligned_sop_diffs/{constellation}_sgp4-{new_mobility}_all_{stat}_{avg_or_max}_differences.svg"
     shell:
-        "python3 {input.script} {input.aligned_diffs_dir} {wildcards.stat} {wildcards.avg_or_max} {output.svg_out}"
+        "python3 {input.script} {input.aligned_diffs_dir} {wildcards.new_mobility} {wildcards.stat} {wildcards.avg_or_max} {output.svg_out}"
+
+rule group_const_aligned_local_sop_stat_diffs:
+    input:
+        script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
+        ref_comm_periods_dir="stats/comm_periods/{constellation}/sgp4",
+        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{constellation}"
+    output:
+        "stats/local_aligned_sop_diffs/{constellation}_sgp4-{new_mobility}_groups.json"
+    shell:
+        """python3 {input.script} {input.ref_comm_periods_dir} {input.aligned_stat_diffs_dir} {wildcards.new_mobility} 5 {output}"""
+
 
 rule plot_anglegroup_delay_duration_diffs_at_offset:
     input:
         script="../../scripts/plots/plot_anglegroup_sop_stats_at_offset.py",
-        grouped_periods="stats/local_aligned_sop_diffs/{constellation}_groups.json"
+        grouped_periods="stats/local_aligned_sop_diffs/{constellation}_sgp4-{new_mobility}_groups.json"
     params:
-        delay_output_dir="plots/grouped_aligned_delay_diffs/{constellation}",
-        duration_output_dir="plots/grouped_aligned_duration_diffs/{constellation}"
+        delay_output_dir="plots/grouped_aligned_delay_diffs/{constellation}/sgp4-{new_mobility}",
+        duration_output_dir="plots/grouped_aligned_duration_diffs/{constellation}/sgp4-{new_mobility}"
     output:
-        "plots/grouped_aligned_delay_diffs/{constellation}.done",
-        "plots/grouped_aligned_duration_diffs/{constellation}.done"
+        "plots/grouped_aligned_delay_diffs/sgp4-{new_mobility}/{constellation}.done",
+        "plots/grouped_aligned_duration_diffs/sgp4-{new_mobility}/{constellation}.done"
     shell:
-        """python3 {input.script} {input.grouped_periods} 5 kepler {params.delay_output_dir} {params.duration_output_dir}
+        """python3 {input.script} {input.grouped_periods} 5 {wildcards.new_mobility} {params.delay_output_dir} {params.duration_output_dir}
         touch {output[0]}
         touch {output[1]}"""
 
 rule plot_anglegroups_delay_duration_diffs_in_one:
     input:
         script="../../scripts/plots/plot_const_anglegrouped_sop_stat_diffs.py",
-        grouped_periods="stats/local_aligned_sop_diffs/{constellation}_groups.json"
+        grouped_periods="stats/local_aligned_sop_diffs/{constellation}_sgp4-{new_mobility}_groups.json"
     params:
         delay_output_dir="plots/grouped_aligned_delay_diffs/{constellation}",
         duration_output_dir="plots/grouped_aligned_duration_diffs/{constellation}"
     output:
-        "plots/grouped_aligned_delay_diffs/{constellation}/all_groups_delay_differences.svg",
-        "plots/grouped_aligned_duration_diffs/{constellation}/all_groups_duration_differences.svg"
+        "plots/grouped_aligned_delay_diffs/{constellation}/sgp4-{new_mobility}_all_groups_delay_differences.svg",
+        "plots/grouped_aligned_duration_diffs/{constellation}/sgp4-{new_mobility}_all_groups_duration_differences.svg"
     shell:
-        """python3 {input.script} {input.grouped_periods} 5 kepler {params.delay_output_dir} {params.duration_output_dir}"""
+        """python3 {input.script} {input.grouped_periods} 5 {wildcards.new_mobility} {params.delay_output_dir} {params.duration_output_dir}"""
 
 rule calc_comm_period_info:
     """
@@ -754,11 +752,11 @@ rule sat_comm_period_zenith_interval_changes:
 rule plot_sat_comm_period_zenith_interval_changes:
     input:
         zenith_interval_changes = "stats/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json",
-        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_stat.py"
+        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_diff.py"
     output:
-        "plots/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_difference_at_{offset_sum_or_offset_diff}.svg"
+        "plots/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_difference_at_offset_diff.svg"
     shell:
-        "python3 {input.script} '{input.zenith_interval_changes}' {wildcards.offset_sum_or_offset_diff} '{output}'"    
+        "python3 {input.script} '{input.zenith_interval_changes}' '{output}'"    
 
 rule const_comm_period_all_interval_changes:
     input:
@@ -797,10 +795,10 @@ rule compare_comm_period_info:
     """
     input:
         script="../../scripts/statistics/compare_comm_period_info.py",
-        ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        ref_stats="stats/comm_periods/{constellation}/sgp4/{modname}_communication-periods.json",
         new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json"
     output:
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+        "stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
     shell:
         "python3 {input.script} '{input.ref_stats}' '{input.new_stats}' '{output}'"
 
@@ -813,24 +811,25 @@ rule plot_communication_period_comparison:
     """
     input:
         script="../../scripts/plots/plot_comm_comparison.py",
-        ref_stats="stats/comm_periods/{constellation}/{ref_mobility}/{modname}_communication-periods.json",
+        ref_stats="stats/comm_periods/{constellation}/sgp4/{modname}_communication-periods.json",
         new_stats="stats/comm_periods/{constellation}/{new_mobility}/{modname}_communication-periods.json",
-        period_groups="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+        period_groups="stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
     output:
-        "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.svg",
-        "plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.html"
+        "plots/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.svg",
+        "plots/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.html"
     params:
-        output_basepath="plots/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison"
+        output_basepath="plots/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison"
     shell:
-        "python3 {input.script} '{input.period_groups}' {wildcards.ref_mobility} '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}' '{params.output_basepath}'"
+        "python3 {input.script} '{input.period_groups}' sgp4 '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}' '{params.output_basepath}'"
 
 def get_const_comm_comp_json_paths(wildcards):
     """
     Returns all paths of JSONs containing the matched periods of the constellation specified in wildcards,
     currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
     """
-    return expand("stats/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.json",
-            constellation=wildcards.constellation,  
+    return expand("stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
+            constellation=wildcards.constellation,
+            new_mobility=["kepler", "circular"],  
             modname=get_const_sat_mods(wildcards.constellation))
 
 def get_const_comm_comp_plot_paths(wildcards):
@@ -838,8 +837,9 @@ def get_const_comm_comp_plot_paths(wildcards):
     Returns all paths of the plots comparing elevation angles, distances and delays in the matched communication periods of the constellation specified in wildcards,
     currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
     """
-    return expand("plots/compare_comm_periods/{constellation}/sgp4-kepler_{modname}_communication_comparison.{format}",
+    return expand("plots/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.{format}",
             constellation=wildcards.constellation,  
+            new_mobility=["kepler", "circular"],
             modname=get_const_sat_mods(wildcards.constellation),
             format=["svg", "html"])
 
@@ -864,7 +864,7 @@ rule calc_communication_period_comparison_summary:
         get_const_comm_comp_json_paths,
         script="../../scripts/statistics/summarize_comm_comp_info.py"
     output:
-        "stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_summary.json"
+        "stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_summary.json"
     params:
         comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
     shell:
@@ -878,8 +878,8 @@ rule plot_const_overlap_stats:
         get_const_comm_comp_json_paths,
         script="../../scripts/plots/plot_const_overlap_stats.py"
     output:
-        "plots/compare_comm_periods/{constellation}_overlaps_plot.html",
-        svg_out="plots/compare_comm_periods/{constellation}_overlaps_plot.svg"
+        "plots/compare_comm_periods/{constellation}_sgp4-{new_mobility}_overlaps_plot.html",
+        svg_out="plots/compare_comm_periods/{constellation}_sgp4-{new_mobility}_overlaps_plot.svg"
     params:
         comp_jsons_dir="stats/compare_comm_periods/{constellation}/"
     shell:
@@ -888,16 +888,16 @@ rule plot_const_overlap_stats:
 rule plot_zenith_shifts:
     input:
         script="../../scripts/plots/plot_sat_period_zenith_shifts.py",
-        comm_comp="stats/compare_comm_periods/{constellation}/{ref_mobility}-{new_mobility}_{modname}_communication_comparison.json"
+        comm_comp="stats/compare_comm_periods/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
     output:
-        "plots/zenith_shifts/{constellation}/{ref_mobility}-{new_mobility}_{modname}_zenith_shifts.svg"
+        "plots/zenith_shifts/{constellation}/sgp4-{new_mobility}_{modname}_zenith_shifts.svg"
     shell:
         "python3 {input.script} '{input.comm_comp}' '{output}'"
 
 def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
     
     multiple_overlapping_periods_modnames = []
-    for comm_comp_fname in filter( lambda fname: fname.endswith("communication_comparison.json"), 
+    for comm_comp_fname in filter( lambda fname: fname.endswith("communication_comparison.json") and wildcards.new_mobility in fname, 
                                     os.listdir(f"stats/compare_comm_periods/{wildcards.constellation}") ):
         
         with open(f"stats/compare_comm_periods/{wildcards.constellation}/" + comm_comp_fname) as json_f:
@@ -906,9 +906,8 @@ def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
         if len(comm_comp["period_groups"]) > 1:
             multiple_overlapping_periods_modnames.append(comm_comp["modname"])
     
-    return expand("plots/zenith_shifts/{constellation}/{ref_mobility}-{new_mobility}_{modname}_zenith_shifts.svg",
+    return expand("plots/zenith_shifts/{constellation}/sgp4-{new_mobility}_{modname}_zenith_shifts.svg",
                     constellation=wildcards.constellation,
-                    ref_mobility=wildcards.ref_mobility,
                     new_mobility=wildcards.new_mobility,
                     modname=multiple_overlapping_periods_modnames)
 
@@ -917,7 +916,7 @@ rule plot_const_multiple_overlapping_periods_zenith_shifts:
     input:
         get_const_multiple_overlapping_periods_zenith_shift_paths
     output:
-        "plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}.done"
+        "plots/zenith_shifts/{constellation}_sgp4-{new_mobility}.done"
     shell:
         "touch {output}"
 
@@ -927,8 +926,8 @@ rule plot_const_periods_zenith_shifts_in_one:
         script="../../scripts/plots/plot_const_period_zenith_shifts.py",
         comm_comp_dir="stats/compare_comm_periods/{constellation}"
     output:
-        "plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}_all_{differences_or_changes}.html",
-        svg_out="plots/zenith_shifts/{constellation}_{ref_mobility}-{new_mobility}_all_{differences_or_changes}.svg"
+        "plots/zenith_shifts/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.html",
+        svg_out="plots/zenith_shifts/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.svg"
     params:
         difference_option=lambda wildcards: "--differences" if wildcards.differences_or_changes == "differences" else ""
     shell:

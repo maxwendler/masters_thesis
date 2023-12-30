@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     parser.add_argument("csv_path1", help="Path of directory with kepler result csvs of the constellation (can contain csvs of other constellations).")
     parser.add_argument("csv_path2", help="Path of directory with sgp4 result csvs of the constellation (can contain csvs of other constellations).")
-    parser.add_argument("frame", choices=["itrf", "wgs84", "omnet"], help="Specifies coordinate reference frame. Requires one of.")
+    parser.add_argument("frame", choices=["itrf", "wgs84", "omnet", "teme"], help="Specifies coordinate reference frame. Requires one of.")
     parser.add_argument("-c", "--coord_dims", action="store_true", help="If flag is set, distances in individual coordinate dimensions will be output, which is the only thing that currently can be calculated for wgs84 coordinates.")
 
     args = parser.parse_args()

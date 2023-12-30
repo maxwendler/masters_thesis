@@ -243,6 +243,7 @@ for ref_pname in ref_period_relations.keys():
             new_refp_next_nonoverlap_idx = ref_period_seq.index(refp_next_nonoverlap) + 1
             new_refp_next_nonoverlap = ref_period_seq[new_refp_next_nonoverlap_idx] if new_refp_next_nonoverlap_idx < len(ref_period_seq) else "end"
             was_lost = new_refp_next_nonoverlap not in refp_newp_mapping.keys()
+            print("loop", new_refp_next_nonoverlap_idx, new_refp_next_nonoverlap)
             if not was_lost:
                 refp_next_nonoverlap = new_refp_next_nonoverlap
         ref_period_relations[ref_pname]["next_nonoverlap_period"] = refp_next_nonoverlap

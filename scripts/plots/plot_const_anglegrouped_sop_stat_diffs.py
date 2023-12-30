@@ -41,7 +41,7 @@ fig.update_layout(
         tickvals=sorted(list(set(group_names)))
     )
 )
-fig.write_image(delay_diffs_output_dir + "all_groups_delay_differences.svg")
+fig.write_image(delay_diffs_output_dir + "sgp4-" + args.new_mobility +"_all_groups_delay_differences.svg")
 
 fig = go.Figure(data=go.Scatter(x=group_names, y=grouped_duration_diffs, name="duration differences", mode='markers'))
 fig.update_layout(
@@ -51,4 +51,4 @@ fig.update_layout(
         tickangle=-90
     )
 )
-fig.write_image(duration_diffs_output_dir + "all_groups_duration_differences.svg")
+fig.write_image(duration_diffs_output_dir + "sgp4-" + args.new_mobility + "_all_groups_duration_differences.svg")

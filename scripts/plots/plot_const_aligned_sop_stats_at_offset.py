@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(prog="plot_aligned_sop_stats_at_offset.py",
                                  description="""Plots the maximum or average elevation angle or delay difference of the aligned communication 
                                  periods of two mobilities for all satellite modules of a constellation from JSONs in the specified directory with those values, with offset to the used TLE as x values.""")
 parser.add_argument("stat_diffs_or_changes_dir", help="Directory with JSONs with input data.")
+parser.add_argument("new_mobility")
 parser.add_argument("stat", choices=["angle", "delay"], help="Which statistic relative to SOP to plot.")
 parser.add_argument("avg_or_max", choices=["avg", "max"], help="If average or maximum value of a period should be plotted.")
 parser.add_argument("svg_output_path")
@@ -18,7 +19,7 @@ new_mobility = None
 
 # get data as (offset to epoch, zenith shift, modname) tuples
 data = []
-for stats_fname in filter(lambda fname: fname.endswith("aligned_differences.json"), os.listdir(stats_dir)):
+for stats_fname in filter(lambda fname: fname.endswith("aligned_differences.json") and args.new_mobility in fname, os.listdir(stats_dir)):
     
     if not ref_mobility:
         mobilties = stats_fname.split("_")[0].split("-")

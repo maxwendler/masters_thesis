@@ -94,12 +94,16 @@ for ref_period_idx in range(len(ref_period_names)):
         new_interval = new_period_zenith - prev_new_zenith
         prev_new_zenith = new_period_zenith
 
-        same_periods_interval_changes[f"{prev_ref_period_name}-{ref_period_name}"] = {
-            "difference": new_interval - ref_interval,
-            "start_offset": start_offset,
-            "end_offset": end_offset,
-            "abs_offset_sum": abs_ref_offsets_sum,
-            "abs_offset_diff": abs_offset_ref_dif
+        same_periods_interval_changes[prev_ref_period_name] = {
+            "overlap_changes": [],
+            "next_nonoverlap_changes": 
+            {
+                "name": f"{prev_ref_period_name}-{ref_period_name}",
+                "zenith_interval_difference": new_interval - ref_interval,
+                "start_offset": start_offset,
+                "end_offset": end_offset,
+                "abs_offset_difference": abs_offset_ref_dif
+            }
         }
 
         prev_ref_period_name = ref_period_name
@@ -131,12 +135,16 @@ for ref_period_idx in range(len(ref_period_names)):
             new_interval = related_new_period_zenith - prev_new_zenith
             prev_new_zenith = related_new_period_zenith
 
-            same_periods_interval_changes[f"{prev_ref_period_name}-{ref_period_name}"] = {
-                "difference": new_interval - ref_interval,
-                "start_offset": start_offset,
-                "end_offset": end_offset,
-                "abs_offset_sum": abs_ref_offsets_sum,
-                "abs_offset_diff": abs_offset_ref_dif
+            same_periods_interval_changes[prev_ref_period_name] = {
+                "overlap_changes": [],
+                "next_nonoverlap_changes": 
+                {
+                    "name": f"{prev_ref_period_name}-{ref_period_name}",
+                    "start_offset": start_offset,
+                    "end_offset": end_offset,
+                    "zenith_interval_difference": new_interval - ref_interval,
+                    "abs_offset_difference": abs_offset_ref_dif
+                }
             }            
 
             new_period_idx += added_periods_num + 1

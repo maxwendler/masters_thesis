@@ -6,6 +6,7 @@ from math import floor
 parser = argparse.ArgumentParser(prog="group_aligned_period_sop_stat_diffs_by_angle.py")
 parser.add_argument("ref_comm_period_jsons_dir")
 parser.add_argument("aligned_stat_diffs_dir")
+parser.add_argument("new_mobility")
 parser.add_argument("angle_interval", type=int)
 parser.add_argument("output_path")
 args = parser.parse_args()
@@ -32,7 +33,7 @@ for comm_period_json_fname in os.listdir(ref_comm_period_jsons_dir):
         else:
             grouped_periods[group].append( {"modname": modname, "period_idx": period_idx} )
 
-for aligned_stat_diffs_fname in filter(lambda fname: fname.endswith("aligned_differences.json"), os.listdir(aligned_stat_diffs_dir)):
+for aligned_stat_diffs_fname in filter(lambda fname: fname.endswith("aligned_differences.json") and args.new_mobility in fname, os.listdir(aligned_stat_diffs_dir)):
 
     json_path = aligned_stat_diffs_dir + aligned_stat_diffs_fname
     with open(json_path, "r") as json_f:

@@ -42,7 +42,7 @@ inliers_fun_xs = [0, max(abs_offset_differences)]
 # find 4 most outlying points
 outlier_xs = []
 outlier_ys = []
-for i in range(4):
+for i in range(0):
     outlier_idx = errors.index(max(errors))
     errors.pop(outlier_idx)
     outlier_xs.append(abs_offset_differences.pop(outlier_idx))

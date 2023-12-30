@@ -3,7 +3,8 @@ constellations: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
 # determines coordinate frames for which sat. pos. csvs will be created
-coord_frames: [ "teme" ] #"itrf", "omnet"] # "wgs84"]
+# teme only supported by sgp4 and circular model, as input for kepler model are itrf traces
+coord_frames: [ "teme", "itrf", "omnet"] # "wgs84"]
 
 # omnetpp.ini parameters
-sim-time-limit: 3020
+sim-time-limit: 86420

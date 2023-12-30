@@ -30,6 +30,8 @@ for interval_factor_str in grouped_periods.keys():
     interval_end_angle = (interval_factor + 1) * args.angle_interval
 
     periods = grouped_periods[interval_factor_str]
+    if len(periods) == 0:
+        continue
 
     offsets_to_epoch = []
     avg_delay_diffs = []
@@ -52,21 +54,22 @@ for interval_factor_str in grouped_periods.keys():
     fig = go.Figure(data=go.Scatter(x=offsets_to_epoch, y=avg_delay_diffs, name="avg. delay difference", mode='markers'))
     fig.add_trace(go.Scatter(x=offsets_to_epoch, y=max_delay_diffs, name="max. delay difference", mode='markers'))
     
-    pos_offsets_to_epoch = []
-    pos_offset_max_delay_diffs = []
+    positive_offsets_to_epoch = []
+    positive_offset_max_delay_diffs = []
     for offset_idx in range(len(offsets_to_epoch)):
         offset_to_epoch = offsets_to_epoch[offset_idx]
         max_delay_diff = max_delay_diffs[offset_idx]
         if offset_to_epoch >= 0:
-            pos_offsets_to_epoch.append(offset_to_epoch)
-            pos_offset_max_delay_diffs.append(max_delay_diff)
+            positive_offsets_to_epoch.append(offset_to_epoch)
+            positive_offset_max_delay_diffs.append(max_delay_diff)
 
-    pos_offset_linear_fun = Polynomial.fit(pos_offsets_to_epoch, pos_offset_max_delay_diffs, deg=1)
-    linear_fun_xs = [0, max(offsets_to_epoch)]
-    linear_fun_ys = [pos_offset_linear_fun(0), pos_offset_linear_fun(linear_fun_xs[1])]
-    fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', name="max. delay difference function", line=dict(color="red")))
+    if len(positive_offsets_to_epoch) > 1:
+        positive_offset_linear_fun = Polynomial.fit(positive_offsets_to_epoch, positive_offset_max_delay_diffs, deg=1)
+        linear_fun_xs = [0, max(offsets_to_epoch)]
+        linear_fun_ys = [positive_offset_linear_fun(0), positive_offset_linear_fun(linear_fun_xs[1])]
+        fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', name="max. delay difference function", line=dict(color="red")))
 
-    fig.update_layout(title_text=f"y={str(pos_offset_linear_fun.convert())}")
+        fig.update_layout(title_text=f"y={str(positive_offset_linear_fun.convert())}")
 
     # modname annotations
     for modname_idx in range(len(modnames)):
