@@ -4,3 +4,6 @@ constellations: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
 debug_mode: false
 # determines coordinate frames for which sat. pos. csvs will be created
 coord_frames: [ "teme" ] #"itrf", "omnet"] # "wgs84"]
+
+# omnetpp.ini parameters
+sim-time-limit: 3020

@@ -58,10 +58,11 @@ rule update_omnetini:
         # as snakemake won't accept filepath strings containing quotes as input
         # but call of python scripts requires them
         quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
+        sim_time_limit = config["sim-time-limit"]
     output:
         "omnetpp.ini"
     shell:
-        """python3 {input.script} {input.ini_template} traces/ {params.quoted_tles_paths}
+        """python3 {input.script} {input.ini_template} traces/ {params.quoted_tles_paths} {params.sim_time_limit}
         
         cp backups/omnetpp.ini old/omnetpp.ini
 
@@ -222,12 +223,13 @@ rule vec2csv:
     params:
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv"
+        unsorted_path="csv/vectors/{oppConfig}_{coordframe}.csv",
+        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "*.vec"
     threads:
         1
     shell:
         """
-        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} results/{wildcards.oppConfig}*.vec > {params.unsorted_path}
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} {params.vec_file} > {params.unsorted_path}
         python3 {input.sort_script} {params.unsorted_path}  
         rm {params.unsorted_path}
         """
@@ -714,9 +716,11 @@ rule plot_const_comm_periods:
         periods_csv="csv/comm_periods/{constellation}_{mobility}_all_periods.csv"
     output:
         "plots/comm_periods/{constellation}_{mobility}_all_periods.svg"
+    params:
+        sim_time_limit = config["sim-time-limit"]
     shell:
         """
-        python3 {input.script} {input.periods_csv} 15 86400 {output}
+        python3 {input.script} {input.periods_csv} 15 {params.sim_time_limit} {output}
         """
 
 rule const_comm_period_intervals_csvs:
@@ -728,8 +732,10 @@ rule const_comm_period_intervals_csvs:
     output:
         period_intervals="csv/comm_period_intervals/{constellation}_{mobility}_period_intervals.csv",
         zenith_intervals="csv/comm_period_intervals/{constellation}_{mobility}_zenith_intervals.csv"
+    params:
+        sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} {input.all_periods} {input.period_infos_dir} 86400 {output.period_intervals} {output.zenith_intervals}"
+        "python3 {input.script} {input.all_periods} {input.period_infos_dir} {params.sim_time_limit} {output.period_intervals} {output.zenith_intervals}"
 
 rule sat_comm_period_zenith_interval_changes:
     input:
@@ -740,8 +746,10 @@ rule sat_comm_period_zenith_interval_changes:
         script="../../scripts/statistics/sat_period_zenith_interval_changes.py"
     output:
         "stats/comm_period_zenith_interval_changes/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json"
+    params:
+        sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} '{wildcards.modname}' {input.ref_periods} '{input.ref_periods_json}' {input.new_periods} '{input.new_periods_json}' 86400 '{output}'"    
+        "python3 {input.script} '{wildcards.modname}' {input.ref_periods} '{input.ref_periods_json}' {input.new_periods} '{input.new_periods_json}' {params.sim_time_limit} '{output}'"    
 
 rule plot_sat_comm_period_zenith_interval_changes:
     input:
@@ -761,8 +769,10 @@ rule const_comm_period_all_interval_changes:
         script="../../scripts/statistics/all_interval_changes.py",
     output:
         "stats/comm_period_all_interval_changes/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
+    params:
+        sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} 86400 {output}"
+        "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} {params.sim_time_limit} {output}"
 
 rule plot_const_comm_period_zenith_interval_changes_at_offset_diff:
     input:
@@ -931,8 +941,10 @@ rule available_sats:
         comm_period_info_dir="stats/comm_periods/{constellation}/{mobility}"
     output:
         "stats/available_sats/{constellation}_{mobility}_available_sats.json"
+    params:
+        sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} {input.comm_period_info_dir} 15 86400 {output}"
+        "python3 {input.script} {input.comm_period_info_dir} 15 {params.sim_time_limit} {output}"
 
 rule available_sat_diffs:
     input:
