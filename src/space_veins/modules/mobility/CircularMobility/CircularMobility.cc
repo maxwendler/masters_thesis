@@ -46,6 +46,8 @@ void CircularMobility::initialize(int stage)
     EV_DEBUG << "SGP4Mobility stage: " << stage << std::endl;
     MovingMobilityBase::initialize(stage);
     if (stage == 0) {
+        
+        circlePlane2ndPointHalfOrbitTenth = par("circlePlane2ndPointHalfOrbitTenth").intValue();
 
         EV_DEBUG << "Initializing SGP4Mobility module." << std::endl;
         EV_DEBUG << "isPreInitialized: " << isPreInitialized << std::endl;
@@ -168,22 +170,26 @@ void CircularMobility::initialize(int stage)
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // CIRCLE SETUP
         // Circle setup (1): get simulation start point in TEME
-        std::pair<std::vector<double>, std::vector<double>> sec0TEME = calcSatellitePositionTEME(0);
-        std::vector<double> rTEME0 = sec0TEME.first;
+        std::pair<std::vector<double>, std::vector<double>> firstPlanePointTEME = calcSatellitePositionTEME(0);
+        std::vector<double> r1stTEME = firstPlanePointTEME.first;
 
         // Circle setup (2): get another point in TEME, forming circular plane in TEME
-        std::pair<std::vector<double>, std::vector<double>> sec60TEME = calcSatellitePositionTEME(75);
-        std::vector<double> rTEME60 = sec60TEME.first;
 
-        // Circle setup (3): initialize circle with those points and radius of first point
-        double radius = sqrt(pow(rTEME0[0], 2) + pow(rTEME0[1], 2) + pow(rTEME0[2], 2));
-        
         std::string meanMotionStr = tle.get_tle_line2().substr(52, 11);
         double meanMotionRevPerDay = std::stod(meanMotionStr); 
         double meanMotionRevPerSec = meanMotionRevPerDay / 86400;
         double meanMotionRadPerSec = meanMotionRevPerSec * 2 * M_PI;
 
-        circlePlane = CirclePlane(veins::Coord(rTEME0[0], rTEME0[1], rTEME0[2]), veins::Coord(rTEME60[0], rTEME60[1], rTEME60[2]), radius, meanMotionRadPerSec);
+        double halfOrbitSecs = 0.5 / meanMotionRevPerSec;
+        double secondPlanePointMinutes = halfOrbitSecs * circlePlane2ndPointHalfOrbitTenth / 600 + 1;
+
+        std::pair<std::vector<double>, std::vector<double>> secondPlanePointTEME = calcSatellitePositionTEME(secondPlanePointMinutes);
+        std::vector<double> r2ndTEME = secondPlanePointTEME.first;
+
+        // Circle setup (3): initialize circle with those points, radius of first point and TLE's mean motion
+        double radius = sqrt(pow(r1stTEME[0], 2) + pow(r1stTEME[1], 2) + pow(r1stTEME[2], 2));
+
+        circlePlane = CirclePlane(veins::Coord(r1stTEME[0], r1stTEME[1], r1stTEME[2]), veins::Coord(r2ndTEME[0], r2ndTEME[1], r2ndTEME[2]), radius, meanMotionRadPerSec);
 
         // Statistics
         vehicleStatistics = VehicleStatisticsAccess().get(getParentModule());

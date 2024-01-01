@@ -43,6 +43,8 @@ class SPACE_VEINS_API CircularMobility : public inet::MovingMobilityBase {
 
     protected:
        
+        int circlePlane2ndPointHalfOrbitTenth; 
+
         bool isPreInitialized;
         
         // Proj projections
