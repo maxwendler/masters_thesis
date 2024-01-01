@@ -172,7 +172,7 @@ void CircularMobility::initialize(int stage)
         std::vector<double> rTEME0 = sec0TEME.first;
 
         // Circle setup (2): get another point in TEME, forming circular plane in TEME
-        std::pair<std::vector<double>, std::vector<double>> sec60TEME = calcSatellitePositionTEME(1);
+        std::pair<std::vector<double>, std::vector<double>> sec60TEME = calcSatellitePositionTEME(75);
         std::vector<double> rTEME60 = sec60TEME.first;
 
         // Circle setup (3): initialize circle with those points and radius of first point
