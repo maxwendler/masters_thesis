@@ -52,3 +52,5 @@ if __name__ == "__main__":
     fig = px.box(x=satnames_list, y=distances_list, labels={'y': "difference in km"})
     fig.write_image(args.output_basepath + "boxplot.svg")
     fig.write_html(args.output_basepath + "boxplot.html")
+    with open(args.output_basepath + "avg_difference.txt", "w") as avg_difference_f:
+        avg_difference_f.write("avg_diff_sum: " + str(avg_distsum) + "\n" + "avg_diff: " + str(avg_dist))

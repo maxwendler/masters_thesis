@@ -49,6 +49,7 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_
         kepler_config_str = kepler_config_str.replace("$MOBILITY_CLASS$", f'"KeplerMobility"')
         kepler_config_str = kepler_config_str.replace("$TRACES_PATH$", f'"{traces_dir_path}{tles_fnames[i].removesuffix(".txt")}/"')
         kepler_config_lines = kepler_config_str.splitlines(keepends=True)
+        # remove TLE path line
         kepler_config_lines.pop(6)
         new_lines += kepler_config_lines
 
@@ -59,6 +60,7 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_
         sgp4_config_str = sgp4_config_str.replace("$MOBILITY_CLASS$", f'"SGP4Mobility"')
         sgp4_config_str = sgp4_config_str.replace("$TLE_PATH$", f'"{tles_paths[i]}"')
         sgp4_config_lines = sgp4_config_str.splitlines(keepends=True)
+        # remove traces path line
         sgp4_config_lines.pop(7)
         new_lines += sgp4_config_lines
 
@@ -69,7 +71,10 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_
         circular_config_str = circular_config_str.replace("$MOBILITY_CLASS$", f'"CircularMobility"')
         circular_config_str = circular_config_str.replace("$TLE_PATH$", f'"{tles_paths[i]}"')
         circular_config_lines = circular_config_str.splitlines(keepends=True)
+        # remove traces path line
         circular_config_lines.pop(7)
+        # insert line for parameter study about which second circle plane point to choose 
+        circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = ${halfOrbitTenth=5,25,45,65,85,105,125,145,165}")
         new_lines += circular_config_lines
 
     input_ini_fname = ini_path.split("/")[-1] 

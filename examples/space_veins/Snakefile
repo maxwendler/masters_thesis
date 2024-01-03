@@ -149,9 +149,10 @@ rule createRunFile:
     # params:
     #    shell="echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}"
     shell:
-        """
-            echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
-        """
+        #"""
+        #    echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
+        #"""
+        "perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}"
 
 rule createRunmakerLogFile:
     """
@@ -234,34 +235,81 @@ rule vec2csv:
         rm {params.unsorted_path}
         """
 
+rule vec2csv_circular:
+    input:
+        "runs/{oppConfig}_done.txt",
+        sort_script="../../scripts/time_sort_csv.py"
+    output:
+        "csv/circular_vectors/{oppConfig}_{halforbit_tenth}_{coordframe}_sorted.csv"
+    params:
+        vectors=format_coord_vectors,
+        moduleRegex='^SatelliteExampleScenario\.leo',
+        unsorted_path="csv/circular_vectors/{oppConfig}_{halforbit_tenth}_{coordframe}.csv",
+        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-" + wildcards.halforbit_tenth + ",warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "*.vec"
+    threads:
+        1
+    shell:
+        """
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} {params.vec_file} > {params.unsorted_path}
+        python3 {input.sort_script} {params.unsorted_path}  
+        rm {params.unsorted_path}
+        """    
+
 """
 RULES TO CALCULATE AND PLOT POSITIONAL DIFFERENCES IN 3D COORDINATES
 """
 
-rule calc_pos_diffs:
+#rule calc_pos_diffs:
+#    """
+#    Calculates differences between 3D coordinate CSVs of the two specified mobilities and the specified coordinate frame, 
+#    and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
+#    """
+#    input:
+#        script="../../scripts/statistics/positional_differences.py",
+#        mob1_csv="csv/vectors/{constellation}-sgp4_{coord_frame}_sorted.csv",
+#        mob2_csv="csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+#    output:
+#        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
+#    shell:
+#        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
+
+rule calc_pos_diffs_circular:
     """
     Calculates differences between 3D coordinate CSVs of the two specified mobilities and the specified coordinate frame, 
     and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
     """
     input:
         script="../../scripts/statistics/positional_differences.py",
-        mob1_csv="csv/vectors/{constellation}-sgp4_{coord_frame}_sorted.csv",
-        mob2_csv="csv/vectors/{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+        mob1_csv="csv/vectors/{constellation}-sgp4_teme_sorted.csv",
+        mob2_csv="csv/circular_vectors/{constellation}-circular_{halforbit_tenth}_teme_sorted.csv"
     output:
-        "csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
+        "csv/pos_diff/" + get_debug_str() + "{constellation}_teme_sgp4-circular_{halforbit_tenth}_differences.csv"
     shell:
-        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
+        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} teme -c > {output}"
 
-rule plot_pos_diffs:
+#rule plot_pos_diffs:
+#    """
+#    Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame and satellite module. 
+#    """
+#    input:
+#        script="../../scripts/plots/plot_differences.py",
+#        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv",
+#        tle_times="tles/{constellation}_times.json"
+#    output:
+#        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances.svg"
+#    shell:
+#        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
+
+rule plot_pos_diffs_circular:
     """
     Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame and satellite module. 
     """
     input:
         script="../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv",
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_teme_sgp4-circular_{halforbit_tenth}_differences.csv",
         tle_times="tles/{constellation}_times.json"
     output:
-        "plots/pos_diff/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances.svg"
+        "plots/pos_diff/{constellation}/"+ get_debug_str() + "teme_sgp4-circular_{leo_modname}_{halforbit_tenth}_distances.svg"
     shell:
         "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}'"
 
@@ -303,6 +351,15 @@ rule plot_pos_diffs_with_ecdf:
     shell:
         "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}' --ecdf"
 
+rule plot_circular_pos_diff_avgs:
+    input:
+        script="../../scripts/plots/plot_average_differences.py",
+        avg_diff_dir="plots/pos_diff_distr/"
+    output:
+        "plots/pos_diff/{constellation}/average/avg_differences.svg"
+    shell:
+        """python3 {input.script} {input.avg_diff_dir} {wildcards.constellation} {output}"""
+
 def get_const_sat_mods(constellation: str):
     """
     Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
@@ -340,21 +397,43 @@ rule plot_const_pos_diffs:
     shell:
         "touch {output}"
 
-rule plot_diff_distributions:
+#rule plot_diff_distributions:
+#    """
+#    Plots sum histogram plot and box plot for the 3D coordinate differences of all satellite modules of the given constellation,
+#    for the specified two mobilities and coordinate frame.  
+#    """
+#    input:
+#        script="../../scripts/plots/plot_difference_distributions.py",
+#        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
+#    output:
+#        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
+#        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
+#        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.svg",
+#        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.html"
+#        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_avg_difference.txt"
+#    params:
+#        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_"
+#    shell:
+#        """
+#        python3 {input.script} {input.in_csv} {params.output_basepath}
+#        """
+
+rule plot_diff_distributions_circular:
     """
     Plots sum histogram plot and box plot for the 3D coordinate differences of all satellite modules of the given constellation,
     for the specified two mobilities and coordinate frame.  
     """
     input:
         script="../../scripts/plots/plot_difference_distributions.py",
-        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
+        in_csv="csv/pos_diff/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_differences.csv"
     output:
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.svg",
-        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.html"
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_sum-histogram.svg",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_sum-histogram.html",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_boxplot.svg",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_boxplot.html",
+        "plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_avg_difference.txt"
     params:
-        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_"
+        output_basepath="plots/pos_diff_distr/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_{halforbit_tenth}_"
     shell:
         """
         python3 {input.script} {input.in_csv} {params.output_basepath}
@@ -966,6 +1045,25 @@ rule plot_available_sats_diffs:
         "plots/available_sats_diffs/{constellation}_sgp4-{new_mobility}_available_sat_diffs.svg"
     shell:
         "python3 {input.script} {input.availables_diffs} {output}"
+
+rule validate_circular_mobility_direction:
+    input:
+        script="../../scripts/statistics/validate_circular_mobility_direction.py",
+        sgp4_teme_csv="csv/vectors/{constellation}-sgp4_teme_sorted.csv",
+        circular_teme_csv="csv/circular_vectors/{constellation}-circular_{halforbit_tenth}_teme_sorted.csv"
+    output:
+        "stats/validation/circular_direction/{constellation}_{halforbit_tenth}.txt"
+    shell:
+        "python3 {input.script} {input.sgp4_teme_csv} {input.circular_teme_csv} > {output}"
+
+rule avg_sgp4_altitudes:
+    input:
+        script="../../scripts/statistics/avg_sgp4_altitudes.py",
+        sgp4_teme_csv="csv/vectors/{constellation}-sgp4_teme_sorted.csv"
+    output:
+        "csv/avg_alt/{constellation}-sgp4_teme_avg_altitudes.csv"
+    shell:
+        "python3 {input.script} {input.sgp4_teme_csv} {output}"
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS

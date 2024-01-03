@@ -151,7 +151,7 @@ network = SatelliteExampleScenario
 *.node[*].mobility.typename = "StationaryMobility"
 *.node[*].mobility.updateFromDisplayString = false
 *.node[*].mobility.initFromDisplayString = false
-*.node[*].mobility.initialX = ${nodeXPos=0..100 step 1}km
+*.node[*].mobility.initialX = 0m
 *.node[*].mobility.initialY = 0m
 *.node[*].mobility.initialZ = 0m
 

@@ -47,6 +47,16 @@
             "justMyCode": true
         },
         {
+            "name": "Python validate_circular_mobility_direction",
+            "type": "python",
+            "request": "launch",
+            "program": "/workspaces/ma-max-wendler/scripts/statistics/validate_circular_mobility_direction.py",
+            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-sgp4_teme_sorted.csv",
+            "/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-circular_teme_sorted.csv"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",
