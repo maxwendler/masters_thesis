@@ -33,11 +33,12 @@ void CircularMobility::initializePosition()
     MovingMobilityBase::initializePosition();
 }
 
-void CircularMobility::preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc)
+void CircularMobility::preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc, double pAvgSGP4Altitude=-1.0)
 {
     EV_DEBUG << "SGP4Mobility preInitialize()" << std::endl;
     tle = pTle;
     wall_clock_sim_start_time_utc = pWall_clock_sim_start_time_utc;
+    avgSGP4Altitude = pAvgSGP4Altitude;
     isPreInitialized = true;
 }
 
@@ -171,6 +172,7 @@ void CircularMobility::initialize(int stage)
         // CIRCLE SETUP
         // Circle setup (1): get simulation start point in TEME
         std::pair<std::vector<double>, std::vector<double>> firstPlanePointTEME = calcSatellitePositionTEME(0);
+        
         std::vector<double> r1stTEME = firstPlanePointTEME.first;
 
         // Circle setup (2): get another point in TEME, forming circular plane in TEME
@@ -187,7 +189,9 @@ void CircularMobility::initialize(int stage)
         std::vector<double> r2ndTEME = secondPlanePointTEME.first;
 
         // Circle setup (3): initialize circle with those points, radius of first point and TLE's mean motion
-        double radius = sqrt(pow(r1stTEME[0], 2) + pow(r1stTEME[1], 2) + pow(r1stTEME[2], 2));
+        double radius = 0; 
+        if (avgSGP4Altitude == -1.0) radius = sqrt(pow(r1stTEME[0], 2) + pow(r1stTEME[1], 2) + pow(r1stTEME[2], 2));
+        else radius = avgSGP4Altitude;
 
         circlePlane = CirclePlane(veins::Coord(r1stTEME[0], r1stTEME[1], r1stTEME[2]), veins::Coord(r2ndTEME[0], r2ndTEME[1], r2ndTEME[2]), radius, meanMotionRadPerSec);
 

@@ -1,5 +1,5 @@
 # constellations that are processed
-constellations: ["iridiumNEXT", "eccentric", "oneweb", "satnogs" , "starlink"]
+constellations: ["iridiumNEXT", "eccentric"] # "oneweb", "satnogs" , "starlink"]
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
 # determines coordinate frames for which sat. pos. csvs will be created

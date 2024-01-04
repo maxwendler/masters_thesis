@@ -44,9 +44,10 @@ class SPACE_VEINS_API CircularMobility : public inet::MovingMobilityBase {
     protected:
        
         int circlePlane2ndPointHalfOrbitTenth; 
+        double avgSGP4Altitude;
 
         bool isPreInitialized;
-        
+
         // Proj projections
         PJ_CONTEXT* pj_ctx;
         PJ* itrf2008_to_wgs84_projection;
@@ -97,7 +98,7 @@ class SPACE_VEINS_API CircularMobility : public inet::MovingMobilityBase {
         }
 
         // Sets ifstream to read trace coordinates.
-        void preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc);
+        void preInitialize(TLE pTle, std::string pWall_clock_sim_start_time_utc, double avgSGP4Altitude);
         
         // from SGP4Mobility
         void updateSatellitePosition();

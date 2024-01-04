@@ -11,5 +11,5 @@ simple CircularMobility extends MovingMobilityBase
         @class(space_veins::CircularMobility);
         @display("i=block/cogwheel");
         @signal[mobilityStateChanged](type=inet::MobilityBase);
-        int circlePlane2ndPointHalfOrbitTenth = default(9); 
+        int circlePlane2ndPointHalfOrbitTenth = default(9);
 }

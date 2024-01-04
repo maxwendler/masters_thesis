@@ -2,7 +2,7 @@ import argparse
 
 CONFIG_TEMPLATE_PATH = "/workspaces/ma-max-wendler/scripts/keplertraces/config_template.txt"
 
-def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_limit: int):
+def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int):
     
     # load config template
     template_str = None    
@@ -36,6 +36,7 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_
         new_lines.append(line)
     
     # add configurations for TLE lists
+    print(constellations)
     for i in range(0, len(tles_fnames)):
 
         # same walltime for configs of all mobility models
@@ -74,7 +75,10 @@ def update(ini_path: str, tles_paths: list[str], traces_dir_path: str, sim_time_
         # remove traces path line
         circular_config_lines.pop(7)
         # insert line for parameter study about which second circle plane point to choose 
-        circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = ${halfOrbitTenth=5,25,45,65,85,105,125,145,165}")
+        circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = ${halfOrbitTenth=5,25,45,65,85,105,125,145,165}\n")
+        if i < len(avg_sgp4_altitudes_paths):
+            circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = ${SGP4Alts=false}\n")
+            circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4AltitudesPath = " + f'"{avg_sgp4_altitudes_paths[i]}"' + "\n")
         new_lines += circular_config_lines
 
     input_ini_fname = ini_path.split("/")[-1] 
@@ -89,8 +93,11 @@ if __name__ == "__main__":
                                     )
     parser.add_argument('ini_path', help="Path of omnetpp.ini (for file update) or .ini template (for omnetpp.ini file).")
     parser.add_argument('traces_dir', help="Path of directory containing directories of traces indiviual TLE lists (named after TLE list files by 'create_traces.py').")
-    parser.add_argument('tles_paths', metavar='tle_path', type=str, nargs='+', help='Path of a TLE list.')
+    parser.add_argument('--tles_paths', "-t", metavar='tle_path', type=str, nargs='+', help='Path of a TLE list.')
+    parser.add_argument('--avg_sgp4_altitudes_paths', metavar="avg_sgp4_altitudes_path", type=str, nargs="+")
     parser.add_argument('sim_time_limit', type=int)
 
     args = parser.parse_args()
-    update(args.ini_path, args.tles_paths , args.traces_dir, args.sim_time_limit)
+    print(args.tles_paths)
+    print(args.avg_sgp4_altitudes_paths)
+    update(args.ini_path, args.tles_paths , args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit)

@@ -66,6 +66,10 @@ class SPACE_VEINS_API SatelliteInserter : public cSimpleModule
         std::string satelliteModuleDefaultName;
         std::string satelliteConstellationsModuleName;
         std::string wall_clock_sim_start_time_utc;  // wall clock start time of the simulation's begin
+        
+        std::string avgSGP4AltitudesPath;
+        bool useAvgSGP4Alts;
+        std::map<std::string,double> avgSGP4Altitudes; 
 
         unsigned int satelliteVectorSize = 0;
         unsigned int starlinkVectorSize = 0;

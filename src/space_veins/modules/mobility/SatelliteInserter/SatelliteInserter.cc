@@ -34,6 +34,10 @@
 #include <vector>
 #include <boost/algorithm/string/trim.hpp>
 
+
+ 
+#include <iostream>
+
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"
 #include "space_veins/modules/mobility/SGP4Mobility/SGP4Mobility.h"
@@ -53,11 +57,47 @@ void SatelliteInserter::initialize(int stage)
             ASSERT(mobilityType != "None");
             if (mobilityType == "SGP4" || mobilityType == "Circular") pathToTleFile = par("pathToTleFile").stringValue();
             if (mobilityType == "Kepler") pathToTracesDir = par("pathToTracesDir").stringValue();
-
+            if (mobilityType == "Circular") 
+            {
+                avgSGP4AltitudesPath = par("avgSGP4AltitudesPath").stringValue();
+                useAvgSGP4Alts = par("useAvgSGP4Alts").boolValue();
+            }
             satelliteModuleType = par("satelliteModuleType").stringValue();
             satelliteModuleDefaultName = par("satelliteModuleDefaultName").stringValue();
             wall_clock_sim_start_time_utc = par("wall_clock_sim_start_time_utc").stringValue();
             ignoreUnknownSatellites = par("ignoreUnknownSatellites").boolValue();
+
+            // load map of module name (used in create_satellite) to  
+            if (mobilityType == "Circular" && useAvgSGP4Alts)
+            {
+                avgSGP4Altitudes = std::map<std::string,double>();
+                std::fstream file (avgSGP4AltitudesPath, std::ios::in);
+                if(file.is_open())
+                {
+                    std::string word;
+                    std::string line="header";
+                    //std::string moduleName;
+                    std::vector<std::string> row;
+                    //double avgAltitude;
+                    // skip header
+                    getline(file, line);
+                    while(getline(file, line))
+                    {
+
+                        row.clear();
+                        std::stringstream str(line);
+            
+                        while(getline(str, word, ','))
+                            row.push_back(word);
+                        
+                        avgSGP4Altitudes[row[0]] = std::stod(row[1]);
+                    }
+                }
+                else{
+                    std::cout<<"Could not open the file\n";
+                    }
+            }
+
             break;
 
         case 98:
@@ -76,6 +116,7 @@ void SatelliteInserter::parseTleFile(std::string path)
     std::string tleLine;
     int tleLineNumber = 0;
     TLE tle;
+
     while (std::getline(tleFile, tleLine))
     {
         switch (tleLineNumber)
@@ -256,7 +297,16 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
             throw cRuntimeError("No mobility submodules found for Satellite module. Have you set the *.leo*[*].mobility.typename to CircularMobility?");
         }
         for (CircularMobility* sm : tleMobility){
-            sm->preInitialize(tle, wall_clock_sim_start_time_utc);
+            std::string modname = "leo" + constellation + "[" +  std::to_string(satNum) + "]";
+            if (!useAvgSGP4Alts)
+            {
+                 sm->preInitialize(tle, wall_clock_sim_start_time_utc, -1.0);
+            }
+            else 
+            {
+                 sm->preInitialize(tle, wall_clock_sim_start_time_utc, avgSGP4Altitudes[modname]);
+            }
+           
         }
     }
     else{

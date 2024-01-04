@@ -32,6 +32,14 @@ def get_tles_paths():
     
     return tles_fpaths
 
+def get_avg_sgp4_altitudes_paths():
+    constellations = config["constellations"]
+    avg_sgp4_altitudes_paths = []
+
+    for fname in filter(lambda fname: fname.split("-")[0] in constellations, os.listdir("csv/avg_alt/")):
+        avg_sgp4_altitudes_paths.append("csv/avg_alt/" + fname)
+    
+    return reversed(avg_sgp4_altitudes_paths)
 
 def get_debug_str():
     """
@@ -43,6 +51,8 @@ def get_debug_str():
 """
 RULES FOR RUNNING THE SIMULATION
 """
+
+
 
 rule update_omnetini:
     """
@@ -58,11 +68,12 @@ rule update_omnetini:
         # as snakemake won't accept filepath strings containing quotes as input
         # but call of python scripts requires them
         quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
-        sim_time_limit = config["sim-time-limit"]
+        sim_time_limit = config["sim-time-limit"],
+        avg_sgp4_altitudes_paths = quote_strs(get_avg_sgp4_altitudes_paths())
     output:
         "omnetpp.ini"
     shell:
-        """python3 {input.script} {input.ini_template} traces/ {params.quoted_tles_paths} {params.sim_time_limit}
+        """python3 {input.script} {input.ini_template} traces/ {params.sim_time_limit} --tles_paths {params.quoted_tles_paths} --avg_sgp4_altitudes_paths {params.avg_sgp4_altitudes_paths}
         
         cp backups/omnetpp.ini old/omnetpp.ini
 
