@@ -75,9 +75,9 @@ def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[
         # remove traces path line
         circular_config_lines.pop(7)
         # insert line for parameter study about which second circle plane point to choose 
-        circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = ${halfOrbitTenth=5,25,45,65,85,105,125,145,165}\n")
+        circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = ${halfOrbitTenth=5,25,45,65}\n")
         if i < len(avg_sgp4_altitudes_paths):
-            circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = ${SGP4Alts=false}\n")
+            circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = ${SGP4Alts=false,true}\n")
             circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4AltitudesPath = " + f'"{avg_sgp4_altitudes_paths[i]}"' + "\n")
         new_lines += circular_config_lines
 
