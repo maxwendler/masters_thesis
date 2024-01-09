@@ -995,6 +995,18 @@ rule validate_circular_radii:
     shell:
         "python3 {input.script} {input.circular_teme_csv} {output}"
 
+rule update_net_xml_location:
+    input:
+        script="../../scripts/update_net_xml.py",
+        net_xml="Null-Island-3by3-grid.net.xml_template"
+    output:
+        "Null-Island-3by3-grid.net.xml"
+    params:
+        location_str=lambda wildcards: config["locations_xml"][config["location"]]
+    shell:
+        "python3 {input.script} {input.net_xml} '{params.location_str}' {output}"
+
+
 """
 RULES FOR PLOTTING SATELLITE ORBITS
 """

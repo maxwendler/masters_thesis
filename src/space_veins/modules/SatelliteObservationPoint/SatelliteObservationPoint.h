@@ -72,7 +72,7 @@ protected:
     inet::StationaryMobility* mobility;
     veins::Coord sop_omnet_coord;
     veins::TraCICoord sop_traci_coord;    // SUMO coordinate
-    veins::TraCICoord sop_utm_coord;      // UTM coordinate: sumo coordinates + sumo netOffset
+    veins::TraCICoord sop_utm_ups_coord;      // UTM coordinate: sumo coordinates + sumo netOffset
     WGS84Coord sop_wgs84;
     PJ_COORD sop_wgs84_proj_cart;
 

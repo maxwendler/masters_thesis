@@ -31,7 +31,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
-<location netOffset="-3039483,-2236990.02" convBoundary="0.00,0.00,750.00,744.98" origBoundary="0.000000,-0.005062,0.047989,0.000000" projParameter="+proj=ups +ellps=WGS84 +x_0=2000000 +y_0=2000000 +south" />
+    <location netOffset="-3039483,-2236990.02" convBoundary="0.00,0.00,750.00,744.98" origBoundary="0.000000,-0.005062,0.047989,0.000000" projParameter="+proj=ups +ellps=WGS84 +x_0=2000000 +y_0=2000000 +south" />
 
     <edge id=":n0_0_0" function="internal">
         <lane id=":n0_0_0_0" index="0" speed="6.08" length="7.74" shape="3.20,746.58 1.10,746.28 -0.40,745.38 -1.30,743.88 -1.60,741.78"/>

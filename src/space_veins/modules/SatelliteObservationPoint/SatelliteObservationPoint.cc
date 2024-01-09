@@ -172,12 +172,12 @@ void SatelliteObservationPoint::initialize(int stage)
         sop_traci_coord = coordinateTransformation->omnet2traci(sop_omnet_coord);
         EV_DEBUG << "SOP: sop_traci_coord: " << sop_traci_coord.x << ", " << sop_traci_coord.y << std::endl;
 
-        // Apply netOffset to get UTM coords
-        sop_utm_coord = veins::TraCICoord(sop_traci_coord.x - netOffset.x, sop_traci_coord.y - netOffset.y);
-        EV_DEBUG << "SOP: sop_utm_coord: " << sop_utm_coord.x << ", " << sop_utm_coord.y << std::endl;
+        // Apply netOffset to get UTM/UPS coords
+        sop_utm_ups_coord = veins::TraCICoord(sop_traci_coord.x - netOffset.x, sop_traci_coord.y - netOffset.y);
+        EV_DEBUG << "SOP: sop_utm_coord: " << sop_utm_ups_coord.x << ", " << sop_utm_ups_coord.y << std::endl;
 
         // Transform sop_traci_coord (UTM) into a WGS84 coordinate
-        PJ_COORD toTransfer = proj_coord(sop_utm_coord.x, sop_utm_coord.y, 0, 0);
+        PJ_COORD toTransfer = proj_coord(sop_utm_ups_coord.x, sop_utm_ups_coord.y, 0, 0);
         PJ_COORD sop_wgs84_proj = proj_trans(sumo_to_wgs84_projection, PJ_FWD, toTransfer);
         EV_TRACE << "SOP: sop_wgs84_proj: latitude: " << sop_wgs84_proj.lp.phi << ", longitude: " << sop_wgs84_proj.lp.lam << std::endl;
         sop_wgs84 = WGS84Coord(sop_wgs84_proj.lp.phi, sop_wgs84_proj.lp.lam, 0.0);
@@ -210,7 +210,7 @@ WGS84Coord SatelliteObservationPoint::get_sop_wgs84() const
 
 veins::TraCICoord SatelliteObservationPoint::get_sop_utm_coord() const
 {
-    return sop_utm_coord;
+    return sop_utm_ups_coord;
 }
 
 veins::TraCICoord SatelliteObservationPoint::get_sop_traci_coord() const
