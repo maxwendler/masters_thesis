@@ -38,56 +38,69 @@ for comm_comp_fname in filter(lambda fname: fname.endswith("communication_compar
 # sort by offset to epoch
 data.sort(key=lambda data_tuple: data_tuple[0])
 
-# create point plot with modname annotation for every point
-offsets = []
-pos_offsets = []
-zenith_shifts = []
-pos_offset_zenith_shifts = []
+if len(data) == 0:
+    fig = go.Figure()
+    fig.add_annotation(dict(font=dict(color="black",size=40),
+                    x=0.5,
+                    y=0.5,
+                    showarrow=False,
+                    text="No common communication for which intervals exist.",
+                    textangle=0,
+                    xref="paper",
+                    yref="paper"))
 
-for i in range(len(data)):
-    
-    offset = data[i][0]
-    zenith_shift = data[i][1]
-    
-    offsets.append(offset)
-    zenith_shifts.append(zenith_shift)
+else:
 
-    if offset >= 0:
-        pos_offsets.append(offset)
-        pos_offset_zenith_shifts.append(zenith_shift)
-    
+    # create point plot with modname annotation for every point
+    offsets = []
+    pos_offsets = []
+    zenith_shifts = []
+    pos_offset_zenith_shifts = []
 
-linear_fun = Polynomial.fit(pos_offsets, pos_offset_zenith_shifts, deg=1)
-linear_fun_xs = [0, max(pos_offsets)]
-linear_fun_ys = [linear_fun(0), linear_fun(linear_fun_xs[1])]
+    for i in range(len(data)):
+        
+        offset = data[i][0]
+        zenith_shift = data[i][1]
+        
+        offsets.append(offset)
+        zenith_shifts.append(zenith_shift)
 
-fig = go.Figure(data=go.Scatter(x=offsets, y=zenith_shifts, mode='markers'))
-fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
+        if offset >= 0:
+            pos_offsets.append(offset)
+            pos_offset_zenith_shifts.append(zenith_shift)
+        
 
-fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0: {str(linear_fun.convert())}')
-fig.update_xaxes(title_text='seconds to epoch')
-fig.update_yaxes(title_text='zenith shift in seconds')
+    linear_fun = Polynomial.fit(pos_offsets, pos_offset_zenith_shifts, deg=1)
+    linear_fun_xs = [0, max(pos_offsets)]
+    linear_fun_ys = [linear_fun(0), linear_fun(linear_fun_xs[1])]
 
-# estimate from just trying!
-average_pixel_width_per_char = 6
-padding = 0
-yshift_sign = 1
+    fig = go.Figure(data=go.Scatter(x=offsets, y=zenith_shifts, mode='markers'))
+    fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
 
-# modname annotations
-for data_tuple in data:
+    fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0: {str(linear_fun.convert())}')
+    fig.update_xaxes(title_text='seconds to epoch')
+    fig.update_yaxes(title_text='zenith shift in seconds')
 
-    modname = data_tuple[2]
-    yshift = (len(modname) * average_pixel_width_per_char / 2 + padding) * yshift_sign
-    yshift_sign *= -1
+    # estimate from just trying!
+    average_pixel_width_per_char = 6
+    padding = 0
+    yshift_sign = 1
 
-    fig.add_annotation(
-        x=data_tuple[0], y=data_tuple[1],
-        text=data_tuple[2],
-        showarrow=False,
-        font=dict(size=4, color="Black"),
-        textangle=90,
-        yshift=yshift
-    )
+    # modname annotations
+    for data_tuple in data:
+
+        modname = data_tuple[2]
+        yshift = (len(modname) * average_pixel_width_per_char / 2 + padding) * yshift_sign
+        yshift_sign *= -1
+
+        fig.add_annotation(
+            x=data_tuple[0], y=data_tuple[1],
+            text=data_tuple[2],
+            showarrow=False,
+            font=dict(size=4, color="Black"),
+            textangle=90,
+            yshift=yshift
+        )
 
 fig.write_image(args.svg_output_path, width=1920, height=1080)
 fig.write_html(args.svg_output_path.removesuffix("svg") + "html")

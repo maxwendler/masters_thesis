@@ -49,17 +49,17 @@ for path in info_json_paths:
     total_excluded_time_to_ref_times.append(comm_periods["total_excluded_time_to_ref_time"])
 
 # calculate averages
-avg_coverage = sum(coverages) / len(coverages)
-avg_exlusion = sum(exclusions) / len(exclusions)
-avg_excluded_to_ref = sum(total_excluded_time_to_ref_times) / len(total_excluded_time_to_ref_times)
-min_zenith_shift = min(zenith_shifts)
-max_zenith_shift = max(zenith_shifts)
-avg_zenith_shift = sum(zenith_shifts) / len(zenith_shifts)
-median_zenith_shift = median(zenith_shifts)
-min_duration_change = min(duration_changes)
-max_duration_change = max(duration_changes)
-avg_duration_change = sum(duration_changes) / len(duration_changes)
-median_duration_change = median(duration_changes)
+avg_coverage = sum(coverages) / len(coverages) if len(coverages) > 0 else None
+avg_exlusion = sum(exclusions) / len(exclusions) if len(exclusions) > 0 else None
+avg_excluded_to_ref = sum(total_excluded_time_to_ref_times) / len(total_excluded_time_to_ref_times) if len(total_excluded_time_to_ref_times) > 0 else None
+min_zenith_shift = min(zenith_shifts) if len(zenith_shifts) > 0 else None
+max_zenith_shift = max(zenith_shifts) if len(zenith_shifts) > 0 else None
+avg_zenith_shift = sum(zenith_shifts) / len(zenith_shifts) if len(zenith_shifts) > 0 else None
+median_zenith_shift = median(zenith_shifts) if len(duration_changes) > 0 else None
+min_duration_change = min(duration_changes) if len(duration_changes) > 0 else None
+max_duration_change = max(duration_changes) if len(duration_changes) > 0 else None
+avg_duration_change = sum(duration_changes) / len(duration_changes) if len(duration_changes) > 0 else None
+median_duration_change = median(duration_changes) if len(duration_changes) > 0 else None
 
 output = {"avg_ref_coverage": avg_coverage,
           "avg_new_exclusion": avg_exlusion,

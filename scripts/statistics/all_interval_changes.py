@@ -430,42 +430,42 @@ summary = {
     },
     "next_nonoverlap_intervals": {
         "start_to_end_intervals": {
-            "min": min(all_nonoverlap_interval_diffs),
-            "max": max(all_nonoverlap_interval_diffs),
-            "avg": sum(all_nonoverlap_interval_diffs) / len(all_nonoverlap_interval_diffs),
-            "min_abs": min(all_abs_nonoverlap_interval_diffs),
-            "max_abs": max(all_abs_nonoverlap_interval_diffs),
-            "avg_abs": sum(all_abs_nonoverlap_interval_diffs) / len(all_abs_nonoverlap_interval_diffs),
+            "min": min(all_nonoverlap_interval_diffs) if len(all_nonoverlap_interval_diffs) > 0 else None,
+            "max": max(all_nonoverlap_interval_diffs) if len(all_nonoverlap_interval_diffs) > 0 else None,
+            "avg": sum(all_nonoverlap_interval_diffs) / len(all_nonoverlap_interval_diffs) if len(all_nonoverlap_interval_diffs) > 0 else None,
+            "min_abs": min(all_abs_nonoverlap_interval_diffs) if len(all_abs_nonoverlap_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_nonoverlap_interval_diffs) if len(all_nonoverlap_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_nonoverlap_interval_diffs) / len(all_abs_nonoverlap_interval_diffs) if len(all_nonoverlap_interval_diffs) > 0 else None,
             "new_overlaps": {
                 "num": len(new_overlaps),
                 "instances": new_overlaps
             }
         },
         "zenith_intervals": {
-            "min": min(all_nonoverlap_zenith_interval_diffs),
-            "max": max(all_nonoverlap_zenith_interval_diffs),
-            "avg": sum(all_nonoverlap_zenith_interval_diffs) / len(all_nonoverlap_zenith_interval_diffs),
-            "min_abs": min(all_abs_nonoverlap_zenith_interval_diffs),
-            "max_abs": max(all_abs_nonoverlap_zenith_interval_diffs),
-            "avg_abs": sum(all_abs_nonoverlap_zenith_interval_diffs) / len(all_abs_nonoverlap_zenith_interval_diffs)
+            "min": min(all_nonoverlap_zenith_interval_diffs) if len(all_nonoverlap_zenith_interval_diffs) > 0 else None,
+            "max": max(all_nonoverlap_zenith_interval_diffs) if len(all_nonoverlap_zenith_interval_diffs) > 0 else None,
+            "avg": sum(all_nonoverlap_zenith_interval_diffs) / len(all_nonoverlap_zenith_interval_diffs) if len(all_nonoverlap_zenith_interval_diffs) > 0 else None,
+            "min_abs": min(all_abs_nonoverlap_zenith_interval_diffs) if len(all_abs_nonoverlap_zenith_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_nonoverlap_zenith_interval_diffs) if len(all_abs_nonoverlap_zenith_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_nonoverlap_zenith_interval_diffs) / len(all_abs_nonoverlap_zenith_interval_diffs) if len(all_abs_nonoverlap_zenith_interval_diffs) > 0 else None
         }
     },
     "all_intervals": {
         "start_to_end_intervals": {
-            "min": min(all_interval_diffs),
-            "max": max(all_interval_diffs),
-            "avg": sum(all_interval_diffs) / len(all_interval_diffs),
-            "min_abs": min(all_abs_interval_diffs),
-            "max_abs": max(all_abs_interval_diffs),
-            "avg_abs": sum(all_abs_interval_diffs) / len(all_abs_interval_diffs)  
+            "min": min(all_interval_diffs) if len(all_interval_diffs) > 0 else None,
+            "max": max(all_interval_diffs) if len(all_interval_diffs) > 0 else None,
+            "avg": sum(all_interval_diffs) / len(all_interval_diffs) if len(all_interval_diffs) > 0 else None,
+            "min_abs": min(all_abs_interval_diffs) if len(all_abs_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_interval_diffs) if len(all_abs_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_interval_diffs) / len(all_abs_interval_diffs)  if len(all_abs_interval_diffs) > 0 else None
         },
         "zenith_intervals": {
-            "min": min(all_zenith_interval_diffs),
-            "max": max(all_zenith_interval_diffs),
-            "avg": sum(all_zenith_interval_diffs) / len(all_zenith_interval_diffs),
-            "min_abs": min(all_abs_zenith_interval_diffs),
-            "max_abs": max(all_abs_zenith_interval_diffs),
-            "avg_abs": sum(all_abs_zenith_interval_diffs) / len(all_abs_zenith_interval_diffs)
+            "min": min(all_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None,
+            "max": max(all_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None,
+            "avg": sum(all_zenith_interval_diffs) / len(all_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None,
+            "min_abs": min(all_abs_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None,
+            "max_abs": max(all_abs_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None,
+            "avg_abs": sum(all_abs_zenith_interval_diffs) / len(all_abs_zenith_interval_diffs) if len(all_zenith_interval_diffs) > 0 else None
         }
     }
 }

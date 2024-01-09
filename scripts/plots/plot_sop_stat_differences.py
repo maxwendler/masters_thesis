@@ -64,82 +64,95 @@ if args.comm_comp_json:
     # one row of angles, distances, delays per period or period group
     row_num = len(period_or_periodgroup_list)
 
-    # only have subplot titles for first row as titles for whole column
-    fig = make_subplots(rows=row_num, cols=3, subplot_titles=[diff_or_change_str + " of elevation angle",
-                                                              diff_or_change_str + " of distance to SOP",
-                                                              diff_or_change_str + " of delay"] + [""] * (row_num*3 - 1))
-
-    fig.update_layout(showlegend=False)
-
-    # add annotations identifying colors with overlapping period values, unmatched ref mobility periods and unmatched new mobility periods
-    fig.add_annotation(dict(font=dict(color="blue",size=14),
-                            x=0,
-                            y=1.2,
-                            showarrow=False,
-                            text=f"overlapping periods values",
-                            textangle=0,
-                            xref="paper",
-                            yref="paper"))
-
-    fig.add_annotation(dict(font=dict(color="green",size=14),
-                            x=0,
-                            y=1.15,
-                            showarrow=False,
-                            text=f"unmatched {ref_mobility} values",
-                            textangle=0,
-                            xref="paper",
-                            yref="paper"))
+    if row_num == 0:    
+        fig = go.Figure()
+        fig.add_annotation(dict(font=dict(color="black",size=40),
+                        x=0.5,
+                        y=0.5,
+                        showarrow=False,
+                        text="No common communication periods to display.",
+                        textangle=0,
+                        xref="paper",
+                        yref="paper"))
     
-    fig.add_annotation(dict(font=dict(color="orange",size=14),
-                            x=0,
-                            y=1.1,
-                            showarrow=False,
-                            text=f"unmatched {new_mobility} values",
-                            textangle=0,
-                            xref="paper",
-                            yref="paper"))
+    else:
 
-    for p_or_p_group_idx in range(0, len(period_or_periodgroup_list)):
+        # only have subplot titles for first row as titles for whole column
+        fig = make_subplots(rows=row_num, cols=3, subplot_titles=[diff_or_change_str + " of elevation angle",
+                                                                diff_or_change_str + " of distance to SOP",
+                                                                diff_or_change_str + " of delay"] + [""] * (row_num*3 - 1))
+
+        fig.update_layout(showlegend=False)
+
+        # add annotations identifying colors with overlapping period values, unmatched ref mobility periods and unmatched new mobility periods
+        fig.add_annotation(dict(font=dict(color="blue",size=14),
+                                x=0,
+                                y=1.2,
+                                showarrow=False,
+                                text=f"overlapping periods values",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
+
+        fig.add_annotation(dict(font=dict(color="green",size=14),
+                                x=0,
+                                y=1.15,
+                                showarrow=False,
+                                text=f"unmatched {ref_mobility} values",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
         
-        p_or_p_group = period_or_periodgroup_list[p_or_p_group_idx]
-        is_p_group = ref_mobility in p_or_p_group.keys() and new_mobility in p_or_p_group.keys()
+        fig.add_annotation(dict(font=dict(color="orange",size=14),
+                                x=0,
+                                y=1.1,
+                                showarrow=False,
+                                text=f"unmatched {new_mobility} values",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
 
-        plot_start_sec = get_period_start(p_or_p_group, ref_mobility, new_mobility)
-        plot_end_sec = get_period_end(p_or_p_group, ref_mobility, new_mobility)
-        sec_range = list( range(plot_start_sec, plot_end_sec + 1) )
-        
-        local_angle_diffs_or_changes = angle_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
-        local_distance_diffs_or_changes = distance_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
-        local_delay_diffs_or_changes = delay_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
+        for p_or_p_group_idx in range(0, len(period_or_periodgroup_list)):
+            
+            p_or_p_group = period_or_periodgroup_list[p_or_p_group_idx]
+            is_p_group = ref_mobility in p_or_p_group.keys() and new_mobility in p_or_p_group.keys()
 
-        color = ""
-        if is_p_group:
-            color="blue"
-        else:
-            if ref_mobility in p_or_p_group.keys():
-                color="green"
+            plot_start_sec = get_period_start(p_or_p_group, ref_mobility, new_mobility)
+            plot_end_sec = get_period_end(p_or_p_group, ref_mobility, new_mobility)
+            sec_range = list( range(plot_start_sec, plot_end_sec + 1) )
+            
+            local_angle_diffs_or_changes = angle_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
+            local_distance_diffs_or_changes = distance_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
+            local_delay_diffs_or_changes = delay_diffs_or_changes[plot_start_sec - args.sim_start_sec: plot_end_sec + 1 - args.sim_start_sec]
+
+            color = ""
+            if is_p_group:
+                color="blue"
             else:
-                color="orange"
+                if ref_mobility in p_or_p_group.keys():
+                    color="green"
+                else:
+                    color="orange"
 
-        fig.add_trace(
-            go.Scatter(x=sec_range, 
-                    y=local_angle_diffs_or_changes,
-                    line=dict(color=color)),
-            row=p_or_p_group_idx + 1, col=1,
-        )
+            fig.add_trace(
+                go.Scatter(x=sec_range, 
+                        y=local_angle_diffs_or_changes,
+                        line=dict(color=color)),
+                row=p_or_p_group_idx + 1, col=1,
+            )
 
-        fig.add_trace(
-            go.Scatter(x=sec_range, 
-                    y=local_distance_diffs_or_changes,
-                    line=dict(color=color)),
-            row=p_or_p_group_idx + 1, col=2,
-        )
+            fig.add_trace(
+                go.Scatter(x=sec_range, 
+                        y=local_distance_diffs_or_changes,
+                        line=dict(color=color)),
+                row=p_or_p_group_idx + 1, col=2,
+            )
 
-        fig.add_trace(
-            go.Scatter(x=sec_range, 
-                    y=local_delay_diffs_or_changes,
-                    line=dict(color=color)),
-            row=p_or_p_group_idx + 1, col=3,
+            fig.add_trace(
+                go.Scatter(x=sec_range, 
+                        y=local_delay_diffs_or_changes,
+                        line=dict(color=color)),
+                row=p_or_p_group_idx + 1, col=3,
         )
 
 # full simulation time plots

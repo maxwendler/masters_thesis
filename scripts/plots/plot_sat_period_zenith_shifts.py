@@ -32,17 +32,18 @@ fig.update_xaxes(title_text='seconds to epoch')
 fig.update_yaxes(title_text='zenith shift in seconds')
 
 # epoch line marker and annotation
-fig.add_shape(
-    type="line",
-    x0=0, y0=min(0, min(zenith_shifts)), x1=0, y1=max(zenith_shifts),
-    line=dict(color="Red", width=1, dash="dash")
-)
+if len(zenith_shifts) > 0:
+    fig.add_shape(
+        type="line",
+        x0=0, y0=min(0, min(zenith_shifts)), x1=0, y1=max(zenith_shifts),
+        line=dict(color="Red", width=1, dash="dash")
+    )
 
-fig.add_annotation(
-    x=0, y=max(zenith_shifts),
-    text="epoch of satellite",
-    showarrow=False,
-    font=dict(size=14, color="Red")
-)
+    fig.add_annotation(
+        x=0, y=max(zenith_shifts),
+        text="epoch of satellite",
+        showarrow=False,
+        font=dict(size=14, color="Red")
+    )
 
 fig.write_image(args.output_path)
