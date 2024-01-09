@@ -2,7 +2,7 @@ import argparse
 
 CONFIG_TEMPLATE_PATH = "/workspaces/ma-max-wendler/scripts/keplertraces/config_template.txt"
 
-def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int):
+def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int, location: str):
     
     # load config template
     template_str = None    
@@ -33,6 +33,8 @@ def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[
             debug_section_found = True
         if line.startswith("sim-time-limit") and not debug_section_found:
             line = "sim-time-limit = ${simTimeLimit=" + str(sim_time_limit) + "}s\n"
+        if line.startswith("*.sop.location"):
+            line = '*.sop.location = ${location="' + location +'"}\n'
         new_lines.append(line)
     
     # add configurations for TLE lists
@@ -96,8 +98,9 @@ if __name__ == "__main__":
     parser.add_argument('--tles_paths', "-t", metavar='tle_path', type=str, nargs='+', help='Path of a TLE list.')
     parser.add_argument('--avg_sgp4_altitudes_paths', metavar="avg_sgp4_altitudes_path", type=str, nargs="+")
     parser.add_argument('sim_time_limit', type=int)
+    parser.add_argument('location')
 
     args = parser.parse_args()
     print(args.tles_paths)
     print(args.avg_sgp4_altitudes_paths)
-    update(args.ini_path, args.tles_paths , args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit)
+    update(args.ini_path, args.tles_paths , args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit, args.location)
