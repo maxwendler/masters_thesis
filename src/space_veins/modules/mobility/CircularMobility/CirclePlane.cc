@@ -7,11 +7,12 @@
 
 using namespace space_veins;
 
-CirclePlane::CirclePlane(veins::Coord point1, veins::Coord point2, double radius, double angularVelocityPerSecRad) :
+CirclePlane::CirclePlane(veins::Coord point1, veins::Coord point2, double radius, double angularVelocityPerSecRad, double startRadOffset=0) :
     inPoint1(point1),
     inPoint2(point2),
     radius(radius),
-    angularVelocityPerSecRad(angularVelocityPerSecRad)
+    angularVelocityPerSecRad(angularVelocityPerSecRad),
+    startRadOffset(startRadOffset)
 {
     // ensure input vectors don't have same direction
     // factor for x2 * k = x1 would hold for y2 * k = y1
@@ -33,6 +34,7 @@ CirclePlane& CirclePlane::operator=(const CirclePlane& other)
         cartesian2dSystem = other.cartesian2dSystem;
 
         const_cast<double&>(radius) = other.radius;
+        const_cast<double&>(startRadOffset) = other.startRadOffset;
         const_cast<veins::Coord&>(inPoint1) = other.inPoint1;
         const_cast<veins::Coord&>(inPoint2) = other.inPoint2;
         const_cast<double&>(angularVelocityPerSecRad) = other.angularVelocityPerSecRad;
@@ -54,7 +56,7 @@ void CirclePlane::calcUnitVectors()
 // 0 radians at inPoint1
 veins::Coord CirclePlane::getPointAtSecond(double t)
 {   
-    double radians = fmod( angularVelocityPerSecRad * t , 2 * M_PI);
+    double radians = fmod( angularVelocityPerSecRad * t + startRadOffset, 2 * M_PI);
 
     double x_in_2d = radius * cos(radians);
     double y_in_2d = radius * sin(radians);

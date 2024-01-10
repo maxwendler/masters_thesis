@@ -1,4 +1,5 @@
 #include "space_veins/modules/mobility/CircularMobility/CircularMobility.h"
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -9,10 +10,12 @@
 #include <vector>
 #include "inet/common/geometry/common/Coord.h"
 #include "space_veins/modules/mobility/CircularMobility/CirclePlane.h"
+#include "space_veins/modules/mobility/SGP4Mobility/SGP4.h"
 #include "space_veins/modules/utility/WGS84Coord.h"
 
 #include "space_veins/modules/mobility/SGP4Mobility/TEME2ITRF.h"
 #include "veins/base/utils/Coord.h"
+#include "space_veins/modules/mobility/CircularMobility/PolarCoordinates.h"
 
 using namespace space_veins;
 
@@ -48,6 +51,7 @@ void CircularMobility::initialize(int stage)
     MovingMobilityBase::initialize(stage);
     if (stage == 0) {
         
+        circlePlanePointsSource = par("circlePlanePointsSource").stringValue();
         circlePlane2ndPointHalfOrbitTenth = par("circlePlane2ndPointHalfOrbitTenth").intValue();
 
         EV_DEBUG << "Initializing SGP4Mobility module." << std::endl;
@@ -170,30 +174,76 @@ void CircularMobility::initialize(int stage)
         
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // CIRCLE SETUP
-        // Circle setup (1): get simulation start point in TEME
-        std::pair<std::vector<double>, std::vector<double>> firstPlanePointTEME = calcSatellitePositionTEME(0);
-        
-        std::vector<double> r1stTEME = firstPlanePointTEME.first;
-
-        // Circle setup (2): get another point in TEME, forming circular plane in TEME
 
         std::string meanMotionStr = tle.get_tle_line2().substr(52, 11);
         double meanMotionRevPerDay = std::stod(meanMotionStr); 
         double meanMotionRevPerSec = meanMotionRevPerDay / 86400;
         double meanMotionRadPerSec = meanMotionRevPerSec * 2 * M_PI;
 
-        double halfOrbitSecs = 0.5 / meanMotionRevPerSec;
-        double secondPlanePointMinutes = halfOrbitSecs * circlePlane2ndPointHalfOrbitTenth / 600 + 1;
-
-        std::pair<std::vector<double>, std::vector<double>> secondPlanePointTEME = calcSatellitePositionTEME(secondPlanePointMinutes);
-        std::vector<double> r2ndTEME = secondPlanePointTEME.first;
-
-        // Circle setup (3): initialize circle with those points, radius of first point and TLE's mean motion
-        double radius = 0; 
-        if (avgSGP4Altitude == -1.0) radius = sqrt(pow(r1stTEME[0], 2) + pow(r1stTEME[1], 2) + pow(r1stTEME[2], 2));
+        std::pair<std::vector<double>, std::vector<double>> sgp4StartPoint = calcSatellitePositionTEME(0); 
+        double radius = 0;
+        if (avgSGP4Altitude == -1.0) radius = sqrt(pow(sgp4StartPoint.first[0], 2) + pow(sgp4StartPoint.first[1], 2) + pow(sgp4StartPoint.first[2], 2));
         else radius = avgSGP4Altitude;
 
-        circlePlane = CirclePlane(veins::Coord(r1stTEME[0], r1stTEME[1], r1stTEME[2]), veins::Coord(r2ndTEME[0], r2ndTEME[1], r2ndTEME[2]), radius, meanMotionRadPerSec);
+        if (circlePlanePointsSource == "sgp4")
+        {
+            // Circle setup (1): get simulation start point in TEME
+            std::pair<std::vector<double>, std::vector<double>> firstPlanePointTEME = sgp4StartPoint;
+            
+            std::vector<double> r1stTEME = firstPlanePointTEME.first;
+
+            // Circle setup (2): get another point in TEME, forming circular plane in TEME
+
+            double halfOrbitSecs = 0.5 / meanMotionRevPerSec;
+            double secondPlanePointMinutes = halfOrbitSecs * circlePlane2ndPointHalfOrbitTenth / 600 + 1;
+
+            std::pair<std::vector<double>, std::vector<double>> secondPlanePointTEME = calcSatellitePositionTEME(secondPlanePointMinutes);
+            std::vector<double> r2ndTEME = secondPlanePointTEME.first;
+
+            // Circle setup (3): initialize circle with those points, radius of first point and TLE's mean motion
+            
+
+            circlePlane = CirclePlane(veins::Coord(r1stTEME[0], r1stTEME[1], r1stTEME[2]), veins::Coord(r2ndTEME[0], r2ndTEME[1], r2ndTEME[2]), radius, meanMotionRadPerSec, 0.0);
+        }
+        else if (circlePlanePointsSource == "tle")
+        {   
+            // all these entries from TLE use degree
+            std::string raanStr = tle.get_tle_line2().substr(17, 8);
+            double raan = std::stod(raanStr);
+            double raanRad = raan * PI/180;
+            std::string inclinationStr = tle.get_tle_line2().substr(8, 8);
+            double inclination = std::stod(inclinationStr);
+            std::string argpStr = tle.get_tle_line2().substr(34,8);
+            double argp = std::stod(argpStr);
+            std::string meanAnomStr = tle.get_tle_line2().substr(43,8);
+            double meanAnom = std::stod(meanAnomStr);
+            
+            // lowest polar angle lies at half of way between ascension and descension => +90°
+            double lowestPolarAngleAzimuthRad = fmod(raan + 90, 360) * PI/180;
+            // lowest polar angle: 90 - inclination
+            double lowestPolarAngleRad = (90 - inclination) * PI/180;
+
+            // first point for CirclePlane: ascending node
+            veins::Coord ascendingNode = PolarCoordinates(M_PI_2, raanRad, radius).getCartesianCoords();
+            // second point at lowest polar angle to ensure inclination
+            veins::Coord lowestPolarPoint = PolarCoordinates(lowestPolarAngleRad, lowestPolarAngleAzimuthRad, radius).getCartesianCoords();
+
+            double diffTleEpochWctSec = diffTleEpochWctMin * 60;
+            double radSinceTleEpoch = diffTleEpochWctSec * meanMotionRadPerSec;
+
+            double angleToAscendingNodeAtEpochDeg = argp + meanAnom;
+            double angleToAscendingNodeAtWctRad = fmod(angleToAscendingNodeAtEpochDeg * PI / 180  + radSinceTleEpoch, 2*PI);
+            if (angleToAscendingNodeAtWctRad < 0)
+            {
+                angleToAscendingNodeAtWctRad = 2*PI + angleToAscendingNodeAtWctRad;
+            }
+
+            circlePlane = CirclePlane(ascendingNode, lowestPolarPoint, radius, meanMotionRadPerSec, angleToAscendingNodeAtWctRad);
+        }
+        else
+        {
+            throw cRuntimeError("mobility.circlePlanePointsSource needs to be configured as either 'sgp4' or 'tle'.");
+        }
 
         // Statistics
         vehicleStatistics = VehicleStatisticsAccess().get(getParentModule());

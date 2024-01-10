@@ -5,6 +5,7 @@
 #include <random>
 #include <math.h>
 #include <vector>
+#include "space_veins/modules/mobility/CircularMobility/PolarCoordinates.h"
 
 namespace space_veins 
 {   
@@ -21,11 +22,12 @@ namespace space_veins
 
             const double radius;
             const double angularVelocityPerSecRad;
+            const double startRadOffset;
 
             Cartesian2dInPlane cartesian2dSystem;
             
-            CirclePlane():radius(0),angularVelocityPerSecRad(0){};
-            CirclePlane(veins::Coord point1, veins::Coord point2, double radius, double angularVelocityPerSecRad);
+            CirclePlane():radius(0),angularVelocityPerSecRad(0),startRadOffset(0){};
+            CirclePlane(veins::Coord point1, veins::Coord point2, double radius, double angularVelocityPerSecRad, double startRadOffset);
             CirclePlane& operator=(const CirclePlane& other);
 
             veins::Coord getPointAtSecond(double t);
