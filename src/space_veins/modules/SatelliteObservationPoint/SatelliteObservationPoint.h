@@ -36,6 +36,7 @@
 
 #include "space_veins/modules/mobility/SGP4Mobility/constants.h"
 #include "space_veins/modules/utility/WGS84Coord.h"
+#include "veins/modules/world/annotations/AnnotationManager.h"
 
 namespace space_veins {
 
@@ -70,6 +71,7 @@ public:
 
 protected:
     inet::StationaryMobility* mobility;
+    veins::AnnotationManager* annotations;
     veins::Coord sop_omnet_coord;
     veins::TraCICoord sop_traci_coord;    // SUMO coordinate
     veins::TraCICoord sop_utm_ups_coord;      // UTM coordinate: sumo coordinates + sumo netOffset
@@ -100,6 +102,10 @@ protected:
     std::string getNetOffsetString(const cXMLElement* sumoNetXmlFile) const;
 
     veins::Coord netOffsetString2Coord(const std::string no) const;
+
+    virtual void handleMessage(cMessage* message) override;
+
+    virtual void handleSelfMessage(cMessage* message);
 
 private:
     std::unique_ptr<veins::TraCICoordinateTransformation> coordinateTransformation;

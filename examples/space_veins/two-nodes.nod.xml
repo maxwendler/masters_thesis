@@ -1,0 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2023 Mario Franke <research@m-franke.net>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<!--80.417222°S, 77.116111°E-->
+<nodes>
+    <node id="n0_0" x="77.11611" y="-80" type="priority"/>
+    <node id="n1_0" x="78" y="-80" type="priority"/>
+</nodes>

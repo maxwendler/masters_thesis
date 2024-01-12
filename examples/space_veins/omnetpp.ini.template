@@ -28,9 +28,30 @@ network = SatelliteExampleScenario
 *.playgroundSizeZ = 9999999km
 
 ##########################################################
+#            TraCIScenarioManager parameters             #
+##########################################################
+*.manager.autoShutdown = true
+*.manager.updateInterval = 0.1s
+*.manager.moduleType = "space_veins.nodes.SatCar"
+
+*.manager.host = "localhost"
+*.manager.port = 9999
+*.manager.launchConfig = xmldoc("two-nodes.launchd.xml")
+
+##########################################################
+#                    VehicleInserter                     #
+##########################################################
+*.vehicleInserter.numVehicles = ${numVehicles=0}
+
+##########################################################
 #                 Physical environment                   #
 ##########################################################
 *.physicalEnvironment.ground.typename = "FlatGround"
+
+##########################################################
+#                   AnnotationManager                    #
+##########################################################
+*.annotations.draw = true
 
 ##########################################################
 #                    Visualization                       #
@@ -77,11 +98,11 @@ network = SatelliteExampleScenario
 ##########################################################
 #                        SOP                             #
 ##########################################################
-*.sop.sumoNetXmlFile = xmldoc("Null-Island-3by3-grid.net.xml")
+*.sop.sumoNetXmlFile = xmldoc("two-nodes.net.xml")
 *.sop.mobility.updateFromDisplayString = false
 *.sop.mobility.initFromDisplayString = false
-*.sop.mobility.initialX = 0m
-*.sop.mobility.initialY = 0m
+*.sop.mobility.initialX = 1000m
+*.sop.mobility.initialY = 1000m
 *.sop.mobility.initialZ = 0m
 *.sop.location = "quito"
 
@@ -240,15 +261,15 @@ network = SatelliteExampleScenario
 *.node[*].vehicleStatistics.wgs84CoordLon:vector.vector-recording = true
 *.node[*].vehicleStatistics.wgs84CoordAlt:vector.vector-recording = true
 
-*.leo*[*].vehicleStatistics.omnetCoordY:vector.vector-recording = true
-*.leo*[*].vehicleStatistics.omnetCoordZ:vector.vector-recording = true
-*.leo*[*].vehicleStatistics.omnetCoordX:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.omnetCoordY:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.omnetCoordZ:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.omnetCoordX:vector.vector-recording = true
 #*.leo*[*].vehicleStatistics.wgs84CoordLat:vector.vector-recording = false
 #*.leo*[*].vehicleStatistics.wgs84CoordLon:vector.vector-recording = false
 #*.leo*[*].vehicleStatistics.wgs84CoordAlt:vector.vector-recording = false
-*.leo*[*].vehicleStatistics.itrfCoordX:vector.vector-recording = true
-*.leo*[*].vehicleStatistics.itrfCoordY:vector.vector-recording = true
-*.leo*[*].vehicleStatistics.itrfCoordZ:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.itrfCoordX:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.itrfCoordY:vector.vector-recording = true
+#*.leo*[*].vehicleStatistics.itrfCoordZ:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordX:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordY:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordZ:vector.vector-recording = true

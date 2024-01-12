@@ -79,9 +79,12 @@ def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[
         # insert line for parameter study about which second circle plane point to choose 
         circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = 25\n")
         if i < len(avg_sgp4_altitudes_paths):
-            circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = true\n")
-            circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4AltitudesPath = " + f'"{avg_sgp4_altitudes_paths[i]}"' + "\n")
-        new_lines += circular_config_lines
+            if avg_sgp4_altitudes_paths[i] != "None":
+                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = true\n")
+                circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4AltitudesPath = " + f'"{avg_sgp4_altitudes_paths[i]}"' + "\n")
+            else:
+                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = false\n")
+            new_lines += circular_config_lines
 
     input_ini_fname = ini_path.split("/")[-1] 
     with open(ini_path.removesuffix(input_ini_fname) + "omnetpp.ini", "w") as new_ini_f:

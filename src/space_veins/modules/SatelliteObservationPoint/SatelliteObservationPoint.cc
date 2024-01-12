@@ -108,10 +108,39 @@ veins::Coord SatelliteObservationPoint::netOffsetString2Coord(const std::string 
     return offset;
 }
 
+void SatelliteObservationPoint::handleMessage(cMessage* message)
+{
+    if (message->isSelfMessage()) {
+        handleSelfMessage(message);
+    }else{
+        EV_DEBUG << "SOP: Error received cMessage that is not self message." << std::endl;
+        delete message;
+    }
+}
+
+void SatelliteObservationPoint::handleSelfMessage(cMessage* message)
+{
+    switch (message->getKind()) {
+    case 0: {
+        // draw SOP in SUMO
+        annotations->drawPoint(sop_omnet_coord, "red", "SOP");
+        EV_TRACE << "SOP: drawn SOP in SUMO at veins::Coord: " << sop_omnet_coord << std::endl;
+        break;
+    }
+    }
+}
+
 void SatelliteObservationPoint::initialize(int stage)
 {
     if (stage == 0) {
         mobility = static_cast<inet::StationaryMobility*>(getSubmodule("mobility"));
+        ASSERT(mobility);
+        // get AnnotationManager
+        annotations = veins::AnnotationManagerAccess().getIfExists();
+        ASSERT(annotations);
+
+        cMessage *drawPosition = new cMessage("drawMessage", 0);
+        scheduleAt(simTime() + 0.01, drawPosition);
     }
     if (stage == 3) {
         // Initialize projections after lastPosition of the mobility submodule is initialized

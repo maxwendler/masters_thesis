@@ -30,16 +30,29 @@ def get_tles_paths():
         if fname.split("_")[0] in tles_fname_prefixes and fname.endswith(".txt"):
             tles_fpaths.append(f'{"tles/" + fname}')
     
-    return tles_fpaths
+    return sorted(tles_fpaths)
 
 def get_avg_sgp4_altitudes_paths():
-    constellations = config["constellations"]
-    avg_sgp4_altitudes_paths = []
 
-    for fname in filter(lambda fname: fname.split("-")[0] in constellations, os.listdir("csv/avg_alt/")):
-        avg_sgp4_altitudes_paths.append("csv/avg_alt/" + fname)
-    
-    return reversed(avg_sgp4_altitudes_paths)
+    constellations = sorted(config["constellations"])
+    avg_sgp4_altitudes_dir = "csv/avg_alt/" + config["location"] + "/"
+    if os.path.isdir(avg_sgp4_altitudes_dir) and config["use_avg_sgp4_altitudes"]:
+        avg_alt_fnames = list(filter(lambda fname: fname.split("-")[0] in constellations, sorted(os.listdir( avg_sgp4_altitudes_dir ))))
+        
+        avg_sgp4_altitudes_paths = []
+        for c in constellations:
+            path = None
+            for fname in avg_alt_fnames:
+                if c in fname:
+                    path = avg_sgp4_altitudes_dir + fname
+            if path:
+                avg_sgp4_altitudes_paths.append(path)
+            else:
+                avg_sgp4_altitudes_paths.append("None")
+
+        return avg_sgp4_altitudes_paths
+    else:
+        return ["None"] * len(constellations)
 
 def get_debug_str():
     """
@@ -51,8 +64,6 @@ def get_debug_str():
 """
 RULES FOR RUNNING THE SIMULATION
 """
-
-
 
 rule update_omnetini:
     """
@@ -999,7 +1010,7 @@ rule avg_sgp4_altitudes:
         script="../../scripts/statistics/avg_sgp4_altitudes.py",
         sgp4_teme_csv="csv/vectors/{location}_{constellation}-sgp4_teme_sorted.csv"
     output:
-        "csv/avg_alt/{location}_{constellation}-sgp4_teme_avg_altitudes.csv"
+        "csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv"
     shell:
         "python3 {input.script} {input.sgp4_teme_csv} {output}"
 
@@ -1022,6 +1033,21 @@ rule update_net_xml_location:
         location_str=lambda wildcards: config["locations_xml"][config["location"]]
     shell:
         "python3 {input.script} {input.net_xml} '{params.location_str}' {output}"
+
+rule plot_constellation_properties:
+    input:
+        script="../../scripts/plots/plot_constellation_properties.py",
+        tles_dir="tles/",
+        avg_alts_dir="csv/avg_alt/{location}/"
+    params:
+        output_dir="plots/constellation_props/{location}/"
+    output:
+        "plots/constellation_props/{location}/.done"
+    shell:
+        """
+        python3 {input.script} {input.tles_dir} {input.avg_alts_dir} {params.output_dir}
+        touch {output}
+        """
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS

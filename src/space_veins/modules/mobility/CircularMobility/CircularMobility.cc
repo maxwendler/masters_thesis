@@ -239,6 +239,9 @@ void CircularMobility::initialize(int stage)
             }
 
             circlePlane = CirclePlane(ascendingNode, lowestPolarPoint, radius, meanMotionRadPerSec, angleToAscendingNodeAtWctRad);
+            veins::Coord testCoord = circlePlane.getPointAtSecond(0);
+            veins::Coord testCoord2 = circlePlane.getPointAtSecond(15);
+            std::string test = "haha";
         }
         else
         {

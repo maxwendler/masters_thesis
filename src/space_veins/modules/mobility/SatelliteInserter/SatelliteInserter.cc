@@ -93,9 +93,10 @@ void SatelliteInserter::initialize(int stage)
                         avgSGP4Altitudes[row[0]] = std::stod(row[1]);
                     }
                 }
-                else{
+                else
+                {
                     std::cout<<"Could not open the file\n";
-                    }
+                }
             }
 
             break;
