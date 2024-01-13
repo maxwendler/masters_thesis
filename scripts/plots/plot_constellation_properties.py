@@ -2,6 +2,7 @@ import argparse
 import os, sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.keplertraces.tleparse import read
+from scripts.utility.satname_to_modname import satname_to_modname
 import plotly.graph_objects as go
 import csv
 
@@ -35,6 +36,7 @@ for constellation in constellation_compositions.keys():
 all_tles_incs = []
 all_tles_eccs = []
 all_tles_meanmotions = []
+const_meanmotion_dicts = {}
 all_tles_categories = []
 
 for constellation in constellation_tles_paths.keys():
@@ -45,9 +47,15 @@ for constellation in constellation_tles_paths.keys():
 
     tles_idxs = list(range(1, len(tles) + 1))
     tles_categories = [1] * len(tles)
+    
     inclinations = sorted([tle.inc for tle in tles])
     eccs = sorted([tle.ecc for tle in tles])
-    meanmotions = sorted([tle.n for tle in tles])
+    
+    meanmotions_dict = {}
+    for tle in tles:
+        meanmotions_dict[tle.name] = tle.n
+    const_meanmotion_dicts[constellation] = meanmotions_dict
+    meanmotions_list = sorted(list(meanmotions_dict.values()))
 
     os.makedirs(output_dir + constellation, exist_ok=True)
 
@@ -74,19 +82,19 @@ for constellation in constellation_tles_paths.keys():
     vertical_fig.write_image(output_dir + constellation + "/" + "eccentricities_vertical.svg")
 
     # mean motion figures
-    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=meanmotions, mode='markers'))
+    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=meanmotions_list, mode='markers'))
     line_fig.update_layout(title=constellation)
     line_fig.update_yaxes(title="mean motion in rev/day")
     line_fig.write_image(output_dir + constellation + "/" + "meanmotions_line.svg")
 
-    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=meanmotions, mode='markers'))
+    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=meanmotions_list, mode='markers'))
     vertical_fig.update_layout(title=constellation)
     vertical_fig.update_yaxes(title="mean motion in rev/day")
     vertical_fig.write_image(output_dir + constellation + "/" + "meanmotions_vertical.svg")
 
     all_tles_incs += inclinations
     all_tles_eccs += eccs
-    all_tles_meanmotions += meanmotions
+    all_tles_meanmotions += meanmotions_list
     all_tles_categories += [constellation] * len(inclinations)
 
 # all constellations in one figs
@@ -122,7 +130,7 @@ for constellation in constellation_compositions.keys():
             if comp in p:
                 const_avg_alt_paths.append(p)
     
-    const_avg_alts = []
+    const_avg_alts_dict = {}
     for p in const_avg_alt_paths:
 
         with open(p, "r") as csv_f:
@@ -130,25 +138,47 @@ for constellation in constellation_compositions.keys():
             row_reader = csv.reader(csv_f)
             header = row_reader.__next__()
             for row in row_reader:
-                const_avg_alts.append(float(row[1]))
+                const_avg_alts_dict[row[0]] = float(row[1])
     
-    const_avg_alts.sort()
-    tles_idxs = list(range(1, len(const_avg_alts) + 1))
+    const_avg_alts_list = list(const_avg_alts_dict.values())
+    const_avg_alts_list.sort()
+    tles_idxs = list(range(1, len(const_avg_alts_list) + 1))
     
-    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=const_avg_alts, mode='markers'))
+    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=const_avg_alts_list, mode='markers'))
     line_fig.update_layout(title=constellation)
     line_fig.update_yaxes(title="avg. altitude in km")
     line_fig.write_image(output_dir + constellation + "/" + "avg_alts_line.svg")
 
-    tles_categories = [1] * len(const_avg_alts)
+    tles_categories = [1] * len(const_avg_alts_list)
     
-    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=const_avg_alts, mode='markers'))
+    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=const_avg_alts_list, mode='markers'))
     vertical_fig.update_layout(title=constellation)
     vertical_fig.update_yaxes(title="avg. altitude in km")
     vertical_fig.write_image(output_dir + constellation + "/" + "avg_alts_vertical.svg")
+    
+    # create satname, avg. altitude, mean motion tuples
+    meanmotions_dict = const_meanmotion_dicts[constellation]
+    data_tuples = []
 
-    all_tles_avg_alts += const_avg_alts
-    all_tles_avg_alts_categories += [constellation] * len(const_avg_alts)
+    for satname in meanmotions_dict.keys():
+        meanmotion = meanmotions_dict[satname]
+        modname = satname_to_modname(satname)
+        avg_alt = const_avg_alts_dict[modname]
+        data_tuples.append(tuple([satname, avg_alt, meanmotion]))
+    
+    # sort by average altitude
+    data_tuples.sort(key=lambda tuple: tuple[1])
+    avg_alts = [tup[1] for tup in data_tuples]
+    meanmotions = [tup[2] for tup in data_tuples]
+
+    meanmotion_at_alt_fig = go.Figure(data=go.Scatter(x=avg_alts, y=meanmotions, mode="markers"))
+    meanmotion_at_alt_fig.update_layout(title=constellation)
+    meanmotion_at_alt_fig.update_xaxes(title="avg. altitude in km")
+    meanmotion_at_alt_fig.update_yaxes(title="mean motion in rev/day")
+    meanmotion_at_alt_fig.write_image(output_dir + constellation + "/" + "meanmotion_at_avg_alt.svg")
+
+    all_tles_avg_alts += const_avg_alts_list
+    all_tles_avg_alts_categories += [constellation] * len(const_avg_alts_list)
 
 all_avg_alts_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_categories, y=all_tles_avg_alts, mode='markers'))
 all_avg_alts_fig.update_layout(title="all constellations")
