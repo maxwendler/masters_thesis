@@ -21,7 +21,7 @@ def remove_empty_startend_lines(orig_lines: list[str]) -> list[str]:
     
     return orig_lines[first_non_empty : last_non_empty+1]
 
-def read(path: str) -> list[TLE]:
+def read(path: str, lines_container_dict : dict[str, list[str]] = None) -> list[TLE]:
     """ 
     reads TLEs file at 'path' and creates TLE objects from TLE-tools API,
     see https://pypi.org/project/TLE-tools/  
@@ -32,14 +32,19 @@ def read(path: str) -> list[TLE]:
         content_lines = remove_empty_startend_lines(f.readlines())
 
     tles = []
+    tles_lines = []
     for i in range(0, len(content_lines), 3):
         tle_lines = content_lines[i:i+3]
         try:
             tles.append(TLE.from_lines(*tle_lines))
+            if lines_container_dict:
+                tles_lines.append(tle_lines)
         except Exception as ex:
             print(ex.args)
             raise ValueError("Incorrect format of TLEs file: Does not consist of line triples, each representing a TLE.")
 
+    if lines_container_dict:
+        lines_container_dict["lines"] = tles_lines
     return tles
 
 def parse_orbits(path: str) -> list[tuple[str,Orbit]]:

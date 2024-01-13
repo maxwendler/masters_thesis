@@ -5,6 +5,7 @@ from scripts.keplertraces.tleparse import read
 from scripts.utility.satname_to_modname import satname_to_modname
 import plotly.graph_objects as go
 import csv
+from math import pi
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tles_dir")
@@ -119,6 +120,7 @@ all_const_fig.write_image(output_dir + "all_meanmotions.svg")
 # average altitudes separately as not from tles
 all_tles_avg_alts = []
 all_tles_avg_alts_categories = []
+all_tles_approx_velocities = []
 
 all_avg_alt_paths = [ avg_alts_dir + fname for fname in os.listdir(avg_alts_dir)]
 
@@ -156,6 +158,7 @@ for constellation in constellation_compositions.keys():
     vertical_fig.update_yaxes(title="avg. altitude in km")
     vertical_fig.write_image(output_dir + constellation + "/" + "avg_alts_vertical.svg")
     
+    ## plot mean motions at avg. altitudes
     # create satname, avg. altitude, mean motion tuples
     meanmotions_dict = const_meanmotion_dicts[constellation]
     data_tuples = []
@@ -177,6 +180,19 @@ for constellation in constellation_compositions.keys():
     meanmotion_at_alt_fig.update_yaxes(title="mean motion in rev/day")
     meanmotion_at_alt_fig.write_image(output_dir + constellation + "/" + "meanmotion_at_avg_alt.svg")
 
+    # plot approximate velocities
+    velocities = []
+    for data_tuple in data_tuples:
+        circumference = 2 * pi * data_tuple[1]
+        velocity_km_per_day = circumference * data_tuple[2]
+        velocities.append(velocity_km_per_day)
+    
+    velocities_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=velocities, mode="markers"))
+    velocities_fig.update_layout(title=constellation)
+    velocities_fig.update_yaxes(title="approx. velocity in km/day")
+    velocities_fig.write_image(output_dir + constellation + "/" + "approx_velocities.svg")
+
+    all_tles_approx_velocities += velocities
     all_tles_avg_alts += const_avg_alts_list
     all_tles_avg_alts_categories += [constellation] * len(const_avg_alts_list)
 
@@ -184,3 +200,8 @@ all_avg_alts_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_categories, y=a
 all_avg_alts_fig.update_layout(title="all constellations")
 all_avg_alts_fig.update_yaxes(title="avg. altitude in km")
 all_avg_alts_fig.write_image(output_dir + "all_avg_alts.svg")
+
+all_approx_velocities_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_categories, y=all_tles_approx_velocities, mode='markers'))
+all_approx_velocities_fig.update_layout(title=constellation)
+all_approx_velocities_fig.update_yaxes(title="approx. velocity in km/day")
+all_approx_velocities_fig.write_image(output_dir + "all_approx_velocities.svg")
