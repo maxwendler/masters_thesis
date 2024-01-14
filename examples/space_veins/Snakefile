@@ -186,11 +186,9 @@ rule vec2csvAll:
 def get_csvs_to_compose(wildcards):
     constellation = wildcards.composed_constellation
     const_components = config["constellation_compositions"][constellation]
-    print(const_components)
     in_csvs = []
     for const_comp in const_components:
         in_csvs.append(f"csv/vector_components/{wildcards.location}_{const_comp}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv")
-    print(in_csvs)
     return in_csvs
 
 rule compose_pos_csvs:
@@ -202,6 +200,25 @@ rule compose_pos_csvs:
     shell:
         "python3 {input.script} {output} {input.in_csvs}"
 
+def get_const_comp_benchmarks(wildcards):
+    constellation_components = config["constellation_compositions"][wildcards.constellation]
+    benchmark_paths = []
+    benchmark_paths += expand("benchmarks/{const_comp}-{mobility}_runlog.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
+    benchmark_paths += expand("benchmarks/{const_comp}-{mobility}_runfile.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
+    benchmark_paths += expand("benchmarks/{const_comp}-{mobility}_run.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
+    if wildcards.mobility == "kepler":
+        benchmark_paths += expand("benchmarks/{const_comp}_traces.benchmark.txt", const_comp=constellation_components)
+    print(benchmark_paths)
+    return benchmark_paths
+
+rule calc_runtime:
+    input:
+        script="../../scripts/statistics/runtime_from_benchmarks.py",
+        benchmarks=get_const_comp_benchmarks
+    output:
+        "stats/runtime/{constellation}_{mobility}_runtime.txt"
+    shell:
+        "python3 {input.script} {output} {input.benchmarks}"
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS
