@@ -213,6 +213,10 @@ void CircularMobility::initialize(int stage)
             double raanRad = raan * PI/180;
             std::string inclinationStr = tle.get_tle_line2().substr(8, 8);
             double inclination = std::stod(inclinationStr);
+            if (inclination > 90)
+            {
+                inclination = 180 - inclination;
+            }
             std::string argpStr = tle.get_tle_line2().substr(34,8);
             double argp = std::stod(argpStr);
             std::string meanAnomStr = tle.get_tle_line2().substr(43,8);

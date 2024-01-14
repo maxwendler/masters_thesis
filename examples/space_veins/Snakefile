@@ -183,11 +183,68 @@ rule vec2csvAll:
         touch {output}
         """
 
-def formatVector(wildcards):
-    v = wildcards.vector.split(".")[-1]
-    return "-F " + v + "=" + v.replace(":", "_")
+def get_csvs_to_compose(wildcards):
+    constellation = wildcards.composed_constellation
+    const_components = config["constellation_compositions"][constellation]
+    print(const_components)
+    in_csvs = []
+    for const_comp in const_components:
+        in_csvs.append(f"csv/vector_components/{wildcards.location}_{const_comp}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv")
+    print(in_csvs)
+    return in_csvs
 
-rule vec2csv:
+rule compose_pos_csvs:
+    input:
+        script="../../scripts/utility/compose_pos_csvs.py",
+        in_csvs=get_csvs_to_compose
+    output:
+        "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
+    shell:
+        "python3 {input.script} {output} {input.in_csvs}"
+
+
+"""
+RULES FOR PLOTTING SATELLITE ORBITS
+"""
+
+rule satmod_csv:
+    """
+    Writes 3D coordinates in the specified coordinate frame for the specified satellite module of the specified OMNeT configuration
+    to an individual CSV file.
+    """
+    input:
+        script="../../scripts/utility/to_sat_csv.py",
+        in_csv="csv/vectors/{location}_{opp_config}_{coord_frame}_sorted.csv"
+    output:
+        "csv/vectors/satmod/{location}/{opp_config}_{coord_frame}_{leo_modname}.csv"
+    shell:
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
+
+def get_satmod_csv_paths(wildcards, same_config=True):
+    """
+    Returns the paths of the CSVs of individual 3D coordinate for the satellite modules of the wildcards list "leo_modnames" of the specified constellation,
+    for the specified coordinate frame and either one or two OMNeT configurations, for (1) plotting orbits of one mobility and (2) comparative plot of the 
+    orbits of two mobilities.
+    """    
+    leo_modnames = wildcards.leo_modnames.split("+")
+
+    # one config (= one mobility) -> one csv per satmod 
+    if same_config:
+        base_path = "csv/vectors/satmod/" + wildcards.location + "/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
+        return [(base_path + modname + ".csv") for modname in leo_modnames]
+
+    # tw0 configs (= two mobilities) -> two csvs per satmod 
+    else:
+        mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
+        mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
+        mob1_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
+        mob2_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
+        return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
+    
+rule plot_orbs_of_mobility:
+    """
+    Creates interactive plot of the orbits of the specified "leo_modnames" for the given coordinate frame and OMNeT configuration.
+    """
     input:
         "{oppConfig}_done.txt"
     output:

@@ -41,7 +41,7 @@ network = SatelliteExampleScenario
 ##########################################################
 #                    VehicleInserter                     #
 ##########################################################
-*.vehicleInserter.numVehicles = ${numVehicles=0}
+*.vehicleInserter.numVehicles = 0
 
 ##########################################################
 #                 Physical environment                   #
@@ -267,9 +267,9 @@ network = SatelliteExampleScenario
 #*.leo*[*].vehicleStatistics.wgs84CoordLat:vector.vector-recording = false
 #*.leo*[*].vehicleStatistics.wgs84CoordLon:vector.vector-recording = false
 #*.leo*[*].vehicleStatistics.wgs84CoordAlt:vector.vector-recording = false
-#*.leo*[*].vehicleStatistics.itrfCoordX:vector.vector-recording = true
-#*.leo*[*].vehicleStatistics.itrfCoordY:vector.vector-recording = true
-#*.leo*[*].vehicleStatistics.itrfCoordZ:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordX:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordY:vector.vector-recording = true
+*.leo*[*].vehicleStatistics.itrfCoordZ:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordX:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordY:vector.vector-recording = true
 *.leo*[*].vehicleStatistics.temeCoordZ:vector.vector-recording = true
