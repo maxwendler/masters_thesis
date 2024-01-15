@@ -1,9 +1,19 @@
 # constellations that are processed
 constellations: ["iridiumNEXThigh", "iridiumNEXTlow", "eccentric", "satnogs", "onewebHigh", "onewebMiddle", "onewebLow", "starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow", "starlinkShortLowest"] # "oneweb", "satnogs" , "starlink"]
+# includes components themselves to allow plotting / statistic calculation for them, not just main constellation
 constellation_compositions: { "starlink": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow", "starlinkShortLowest"],
+                              "starlinkShortHighest": ["starlinkShortHighest"],
+                              "starlinkShortHigh": ["starlinkShortHigh"],
+                              "starlinkShortLow": ["starlinkShortLow"],
+                              "starlinkShortLowest": ["starlinkShortLowest"],
                               "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
+                              "iridiumNEXThigh": ["iridiumNEXThigh"],
+                              "iridiumNEXTlow": ["iridiumNEXTlow"],
                               "eccentric": ["eccentric"],
                               "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh"],
+                              "onewebLow": ["onewebLow"],
+                              "onewebMiddle": ["onewebMiddle"],
+                              "onewebHigh": ["onewebHigh"],
                               "satnogs": ["satnogs"] }
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
