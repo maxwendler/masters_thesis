@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-01-11 14:29:44 by Eclipse SUMO netconvert Version 1.18.0
+<!-- generated on 2024-01-15 11:32:33 by Eclipse SUMO netconvert Version 1.18.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="../examples/space_veins/two-nodes.nod.xml"/>
-        <edge-files value="../examples/space_veins/two-nodes.edg.xml"/>
+        <node-files value="two-nodes.nod.xml"/>
+        <edge-files value="two-nodes.edg.xml"/>
     </input>
 
     <output>
-        <output-file value="../examples/space_veins/two-nodes.net.xml"/>
+        <output-file value="two-nodes.net.xml"/>
     </output>
 
     <projection>
