@@ -42,6 +42,10 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
     # create stub hosts file contents (necessary for resolving "localhost" if network isolation is turned on)
     test -s "${SINGULARITY_ROOTFS}/etc/hosts" || echo '127.0.0.1\tlocalhost' >> "${SINGULARITY_ROOTFS}/etc/hosts"
 
+%files
+    /home/s3997128/git/ma-max-wendler/.devcontainer/conda-requirements.txt /opt/conda-requirements.txt
+
+
 %post
     set -e
 
@@ -121,6 +125,9 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
     export PATH=$PATH:/opt/mambaforge/bin
     # 2. install snakemake
     mamba install -n base  -c conda-forge -c bioconda snakemake
+
+    conda create -p /opt/.conda --file /opt/conda-requirements.txt -c conda-forge -y
+    conda init bash
 
     cd /opt
     case "$OPP_VERSION" in
