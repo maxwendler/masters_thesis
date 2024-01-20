@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-jobs: all
+jobs: 9
 printshellcmds: True
 use-singularity: True
 singularity-args: "-H ../../:/space_veins -C --network none"

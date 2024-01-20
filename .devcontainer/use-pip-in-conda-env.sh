@@ -1,6 +1,6 @@
 #!/bin/bash
 
-conda activate /workspaces/ma-max-wendler/.conda
+conda activate /opt/.conda
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir -r /workspaces/ma-max-wendler/.devcontainer/pip-requirements.txt
+pip install --no-cache-dir tle-tools
 conda deactivate

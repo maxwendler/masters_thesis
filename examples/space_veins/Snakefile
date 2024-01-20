@@ -1,1119 +1,204 @@
-import os
-import glob
-import sys
-sys.path.append(os.path.join(sys.path[0],"..",".."))
-from scripts.utility.satname_to_modname import satname_to_modname
-sys.path.append(os.path.join(sys.path[0],"..","..",".conda", "lib", "python3.10", "site-packages"))
-from scripts.keplertraces.tleparse import read
-from scripts.keplertraces.parseomnetini import parseomnetini
-import json
+# SPDX-FileCopyrightText: 2023 Mario Franke <research@m-franke.net>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 configfile: "smk.config.yaml"
 
-def quote_strs(strs: list[str]):
-    """
-    Puts quotes around given strings, as snakemake requires path strings without additional quotes,
-    while python scripts occasionally required quoted paths.
-    """
-    return ['"' + in_str + '"' for in_str in strs]
-
-def get_tles_paths():
-    """
-    Returns all paths of TLEs lists used according to the current snakemake configuration (-> constellations).
-
-    Used by rule 'update_omnetini'
-    """
-    tles_fname_prefixes = config["constellations"]
-    tles_fpaths = [] 
-    
-    for fname in os.listdir("./tles/"):
-        if fname.split("_")[0] in tles_fname_prefixes and fname.endswith(".txt"):
-            tles_fpaths.append(f'{"tles/" + fname}')
-    
-    return sorted(tles_fpaths)
-
-def get_avg_sgp4_altitudes_paths():
-
-    constellations = sorted(config["constellations"])
-    avg_sgp4_altitudes_dir = "csv/avg_alt/" + config["location"] + "/"
-    if os.path.isdir(avg_sgp4_altitudes_dir) and config["use_avg_sgp4_altitudes"]:
-        avg_alt_fnames = list(filter(lambda fname: fname.split("-")[0] in constellations, sorted(os.listdir( avg_sgp4_altitudes_dir ))))
-        
-        avg_sgp4_altitudes_paths = []
-        for c in constellations:
-            path = None
-            for fname in avg_alt_fnames:
-                if c in fname:
-                    path = avg_sgp4_altitudes_dir + fname
-            if path:
-                avg_sgp4_altitudes_paths.append(path)
-            else:
-                avg_sgp4_altitudes_paths.append("None")
-
-        return avg_sgp4_altitudes_paths
-    else:
-        return ["None"] * len(constellations)
-
-def get_debug_str():
-    """
-    Function for optionally including 'Debug-' prefix for simulation configuration names,
-    when debug_mode is set to true in snakemake config.
-    """
-    return "Debug-" if config["debug_mode"] else ""
-
-"""
-RULES FOR RUNNING THE SIMULATION
-"""
-
-rule update_omnetini:
-    """
-    Adds debug and non-debug configuration generated from the template at ../../scripts/keplertraces/config_template.txt,
-    for the different mobilities and constellation-dependent TLEs list files, trace directories and simulation start times.
-    omnetpp.ini.template is overwritten after [Config Debug] section. omnetpp.ini.template contains example configs after [Config Debug] section.
-    """
+rule buildContainer:
     input:
-        script="../../scripts/keplertraces/updateomnetini.py",
-        ini_template="omnetpp.ini.template",
-        tles_paths=get_tles_paths()
-    params:
-        # as snakemake won't accept filepath strings containing quotes as input
-        # but call of python scripts requires them
-        quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
-        sim_time_limit = config["sim-time-limit"],
-        avg_sgp4_altitudes_paths = quote_strs(get_avg_sgp4_altitudes_paths()),
-        location = config["location"]
+        "../../singularity/singularity-space_veins.def"
     output:
-        "omnetpp.ini"
-    shell:
-        """python3 {input.script} {input.ini_template} traces/ {params.sim_time_limit} {params.location} --tles_paths {params.quoted_tles_paths} --avg_sgp4_altitudes_paths {params.avg_sgp4_altitudes_paths}
-        
-        cp backups/omnetpp.ini old/omnetpp.ini
-
-        cp omnetpp.ini backups/omnetpp.ini
-        """
-
-# do it like this?
-def config_params_changed(config: str) -> bool:
-    inipath = "omnetpp.ini"
-    old_inipath = "old/omnetpp.ini"
-    
-    params_tuple = parseomnetini(inipath, config)
-    old_params_tuple = parseomnetini(old_inipath, config)
-
-    for val_i in range(0, len(params_tuple)):
-        if params_tuple[val_i] != old_params_tuple[val_i]:
-            return True
-
-    return False    
-
-# do it like this?
-rule get_omnetini_traceparams:
-    input:
-        script="../../scripts/keplertraces/parseomnetini.py",
-        ini="omnetpp.ini"
-    output:
-        "traces/params/{opp_config}_params.txt"
-    params:
-        # gets updated by script if values actually change"
-    shell:
-        # only touch output, so that only updates of params matter for rule create_traces
-        """
-        python3 {input.script} {input.ini} {wildcards.opp_config} {output}
-        """
-
-rule create_traces:
-    """
-    Creates ITRF traces of a constellation for either the normal or the debug configuration in omnetpp.ini,
-    from which parameters are derived.
-    """
-    input:
-        script="../../scripts/keplertraces/create_traces.py",
-        params_path=lambda wildcards: "traces/params/" + get_debug_str() + "{constellation}-kepler_params.txt",
-        tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
-    params:
-        configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
-                                        optional_Debug="Debug-" if config["debug_mode"] else "",
-                                        constellation=wildcards.constellation),
-    output:
-        "traces/{constellation}_traces.done"
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
     shell:
         """
-        python3 {input.script} {input.params_path} {input.tles_path} traces/ -c {params.configname} -i -o
-        date +%Y%m%d%H%M%S > {output}
+        singularity build --fakeroot {output} {input}
         """
 
-def get_trace_requirement(wildcards):
-    """
-    Returns traces as input requirement for rule createRunFile only for Kepler configurations. 
-    """
-    if "kepler" in wildcards.oppConfig:
-        config_str = wildcards.oppConfig
-        config = config_str.replace("Debug-","")
-        constellation = config.split("-")[0]
-        return "traces/" + constellation + "_traces.done"
-    else: 
-        return []
-
-rule createRunFile:
-    """
-    Creates run files to run simulations with runmaker
-    """
-    input:
-        # only require trace files for Kepler-orbit-based runs
-        # ---
-        # placed here instead of in rule 'run' so that run file is regenerated with more recent traces
-        # otherwise, run file still has run marked as 'd', done
-        get_trace_requirement,
-        "omnetpp.ini"
-    output:
-        "runs/{oppConfig}_runs.txt"
-    # container:
-    #    "../../singularity/singularity-space_veins.sif"
-    # params:
-    #    shell="echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}"
+rule shell:
+    container:
+        "../../singularity/singularity-space_veins.sif"
     shell:
-        #"""
-        #    echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
-        #"""
-        "perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}"
+        """
+        bash
+        """
+
+rule buildSpaceVeins:
+    input:
+        "../../Makefile"
+    output:
+        "../../bin/space_veins_run"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        workflow.cores
+    shell:
+        """
+        make makefiles
+        ucc make -j{threads} all
+        make bin/space_veins_run
+        """
+
+rule cleanSpaceVeins:
+    input:
+        "../../Makefile"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    threads:
+        1
+    shell:
+        """
+        make cleanall
+        """
+
+rule createRunmakerFiles:
+    input:
+        expand("{oppConfig}_runs.log", oppConfig=config["oppConfig"]),
+        expand("{oppConfig}_runs.txt", oppConfig=config["oppConfig"]),
 
 rule createRunmakerLogFile:
-    """
-    Creates .log file for running simulations with runmaker.
-    """
     output:
-        "runs/{oppConfig}_runs.log"
+        "{oppConfig}_runs.log"
     shell:
         "touch {output}"
 
+rule createRunFile:
+    input:
+        "omnetpp.ini"
+    output:
+        "{oppConfig}_runs.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins && perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}
+        """
 
+rule runAll:
+    input:
+        expand("{oppConfig}_done.txt", oppConfig=config["oppConfig"])
+    # resources:
+    #     tasks=len(input.runs),
+
+# create a dummy output file such that snakemake's dependency management works
 rule run:
-    """
-    Runs OMNeT++ simulation for a configuration from omnetpp.ini.
-    """
     input:
-        logFile="runs/{oppConfig}_runs.log",
-        runFile="runs/{oppConfig}_runs.txt"
+        logFile="{oppConfig}_runs.log",
+        runFile="{oppConfig}_runs.txt"
     output:
-        "runs/{oppConfig}_done.txt"
+        "{oppConfig}_done.txt"
+    threads:
+        config["numJobsPerConfig"]
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins/ && python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} && touch {output}
+        """
+
+rule debugRun:
     threads:
         1
-    #container:
-    #    "../../singularity/singularity-space_veins.sif"
+    container:
+        "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
-        date +%Y%m%d%H%M%S > {output}
+        cd examples/space_veins/ && ./run --debug --tool {config[tool]} -- -u {config[env]} -c {config[oppDebugConfig]} -r {config[debugRunNumber]}
         """
 
-def format_coord_vectors(wildcards):
-    """
-    Determines coordinate vectors that should be written from simulation results to a CSV by "../../lib/veins_scripts/eval/opp_vec2csv.pl",
-    depending on coordinate frame requested for rule vec2csv.
-    """
-    if (wildcards.coordframe == "wgs84"):
-        return ("--list -F " + "wgs84CoordLat:vector=wgs84CoordLat_vector" +
-                                " -F wgs84CoordLon:vector=wgs84CoordLon_vector " +
-                                " -F wgs84CoordAlt:vector=wgs84CoordAlt_vector")
-    elif (wildcards.coordframe == "itrf"):
-        return ("--list -F " + "itrfCoordX:vector=itrfCoordX_vector" +
-                                " -F itrfCoordY:vector=itrfCoordY_vector" +
-                                " -F itrfCoordZ:vector=itrfCoordZ_vector")
-    elif (wildcards.coordframe == "omnet"):
-        return ("--list -F " + "omnetCoordX:vector=omnetCoordX_vector" +
-                                " -F omnetCoordY:vector=omnetCoordY_vector" +
-                                " -F omnetCoordZ:vector=omnetCoordZ_vector")
-    elif (wildcards.coordframe == "teme"):
-        return ("--list -F " + "temeCoordX:vector=temeCoordX_vector" +
-                                " -F temeCoordY:vector=temeCoordY_vector" +
-                                " -F temeCoordZ:vector=temeCoordZ_vector")
-    else:
-        raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
+def formatScaCsvFileNames():
+    files = list()
+    f = ""
+    for c in config["oppConfig"]:
+        for s in config["scalars"]:
+            f = "csv/scalars/" + c + "-"
+            oppModule = ".".join(s.split(".")[:-1])
+            f += oppModule + "-"
+            scalar = s.split(".")[-1]
+            f += scalar + ".csv"
+            files.append(f)
+    return files
 
-"""
-RULES FOR EXTRACTING RELEVANT DATA FROM RESULTS
-"""
-
-rule vec2csv:
-    """
-    Parses coordinate vectors from simulation results to a 3D-coordinate CSV for specified coordinate frame.
-    Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
-    """
+rule sca2csvAll:
     input:
-        "runs/{oppConfig}_done.txt",
-        sort_script="../../scripts/time_sort_csv.py"
+        formatScaCsvFileNames()
+    threads:
+        workflow.cores
+
+def formatItervars(wildcards):
+    i = ""
+    for s in config["itervars"]:
+        i += "-I " + s + " "
+    return i
+
+def formatScalar(wildcards):
+    s = wildcards.scalar.split(".")[-1]
+    flags = "-F " + s + "=" + s.replace(":", "_")
+    return flags
+
+def formatModuleRegex(wildcards):
+    regex = ".".join(wildcards.module.split(".")[:-1])
+    regex = regex.replace(".", "\.")
+    regex = regex.replace("[", "\[")
+    regex = regex.replace("]", "\]")
+    regex = regex.replace("*", "(?<module>[0-9]+)")
+    regex = "\'^" + regex + "\'"
+    return regex
+
+rule sca2csv:
     output:
-        "csv/vectors/{location}_{oppConfig}_{coordframe}_sorted.csv"
+        "csv/scalars/{oppConfig}-{module}-{scalar}.csv"
     params:
-        vectors=format_coord_vectors,
-        moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vectors/{location}_{oppConfig}_{coordframe}.csv",
-        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+        itervars=formatItervars,
+        scalar=formatScalar,
+        moduleRegex=formatModuleRegex
     threads:
         1
     shell:
         """
-        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} {params.vec_file} > {params.unsorted_path}
-        python3 {input.sort_script} {params.unsorted_path}  
-        rm {params.unsorted_path}
+        perl ../../lib/veins_scripts/eval/opp_sca2csv.pl -v -M {params.moduleRegex} {params.scalar} -A repetition {params.itervars} results/{wildcards.oppConfig}*.sca > {output}
         """
 
-"""
-RULES TO CALCULATE AND PLOT POSITIONAL DIFFERENCES IN 3D COORDINATES
-"""
+def formatVecCsvFileNames():
+    files = list()
+    f = ""
+    for c in config["oppConfig"]:
+        for v in config["vectors"]:
+            oppModule = ".".join(v.split(".")[:-1])
+            vec = v.split(".")[-1]
+            f = "csv/vectors/" + c + "-" + oppModule + "-" + vec + ".csv"
+            files.append(f)
+    return files
 
-rule calc_pos_diffs:
-    """
-    Calculates differences between 3D coordinate CSVs of the two specified mobilities and the specified coordinate frame, 
-    and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
-    """
+rule vec2csvAll:
     input:
-        script="../../scripts/statistics/positional_differences.py",
-        mob1_csv="csv/vectors/{location}_{constellation}-sgp4_{coord_frame}_sorted.csv",
-        mob2_csv="csv/vectors/{location}_{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+        formatVecCsvFileNames()
     output:
-        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
-    shell:
-        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
-
-def get_tle_path(constellation: str):
-    """
-    Returns path of TLEs list in tles/ for given constellation, which should start with given
-    constellation name. For options see config -> constellations.
-
-    Used by rule 'calc_tle_times.' 
-    """
-    for fname in os.listdir("./tles/"):
-        if constellation in fname:
-            return "tles/" + fname
-
-rule calc_tle_times:
-    """
-    Creates JSON with start time as well as epochs of a TLEs list in numpy datetime64 format,
-    as well as the offset of each epoch to the start time in days. 
-    """
-    input:
-        script="../../scripts/keplertraces/tletimes.py",
-        tles=lambda wildcards: get_tle_path(wildcards.constellation)
-    output:
-        "tles/{constellation}_times.json"
-    shell:
-        "python3 {input.script} {input.tles}"
-
-rule plot_pos_diffs_with_ecdf:
-    """
-    Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame, and satellite module,
-    as well as ECDF plot of distances. 
-    """
-    input:
-        script="../../scripts/plots/plot_differences.py",
-        tle_times="tles/{constellation}_times.json",
-        in_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
-    output:
-        "plots/pos_diff/{location}/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
-    shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {input.tle_times} '{output}' --ecdf"
-
-def get_const_sat_mods(constellation: str):
-    """
-    Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
-    """
-    const_tles_fname = filter( lambda tles_fname: tles_fname.startswith(constellation) and tles_fname.endswith(".txt"), os.listdir("./tles/")).__next__()
-    tles = read("./tles/" + const_tles_fname)
-
-    sat_mods = set()
-    for tle in tles:
-        sat_mods.add( satname_to_modname(tle.name) )
-    
-    return sat_mods
-
-def get_const_pos_diff_paths(wildcards):
-    """
-    Returns all paths of 3D coordinate difference plots of the constellation, coordframe and the two mobilities specified in wildcards.
-    """
-    return expand("plots/pos_diff/{location}/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances{with_or_without_ecdf}.svg",
-                location=wildcards.location,
-                constellation=wildcards.constellation, 
-                coord_frame=wildcards.coord_frame, 
-                mobility2=wildcards.mobility2,
-                leo_modname=get_const_sat_mods(wildcards.constellation),
-                with_or_without_ecdf=["_with_ecdf"])
-
-
-rule plot_const_pos_diffs:
-    """
-    Plots all line plots of 3D coordinate differences for the specified two mobilities and coordinate frame,
-    one file with ECDF plot, one file without it.
-    """
-    input:
-        get_const_pos_diff_paths
-    output:
-        "plots/pos_diff/{location}/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_distances.done"
-    shell:
-        "touch {output}"
-
-rule plot_diff_distributions:
-    """
-    Plots sum histogram plot and box plot for the 3D coordinate differences of all satellite modules of the given constellation,
-    for the specified two mobilities and coordinate frame.  
-    """
-    input:
-        script="../../scripts/plots/plot_difference_distributions.py",
-        in_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_differences.csv"
-    output:
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.svg",
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.html"
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_avg_difference.txt"
-    params:
-        output_basepath="plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_"
+        "vec2csvAll_done.txt"
+    threads:
+        workflow.cores
     shell:
         """
-        python3 {input.script} {input.in_csv} {params.output_basepath}
-        """
-
-rule calc_pos_diff_diffs_itrf_omnet:
-    """
-    Calculates the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation.
-    """
-    input:
-        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/itrf_sgp4-{mobility2}_differences.csv",
-        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/omnet_sgp4-{mobility2}_differences.csv",
-        script="../../scripts/statistics/diff_differences.py"
-    output:
-        "csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv" 
-    shell:
-        "python3 {input.script} '{input[0]}' '{input[1]}' > {output}"
-
-rule plot_pos_diff_diffs_with_ecdf:
-    """
-    Creates line plot the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities, constellation and satellite module name,
-    as well as ECDF plot of differences.
-    """
-    input:
-        script="../../scripts/plots/plot_differences.py",
-        in_csv="csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv"
-    params:
-        tle_times="tles/{constellation}_times.json"
-    output:
-        "plots/pos_diff_diffs/{location}/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
-    shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' {params.tle_times} '{output}' --ecdf"
-
-def get_const_pos_diff_diffs_paths(wildcards):
-    """
-    Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
-    """
-    return expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
-                location=wildcards.location,
-                constellation=wildcards.constellation,   
-                mobility2=wildcards.mobility2,
-                leo_modname=get_const_sat_mods(wildcards.constellation))
-
-rule plot_const_pos_diff_diffs:
-    """
-    Plots all plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities.
-    """
-    input:
-        get_const_pos_diff_diffs_paths
-    output:
-        "plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done"
-    shell:
-        "touch {output}"
-
-"""
-RULES TO CALCULATE AND PLOT STATISTICS RELATIVE TO SOP
-"""
-
-rule calc_sop_stats:
-    """
-    Calculates elevation angles, distances and delays to SOP at OMNeT coordinate 0,0,0 for the specified OMNeT configuration and outputs them
-    to individual CSVs. In the CSVs, each row is a satellite module name + the list of values for each simulation second.
-    """
-    input:
-        in_csv="csv/vectors/{location}_{oppConfig}_omnet_sorted.csv",
-        script="../../scripts/statistics/sop_stats.py"
-    output:
-        "csv/sop/{location}_{oppConfig}_distances.csv",
-        "csv/sop/{location}_{oppConfig}_angles.csv",
-        "csv/sop/{location}_{oppConfig}_delays.csv"
-    params:
-        output_dir="csv/sop/"
-    shell:
-        "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
-
-rule plot_sop_stats:
-    """
-    Plots elevation angles, distances and delays to SOP for specified constellation for SGP4 and Kepler mobility and the specified constellation and satellite module name.
-    """
-    input:
-        script="../../scripts/plots/plot_sop_stats.py",
-        tle_times="tles/{constellation}_times.json",
-        angle_csvs=lambda wildcards: expand("csv/sop/{location}_" + "{constellation}-{mobility}_angles.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=["sgp4", wildcards.new_mobility]),
-        dist_csvs=lambda wildcards: expand("csv/sop/{location}_" + "{constellation}-{mobility}_distances.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=["sgp4", wildcards.new_mobility]),
-        delay_csvs=lambda wildcards: expand("csv/sop/{location}_" + "{constellation}-{mobility}_delays.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=["sgp4", wildcards.new_mobility])
-    output:
-        "plots/sop/{location}/" + "{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.html",
-        "plots/sop/{location}/" + "{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.svg"
-    params:
-        output_base_path = "plots/sop/{location}/{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays"
-    shell:
-        "python3 {input.script} '{wildcards.modname}' --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} '{params.output_base_path}' --formats svg html"
-
-def get_const_sop_stats_plot_paths(wildcards):
-    """
-    Returns all the paths of elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
-    """
-    return expand("plots/sop/{location}/{constellation}/sgp4-{new_mobility}_{modname}_angles_distances_delays.{format}",
-                location=wildcards.location,
-                constellation=wildcards.constellation,  
-                modname=get_const_sat_mods(wildcards.constellation),
-                new_mobility=wildcards.new_mobility,
-                format=["svg", "html"])
-
-rule plot_const_sop_stats:
-    """
-    Plots all elevation angles + delays + distances to SOP plots for SGP4 and Kepler mobility for the specified constellation.
-    """
-    input:
-        get_const_sop_stats_plot_paths
-    output:
-        "plots/sop/{location}/{constellation}/sgp4-{new_mobility}_angles_distances_delays.done"
-    shell:
-        "touch {output}"
-
-rule calc_sop_stat_diffs:
-    """
-    Calculates differences or changes for elevation angles, distances or delays ('stat') relative to SOP for the specified reference mobility, 
-    alternative (new) mobility and constellation and outputs them to a new CSV.
-    In the CSV, each row is a satellite module name + the list of values for each simulation second.
-    """
-    input:
-        script="../../scripts/statistics/sop_stat_differences.py",
-        ref_mobility_csv="csv/sop/{location}_{constellation}-sgp4_{stat}.csv",
-        new_mobility_csv="csv/sop/{location}_{constellation}-{new_mobility}_{stat}.csv"
-    output:
-        "csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{stat}_{diffs_or_changes}.csv"
-    params:
-        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
-    shell:
-        "python3 {input.script} {input.ref_mobility_csv} {input.new_mobility_csv} {output} {params.change_option}"
-
-rule plot_sop_stat_diffs:
-    """
-    Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
-    alternative (new) mobility, constellation and satellite module name. The plots span the whole simulation time.   
-    """
-    input:
-        script="../../scripts/plots/plot_sop_stat_differences.py",
-        angles_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_angles_{diffs_or_changes}.csv",
-        distances_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_distances_{diffs_or_changes}.csv",
-        delays_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_delays_{diffs_or_changes}.csv"
-    output:
-        "plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.html",
-        svg_out="plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_full.svg"
-    params:
-        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
-    shell:
-        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option}"
-
-rule plot_local_sop_stat_diffs:
-    """
-    Plots line plots of differences or changes for elevation angles, distances and delays relative to SOP for the specified reference mobility,
-    alternative (new) mobility, constellation and satellite module name. The plots only show overlapping and unmatched communication periods of both
-    mobilities. 
-    """
-    input:
-        script="../../scripts/plots/plot_sop_stat_differences.py",
-        angles_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_angles_{diffs_or_changes}.csv",
-        distances_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_distances_{diffs_or_changes}.csv",
-        delays_csv="csv/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_delays_{diffs_or_changes}.csv",
-        comm_comp_json="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
-    output:
-        "plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.html",
-        svg_out="plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}_local.svg"
-    params:
-        change_option=lambda wildcards: "-c" if wildcards.diffs_or_changes == "changes" else ""
-    shell:
-        "python3 {input.script} {input.angles_csv} {input.distances_csv} {input.delays_csv} 15 '{wildcards.modname}' '{output.svg_out}' {params.change_option} --comm_comp_json '{input.comm_comp_json}'"
-
-def get_const_sop_stat_diff_plot_paths(wildcards):
-    """
-    Returns all paths for local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
-    reference mobility, alternative (new) mobility and constellation specified in wildcards.
-    """
-    return expand("plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_{modname}_angles_distances_delays_{diffs_or_changes}{local_option}.{format}",
-                location=wildcards.location,
-                constellation=wildcards.constellation,
-                new_mobility=wildcards.new_mobility,
-                modname=get_const_sat_mods(wildcards.constellation),
-                diffs_or_changes=["diffs", "changes"],
-                format={"svg", "html"},
-                local_option=["_local","_full"])
-
-rule plot_const_sop_stat_diffs:
-    """
-    Plots all local and full simulation time plots of differences and changes of elevation angles, distances and delays for the
-    reference mobility, alternative (new) mobility and constellation specified in wildcards.
-    """
-    input:
-        get_const_sop_stat_diff_plot_paths
-    output:
-        "plots/sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_angles_distances_delays.done"
-    shell:
-        "touch {output}"
-
-rule calc_and_plot_aligned_local_sop_stat_diffs:
-    input:
-        script="../../scripts/statistics/aligned_period_sop_stat_differences.py",
-        comm_comp="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
-        ref_mob_period_stats="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
-        new_mob_period_stats="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json"
-    output:
-        json="stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
-        plot="plots/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
-    params:
-        changes_option=lambda wildcards: "--changes" if wildcards.diffs_or_changes == "changes" else ""
-    shell:
-        "python3 {input.script} '{input.comm_comp}' sgp4 '{input.ref_mob_period_stats}' {wildcards.new_mobility} '{input.new_mob_period_stats}' '{output.json}' '{output.plot}' {params.changes_option}"
-
-def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
-    paths = expand("stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
-                    location=wildcards.location,
-                    constellation=wildcards.constellation,
-                    new_mobility=["circular", "kepler"],
-                    modname=get_const_sat_mods(wildcards.constellation),
-                    diffs_or_changes=["differences", "changes"])
-    paths += expand("plots/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
-                    location=wildcards.location,
-                    constellation=wildcards.constellation,
-                    new_mobility=["circular", "kepler"],
-                    modname=get_const_sat_mods(wildcards.constellation),
-                    diffs_or_changes=["differences", "changes"])
-    return paths
-            
-rule calc_and_plot_const_aligned_local_sop_stat_diffs:
-    input:
-        get_const_aligned_local_sop_stat_diffs_jsons_and_plots
-    output:
-        "stats/local_aligned_sop_diffs/{location}/{constellation}.done",
-        "plots/local_aligned_sop_diffs/{location}/{constellation}.done"
-    shell:
-        """
-        touch {output[0]}
-        touch {output[1]}
-        """
-
-rule plot_aligned_sop_stat_diffs_or_changes_at_offset:
-    input:
-        script="../../scripts/plots/plot_aligned_sop_stats_at_offset.py",
-        stats="stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json"
-    output:
-        "plots/aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_{stat}_aligned_{diffs_or_changes}_{avg_or_max}.svg"
-    shell:
-        "python3 {input.script} '{input.stats}' {wildcards.stat} {wildcards.avg_or_max} '{output}'"
-
-def get_const_aligned_sop_stat_diffs_or_changes_plots(wildcards):
-    return expand("plots/aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_{stat}_aligned_{diffs_or_changes}_{avg_or_max}.svg",
-                    location=wildcards.location,
-                    constellation=wildcards.constellation,
-                    new_mobility=["circular","kepler"],
-                    modname=get_const_sat_mods(wildcards.constellation),
-                    stat=["angle", "delay"],
-                    diffs_or_changes=["differences", "changes"],
-                    avg_or_max=["avg", "max"])
-
-rule plot_const_aligned_sop_stat_diffs_or_changes_at_offset:
-    input:
-        get_const_aligned_sop_stat_diffs_or_changes_plots
-    output:
-        "plots/aligned_sop_diffs/{location}/{constellation}.done"
-    shell:
-        "touch {output}"
-
-rule plot_const_aligned_sop_stat_diffs_at_offset_in_one:
-    input:
-        get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
-        script="../../scripts/plots/plot_const_aligned_sop_stats_at_offset.py",
-        aligned_diffs_dir="stats/local_aligned_sop_diffs/{location}/{constellation}"
-    output:
-        svg_out="plots/aligned_sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_all_{stat}_{avg_or_max}_differences.svg"
-    shell:
-        "python3 {input.script} {input.aligned_diffs_dir} {wildcards.new_mobility} {wildcards.stat} {wildcards.avg_or_max} {output.svg_out}"
-
-rule group_const_aligned_local_sop_stat_diffs:
-    input:
-        script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
-        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4",
-        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{location}/{constellation}"
-    output:
-        "stats/local_aligned_sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_groups.json"
-    shell:
-        """python3 {input.script} {input.ref_comm_periods_dir} {input.aligned_stat_diffs_dir} {wildcards.new_mobility} 5 {output}"""
-
-rule plot_anglegroup_delay_duration_diffs_at_offset:
-    input:
-        script="../../scripts/plots/plot_anglegroup_sop_stats_at_offset.py",
-        grouped_periods="stats/local_aligned_sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_groups.json"
-    params:
-        delay_output_dir="plots/grouped_aligned_delay_diffs/{location}/{constellation}/sgp4-{new_mobility}",
-        duration_output_dir="plots/grouped_aligned_duration_diffs/{location}/{constellation}/sgp4-{new_mobility}"
-    output:
-        "plots/grouped_aligned_delay_diffs/{location}/{constellation}/sgp4-{new_mobility}.done",
-        "plots/grouped_aligned_duration_diffs/{location}/{constellation}/sgp4-{new_mobility}.done"
-    shell:
-        """python3 {input.script} {input.grouped_periods} 5 {wildcards.new_mobility} {params.delay_output_dir} {params.duration_output_dir}
-        touch {output[0]}
-        touch {output[1]}"""
-
-rule plot_anglegroups_delay_duration_diffs_in_one:
-    input:
-        script="../../scripts/plots/plot_const_anglegrouped_sop_stat_diffs.py",
-        grouped_periods="stats/local_aligned_sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_groups.json"
-    params:
-        delay_output_dir="plots/grouped_aligned_delay_diffs/{location}/{constellation}",
-        duration_output_dir="plots/grouped_aligned_duration_diffs/{location}/{constellation}"
-    output:
-        "plots/grouped_aligned_delay_diffs/{location}/{constellation}/sgp4-{new_mobility}_all_groups_delay_differences.svg",
-        "plots/grouped_aligned_duration_diffs/{location}/{constellation}/sgp4-{new_mobility}_all_groups_duration_differences.svg"
-    shell:
-        """python3 {input.script} {input.grouped_periods} 5 {wildcards.new_mobility} {params.delay_output_dir} {params.duration_output_dir}"""
-
-rule calc_comm_period_info:
-    """
-    Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
-    using minimum elevation angle 25 °.
-    Each JSON contains the minimum elevation angles, distances and delays relative to the SOP for each communication period,
-    as well as the offset to the used TLE's epoch.
-    """
-    input:
-        script="../../scripts/statistics/comm_period_info.py",
-        tle_times="tles/{constellation}_times.json",
-        angle_csv=lambda wildcards: expand("csv/sop/{location}_{constellation}-{mobility}_angles.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=wildcards.mobility),
-        dist_csv=lambda wildcards: expand("csv/sop/{location}_{constellation}-{mobility}_distances.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=wildcards.mobility),
-        delay_csv=lambda wildcards: expand("csv/sop/{location}_{constellation}-{mobility}_delays.csv",
-                                    location=wildcards.location,
-                                    constellation=wildcards.constellation,
-                                    mobility=wildcards.mobility)
-    output:
-        "stats/comm_periods/{location}/{constellation}/{mobility}/{modname}_communication-periods.json"
-    shell:
-        "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
-
-def get_const_comm_period_infos(wildcards):
-    return expand("stats/comm_periods/{location}/{constellation}/{mobility}/{modname}_communication-periods.json",
-                    location=wildcards.location,
-                    constellation=wildcards.constellation,
-                    mobility=wildcards.mobility,
-                    modname=get_const_sat_mods(wildcards.constellation))
-
-rule const_comm_periods_csv:
-    input:
-        get_const_comm_period_infos,
-        script="../../scripts/statistics/all_const_periods.py",
-        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
-    output:
-        "csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv"
-    shell:
-        "python3 {input.script} {input.period_infos_dir} {output}"
-
-rule plot_const_comm_periods:
-    input:
-        script="../../scripts/plots/plot_const_comm_periods.py",
-        periods_csv="csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv"
-    output:
-        "plots/comm_periods/{location}/{constellation}_{mobility}_all_periods.svg"
-    params:
-        sim_time_limit = config["sim-time-limit"]
-    shell:
-        """
-        python3 {input.script} {input.periods_csv} 15 {params.sim_time_limit} {output}
-        """
-
-rule const_comm_period_intervals_csvs:
-    input:
-        get_const_comm_period_infos,
-        script="../../scripts/statistics/const_period_intervals.py",
-        all_periods="csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv",
-        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
-    output:
-        period_intervals="csv/comm_period_intervals/{location}/{constellation}_{mobility}_period_intervals.csv",
-        zenith_intervals="csv/comm_period_intervals/{location}/{constellation}_{mobility}_zenith_intervals.csv"
-    params:
-        sim_time_limit = config["sim-time-limit"]
-    shell:
-        "python3 {input.script} {input.all_periods} {input.period_infos_dir} {params.sim_time_limit} {output.period_intervals} {output.zenith_intervals}"
-
-rule sat_comm_period_zenith_interval_changes:
-    input:
-        ref_periods="csv/comm_periods/{location}/{constellation}_sgp4_all_periods.csv",
-        ref_periods_json="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
-        new_periods="csv/comm_periods/{location}/{constellation}_{new_mobility}_all_periods.csv",
-        new_periods_json="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json",
-        script="../../scripts/statistics/sat_period_zenith_interval_changes.py"
-    output:
-        "stats/comm_period_zenith_interval_changes/{location}/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json"
-    params:
-        sim_time_limit = config["sim-time-limit"]
-    shell:
-        "python3 {input.script} '{wildcards.modname}' {input.ref_periods} '{input.ref_periods_json}' {input.new_periods} '{input.new_periods_json}' {params.sim_time_limit} '{output}'"    
-
-rule plot_sat_comm_period_zenith_interval_changes:
-    input:
-        zenith_interval_changes = "stats/comm_period_zenith_interval_changes/{location}/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_changes.json",
-        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_diff.py"
-    output:
-        "plots/comm_period_zenith_interval_changes/{location}/{constellation}/{modname}_sgp4-{new_mobility}_zenith_interval_difference_at_offset_diff.svg"
-    shell:
-        "python3 {input.script} '{input.zenith_interval_changes}' '{output}'"    
-
-rule const_comm_period_all_interval_changes:
-    input:
-        ref_periods="csv/comm_periods/{location}/{constellation}_sgp4_all_periods.csv",
-        ref_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/sgp4",
-        new_periods="csv/comm_periods/{location}/{constellation}_{new_mobility}_all_periods.csv",
-        new_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/{new_mobility}",
-        script="../../scripts/statistics/all_interval_changes.py",
-    output:
-        "stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
-    params:
-        sim_time_limit = config["sim-time-limit"]
-    shell:
-        "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} {params.sim_time_limit} {output}"
-
-rule plot_const_comm_period_zenith_interval_changes_at_offset_diff:
-    input:
-        all_interval_changes = "stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json",
-        script = "../../scripts/plots/plot_zenith_interval_diff_to_offset_diff.py"
-    output:
-        "plots/comm_period_zenith_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_offset_difference.svg"
-    shell:
-        "python3 {input.script} {input.all_interval_changes} {output}"
-
-rule compare_comm_period_info:
-    """
-    Creates JSON of overlapping and non-overlapping communication periods of the reference mobility and alternative (new) mobility,
-    for the specified satellite module name of the specified constellation.
-    For each period group (overlap) and unmatched period, the JSON includes: 
-     - start and end times of the periods
-     - offset to the used TLE's epoch
-     - if there are multiple matches of the reference period or new period of a group
-     - "ref_coverage" statistic: How much of the reference period is covered by the period of the alternative mobility.
-     - "new_excluded" statistic: How much of the period of the alternative mobility is included in the reference period.
-     - "excluded_time_to_ref_time" statistic: Ratio of the time that's not included in the reference period to the time of the reference period.
-    """
-    input:
-        script="../../scripts/statistics/compare_comm_period_info.py",
-        ref_stats="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
-        new_stats="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json"
-    output:
-        "stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
-    shell:
-        "python3 {input.script} '{input.ref_stats}' '{input.new_stats}' '{output}'"
-
-rule plot_communication_period_comparison:
-    """
-    Plots line plots for elevation angles, distances and delays relative to the SOP in the overlapping communication periods of the 
-    specified reference mobility, alternative (new) mobility, constellation and satellite module name.
-    Each plot contains a line for the reference mobility and one line for the alternative mobility. To clearly show where communication
-    periods start and end, values outside of the respective periods are set to 0.
-    """
-    input:
-        script="../../scripts/plots/plot_comm_comparison.py",
-        ref_stats="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
-        new_stats="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json",
-        period_groups="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
-    output:
-        "plots/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.svg",
-        "plots/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.html"
-    params:
-        output_basepath="plots/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison"
-    shell:
-        "python3 {input.script} '{input.period_groups}' sgp4 '{input.ref_stats}' {wildcards.new_mobility} '{input.new_stats}' '{params.output_basepath}'"
-
-def get_const_comm_comp_json_paths(wildcards):
-    """
-    Returns all paths of JSONs containing the matched periods of the constellation specified in wildcards,
-    currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
-    """
-    return expand("stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
-            location=wildcards.location,
-            constellation=wildcards.constellation,
-            new_mobility=["kepler", "circular"],  
-            modname=get_const_sat_mods(wildcards.constellation))
-
-def get_const_comm_comp_plot_paths(wildcards):
-    """
-    Returns all paths of the plots comparing elevation angles, distances and delays in the matched communication periods of the constellation specified in wildcards,
-    currently only for reference mobility SGP4 and alternative (new) mobility Kepler. 
-    """
-    return expand("plots/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.{format}",
-            location=wildcards.location,
-            constellation=wildcards.constellation,  
-            new_mobility=["kepler", "circular"],
-            modname=get_const_sat_mods(wildcards.constellation),
-            format=["svg", "html"])
-
-rule plot_const_communication_period_comparisons:
-    """
-    Plots all plots comparing elevation angles, distances and delays for the matched communication periods of the constellation specified in wildcards.
-    """
-    input:
-        get_const_comm_comp_plot_paths
-    output:
-        "plots/compare_comm_periods/{location}/{constellation}_communication_comparisons.done"
-    shell:
-        "touch {output}"
-
-rule calc_communication_period_comparison_summary:
-    """
-    Calculates summary, i.e. averages, of overlap statistics for all communication period comparisons of the specified reference mobility, alternative (new) mobility
-    and constellation, i.e. for the statistics "ref_coverage", "new_excluded" and "excluded_time_to_ref_time". 
-    For explanation, see rule 'compare_comm_period_info'.
-    """
-    input:
-        get_const_comm_comp_json_paths,
-        script="../../scripts/statistics/summarize_comm_comp_info.py"
-    output:
-        "stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_summary.json"
-    params:
-        comp_jsons_dir="stats/compare_comm_periods/{location}/{constellation}/"
-    shell:
-        "python3 {input.script} {params.comp_jsons_dir} {output}"
-
-rule plot_const_overlap_stats:
-    """
-    Plots bar plot with two bars for each satellite module in the specified constellation, one for "avg_ref_coverage" and "excluded_time_to_ref_time".
-    """
-    input:
-        get_const_comm_comp_json_paths,
-        script="../../scripts/plots/plot_const_overlap_stats.py"
-    output:
-        "plots/compare_comm_periods/{location}/{constellation}_sgp4-{new_mobility}_overlaps_plot.html",
-        svg_out="plots/compare_comm_periods/{location}/{constellation}_sgp4-{new_mobility}_overlaps_plot.svg"
-    params:
-        comp_jsons_dir="stats/compare_comm_periods/{location}/{constellation}/"
-    shell:
-        "python3 {input.script} {params.comp_jsons_dir} {output.svg_out}"
-
-rule plot_zenith_shifts:
-    input:
-        script="../../scripts/plots/plot_sat_period_zenith_shifts.py",
-        comm_comp="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json"
-    output:
-        "plots/zenith_shifts/{location}/{constellation}/sgp4-{new_mobility}_{modname}_zenith_shifts.svg"
-    shell:
-        "python3 {input.script} '{input.comm_comp}' '{output}'"
-
-def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
-    
-    multiple_overlapping_periods_modnames = []
-    for comm_comp_fname in filter( lambda fname: fname.endswith("communication_comparison.json") and wildcards.new_mobility in fname, 
-                                    os.listdir(f"stats/{wildcards.location}/compare_comm_periods/{wildcards.constellation}") ):
-        
-        with open(f"stats/compare_comm_periods/{wildcards.location}/{wildcards.constellation}/" + comm_comp_fname) as json_f:
-            comm_comp = json.load(json_f)
-
-        if len(comm_comp["period_groups"]) > 1:
-            multiple_overlapping_periods_modnames.append(comm_comp["modname"])
-    
-    return expand("plots/zenith_shifts/{location}/{constellation}/sgp4-{new_mobility}_{modname}_zenith_shifts.svg",
-                    location=wildcards.location,
-                    constellation=wildcards.constellation,
-                    new_mobility=wildcards.new_mobility,
-                    modname=multiple_overlapping_periods_modnames)
-
-
-rule plot_const_multiple_overlapping_periods_zenith_shifts:
-    input:
-        get_const_multiple_overlapping_periods_zenith_shift_paths
-    output:
-        "plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}.done"
-    shell:
-        "touch {output}"
-
-rule plot_const_periods_zenith_shifts_in_one:
-    input:
-        get_const_comm_comp_json_paths,
-        script="../../scripts/plots/plot_const_period_zenith_shifts.py",
-        comm_comp_dir="stats/compare_comm_periods/{location}/{constellation}"
-    output:
-        "plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.html",
-        svg_out="plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.svg"
-    params:
-        difference_option=lambda wildcards: "--differences" if wildcards.differences_or_changes == "differences" else ""
-    shell:
-        "python3 {input.script} {input.comm_comp_dir} {output.svg_out} {params.difference_option}"
-
-rule available_sats:
-    input:
-        get_const_comm_period_infos,
-        script="../../scripts/statistics/available_sats_at_simtime.py",
-        comm_period_info_dir="stats/comm_periods/{location}/{constellation}/{mobility}"
-    output:
-        "stats/available_sats/{location}/{constellation}_{mobility}_available_sats.json"
-    params:
-        sim_time_limit = config["sim-time-limit"]
-    shell:
-        "python3 {input.script} {input.comm_period_info_dir} 15 {params.sim_time_limit} {output}"
-
-rule available_sat_diffs:
-    input:
-        script="../../scripts/statistics/available_sats_diffs.py",
-        ref_availables="stats/available_sats/{location}/{constellation}_sgp4_available_sats.json",
-        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4",
-        new_availables="stats/available_sats/{location}/{constellation}_{new_mobility}_available_sats.json",
-        new_comm_periods_dir="stats/comm_periods/{location}/{constellation}/kepler",
-        all_interval_changes="stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
-    output:
-        "stats/available_sats/diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
-    shell:
-        "python3 {input.script} {input.ref_availables} {input.new_availables} {input.all_interval_changes} {input.ref_comm_periods_dir} {input.new_comm_periods_dir} {output}"
-
-rule plot_available_sats_diffs:
-    input:
-        script="../../scripts/plots/plot_available_sats_diffs.py",
-        availables_diffs="stats/available_sats/diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
-    output:
-        "plots/available_sats_diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.svg"
-    shell:
-        "python3 {input.script} {input.availables_diffs} {output}"
-
-rule validate_circular_mobility_direction:
-    input:
-        script="../../scripts/statistics/validate_circular_mobility_direction.py",
-        sgp4_teme_csv="csv/vectors/{location}_{constellation}-sgp4_teme_sorted.csv",
-        circular_teme_csv="csv/vectors/{location}_{constellation}-circular_teme_sorted.csv"
-    output:
-        "stats/validation/circular_direction/{location}_{constellation}.txt"
-    shell:
-        "python3 {input.script} {input.sgp4_teme_csv} {input.circular_teme_csv} > {output}"
-
-rule avg_sgp4_altitudes:
-    input:
-        script="../../scripts/statistics/avg_sgp4_altitudes.py",
-        sgp4_teme_csv="csv/vectors/{location}_{constellation}-sgp4_teme_sorted.csv"
-    output:
-        "csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv"
-    shell:
-        "python3 {input.script} {input.sgp4_teme_csv} {output}"
-
-rule validate_circular_radii:
-    input:
-        script="../../scripts/statistics/validate_circular_radii.py",
-        circular_teme_csv="csv/vectors/{location}_{constellation}-circular_teme_sorted.csv"
-    output:
-        "stats/validation/circ_radii/{location}_{constellation}.txt"
-    shell:
-        "python3 {input.script} {input.circular_teme_csv} {output}"
-
-rule update_net_xml_location:
-    input:
-        script="../../scripts/update_net_xml.py",
-        net_xml="Null-Island-3by3-grid.net.xml_template"
-    output:
-        "Null-Island-3by3-grid.net.xml"
-    params:
-        location_str=lambda wildcards: config["locations_xml"][config["location"]]
-    shell:
-        "python3 {input.script} {input.net_xml} '{params.location_str}' {output}"
-
-rule plot_constellation_properties:
-    input:
-        script="../../scripts/plots/plot_constellation_properties.py",
-        tles_dir="tles/",
-        avg_alts_dir="csv/avg_alt/{location}/"
-    params:
-        output_dir="plots/constellation_props/{location}/"
-    output:
-        "plots/constellation_props/{location}/.done"
-    shell:
-        """
-        python3 {input.script} {input.tles_dir} {input.avg_alts_dir} {params.output_dir}
         touch {output}
         """
 
-"""
-RULES FOR PLOTTING SATELLITE ORBITS
-"""
+def formatVector(wildcards):
+    v = wildcards.vector.split(".")[-1]
+    return "-F " + v + "=" + v.replace(":", "_")
 
-rule satmod_csv:
-    """
-    Writes 3D coordinates in the specified coordinate frame for the specified satellite module of the specified OMNeT configuration
-    to an individual CSV file.
-    """
+rule vec2csv:
     input:
-        script="../../scripts/utility/to_sat_csv.py",
-        in_csv="csv/vectors/{location}_{opp_config}_{coord_frame}_sorted.csv"
+        "{oppConfig}_done.txt"
     output:
-        "csv/vectors/satmod/{location}/{opp_config}_{coord_frame}_{leo_modname}.csv"
-    shell:
-        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
-
-def get_satmod_csv_paths(wildcards, same_config=True):
-    """
-    Returns the paths of the CSVs of individual 3D coordinate for the satellite modules of the wildcards list "leo_modnames" of the specified constellation,
-    for the specified coordinate frame and either one or two OMNeT configurations, for (1) plotting orbits of one mobility and (2) comparative plot of the 
-    orbits of two mobilities.
-    """    
-    leo_modnames = wildcards.leo_modnames.split("+")
-
-    # one config (= one mobility) -> one csv per satmod 
-    if same_config:
-        base_path = "csv/vectors/satmod/" + wildcards.location + "/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
-        return [(base_path + modname + ".csv") for modname in leo_modnames]
-
-    # tw0 configs (= two mobilities) -> two csvs per satmod 
-    else:
-        mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
-        mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
-        mob1_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
-        mob2_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
-        return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
-    
-rule plot_orbs_of_mobility:
-    """
-    Creates interactive plot of the orbits of the specified "leo_modnames" for the given coordinate frame and OMNeT configuration.
-    """
-    input:
-        script="../../scripts/plots/plot_orbs.py",
-        coord_paths=get_satmod_csv_paths
-    output:
-        "plots/orbs/mobility/{location}/{opp_config}_{coord_frame}_{leo_modnames}.html"
+        "csv/vectors/{oppConfig}-{module}-{vector}.csv"
     params:
-        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths)
+        itervars=formatItervars,
+        vector=formatVector,
+        moduleRegex=formatModuleRegex
+    threads:
+        1
     shell:
         """
-        python3 {input.script} -c {params.csv_paths} -o '{output}' -e
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -M {params.moduleRegex} {params.vector} -A repetition {params.itervars} results/{wildcards.oppConfig}*.vec > {output}
         """
-
-rule plot_orbs_of_mobilities:
-    """
-    Creates interactive plot of the orbits of the specfiied "leo_modnames" for the given coordinate frame, with one orbit per satellite module
-    for both mobilities. I.e. enables visual comparison of orbits.
-    """
-    input:
-        script="../../scripts/plots/plot_orbs.py",
-        coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
-    output:
-        "plots/orbs/mobilities/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
-    params:
-        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths),
-    shell:
-        "python3 {input.script} -c {params.csv_paths} -o '{output}' -e"

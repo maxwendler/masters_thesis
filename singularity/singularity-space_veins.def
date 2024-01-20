@@ -43,8 +43,8 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
     test -s "${SINGULARITY_ROOTFS}/etc/hosts" || echo '127.0.0.1\tlocalhost' >> "${SINGULARITY_ROOTFS}/etc/hosts"
 
 %files
-    /home/s3997128/git/ma-max-wendler/.devcontainer/conda-requirements.txt /opt/conda-requirements.txt
-
+    ../.devcontainer/conda-requirements.txt /opt/conda-requirements.txt
+    ../.devcontainer/use-pip-in-conda-env.sh /opt/use-pip-in-conda-env.sh
 
 %post
     set -e
@@ -129,6 +129,8 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
     conda create -p /opt/.conda --file /opt/conda-requirements.txt -c conda-forge -y
     conda init bash
 
+    bash /opt/use-pip-in-conda-env.sh
+
     cd /opt
     case "$OPP_VERSION" in
     5.0)
@@ -141,7 +143,7 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
         echo "Error: No mirror configured for this version of OMNeT++"
         ;;
     *)
-        curl --location https://github.com/omnetpp/omnetpp/releases/download/omnetpp-${OPP_VERSION}/omnetpp-${OPP_VERSION}-core.tgz | tar -xzv
+        curl --location https://github.com/omnetpp/omnetpp/releases/download/omnetpp-${OPP_VERSION}/omnetpp-${OPP_VERSION}-src-core.tgz | tar -xzv
     esac
 
     ln -s omnetpp-${OPP_VERSION} omnetpp
