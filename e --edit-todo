@@ -1,0 +1,1009 @@
+[33mcommit 135f1f27a2c05212bc33fde0efd0c4f4c844261c[m[33m ([m[1;36mHEAD[m[33m, [m[1;31morigin/kepler-mobility[m[33m)[m
+Author: Max Wendler <s3997128@nsm-lab-s01.iai.inf.tu-dresden.de>
+Date:   Sat Jan 20 11:26:49 2024 +0100
+
+    update singularity definition
+
+[33mcommit 7e38fba7a3dc70ae43134b6aa4f6a65a2d33a619[m
+Author: Max Wendler <s3997128@nsm-lab-s01.iai.inf.tu-dresden.de>
+Date:   Fri Jan 19 18:19:49 2024 +0100
+
+    testing singularity definition
+
+[33mcommit f30d50b9911c21a94b400c2ee77a1adc330f80c2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Jan 12 19:52:39 2024 +0100
+
+    constellation properties visualization + sumo integration
+
+[33mcommit a73d7c75fcb4f41d96a3addcfe66eea3b491aa67[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Jan 10 16:57:22 2024 +0100
+
+    implemented circle plane creation with RAAN and inclination
+
+[33mcommit ba6dbc981d68374eae4cf8e4462f40e923166dc9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Jan 9 17:43:40 2024 +0100
+
+    adapted snakemake rules to include location
+
+[33mcommit 2d48ba9d93f3728b429130d1c2384a2b696e5982[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Jan 9 12:51:24 2024 +0100
+
+    implemented location as omnet parameter to identify results
+
+[33mcommit 435329be22dad1c9dec125c8ad6b707e70c5c531[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Jan 9 12:32:08 2024 +0100
+
+    implemented proposal locations
+
+[33mcommit ad344624eb01d5c0ebf98676328b6a5ef6f2c2ca[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Jan 7 17:15:40 2024 +0100
+
+    set circular parameters to fixed values
+
+[33mcommit 32dab6e32c83187cf73f27fa3a771944deccfcba[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Jan 7 15:01:55 2024 +0100
+
+    circular radii validation
+
+[33mcommit 7763c946c52e269fb9df6621d06541e50f27d9ab[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Jan 4 17:54:33 2024 +0100
+
+    added params for CircularMobility radius
+
+[33mcommit 15bef736be553fd7c0265e4d40154bbf8c259fe7[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Jan 3 17:35:30 2024 +0100
+
+    relative time of second point for CirclePlane parameter study
+
+[33mcommit 8ec5b15ddc0023e70bb74ee8adc04272a356f4f9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Jan 1 16:55:13 2024 +0100
+
+    added ned parameter for configuring relative time of second point for CirclePlane in first orbit half
+
+[33mcommit 5a31192d3623b0e9dd59fee7d288330b1c7ae942[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Jan 1 16:26:23 2024 +0100
+
+    testing CircularMobility
+
+[33mcommit aabfc41aebe8ee988dcb92448c9ed425ae3330e2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 30 18:09:54 2023 +0100
+
+    updated snakemake rules for added circular model incl. bugfixes
+
+[33mcommit a2ef834ecb0188a828a40b6e360ae3ba7d7c0f51[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 30 11:58:23 2023 +0100
+
+    added omnetpp.ini's sim-time-limit as snakemake parameter
+
+[33mcommit 25ce6fe1666ea4bfd719cbf515d7a6adbc118fa9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Dec 28 18:03:28 2023 +0100
+
+    implemented CircularMobility
+
+[33mcommit 6531070873b5499861e3f5a72537e3d1699d137b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 20:38:55 2023 +0100
+
+    included effects of lost/added periods on availability changes
+
+[33mcommit 81d33f48f9d213720bef962b16ccbaa017ea6aed[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 20:02:49 2023 +0100
+
+    added summary stats to interval changes
+
+[33mcommit 2dce603441033b9974ced54f405ed8099aa96cec[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 18:15:19 2023 +0100
+
+    stat differences for communication periods grouped by max. elevation angle in one plot with all groups
+
+[33mcommit b78efad8029d4205f2d27925a7d102d1a684339f[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 16:32:28 2023 +0100
+
+    added availability (difference) stats
+
+[33mcommit 1077bba4efca95765b352b5d97ffbb594752e2e0[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 15:57:04 2023 +0100
+
+    removed old scripts and rules for constellation interval changes
+
+[33mcommit c4d71ce967d6ea12dc23e7f3aee4eddf687ecb0f[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 24 15:52:45 2023 +0100
+
+    changed zenith shift at offset diff input to all changes json
+
+[33mcommit 36e5fd9dcbd0e341e738d154ec5632fff426fc77[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 23 16:59:59 2023 +0100
+
+    unified interval changes in one script, also considering overlapping periods as 'neighbors'
+
+[33mcommit a1c5d0633a17e5f5d6215fcdcb37647fc16eeb2e[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Dec 21 17:31:58 2023 +0100
+
+    statistics for available satellites
+
+[33mcommit 020cd4358b16608a1407fd2f1735bf82054cc71a[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 20 18:25:41 2023 +0100
+
+    plots for grouped sop stat diffs by sgp4 elevation angle
+
+[33mcommit df2252238eb3fba6ba7f72f16ef9e022da1df61b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 20 12:17:29 2023 +0100
+
+    grouping sop sat diffs by max sgp4 elevation angle
+
+[33mcommit 07c9f313199be76ef3636d12bcab3c1932375365[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 20 10:16:12 2023 +0100
+
+    linear function fitting
+
+[33mcommit 7cc42cf032ea7d7122560f1afd57c8b067c51d58[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 19 17:40:08 2023 +0100
+
+    plotting zenith interval changes for individual satellites
+
+[33mcommit 3cdf928150ad8159d5a82c6eae2888b56fd13fce[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 19 14:48:53 2023 +0100
+
+    offset differences for zenith intervals
+
+[33mcommit a3aeac69778a06feda2035dc7f1ebac73980ccd1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Dec 18 17:59:36 2023 +0100
+
+    offset sums for zenith intervals
+
+[33mcommit b6a3b0dfa2ff6af95db6ff1335b573bb9f88c0d4[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Dec 18 15:39:48 2023 +0100
+
+    zenith interval changes
+
+[33mcommit 364ca50069fe9d6cf2fe17ee80fe0af7cfb67a99[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 13 18:28:55 2023 +0100
+
+    quantify changes due to added, missing comm. periods & summary stats
+
+[33mcommit af89a980183f6a4f3f2ae4c797ac12a907ef32fd[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 13 15:11:08 2023 +0100
+
+    added communication period interval changes & edge case fixes
+
+[33mcommit 9fa733896f3a1d1a8bcce9dd57a498ec71c58967[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 13 12:25:49 2023 +0100
+
+    missing periods interval changes
+
+[33mcommit c44aa150c3dccd127575c7b5fbed05d4f1be99a5[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 13 11:59:05 2023 +0100
+
+    same period interval differences
+
+[33mcommit 1c45816d93bd9552bd14532c602b37ccbbdfa9a5[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 12 17:16:04 2023 +0100
+
+    fixed zenith interval calculation
+
+[33mcommit 51dcc2a5c463035e8debeeea1510024fc90a8ef4[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 12 16:12:52 2023 +0100
+
+    plotting communication periods
+
+[33mcommit 2ec00a4ff7782272a93f490eae6235d341492edf[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 12 13:05:04 2023 +0100
+
+    intervals between communication periods, interval between their zeniths
+
+[33mcommit 19a9ddb9e88dd038a32dc4591e4dd18abd00c810[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Dec 11 14:38:42 2023 +0100
+
+    angle and delay differences at offset to TLE
+
+[33mcommit 3107e963d9740f7689de27c9953eedcaa385920c[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Dec 8 15:47:25 2023 +0100
+
+    removed interpolation
+
+[33mcommit b8fb68b7e0e5aaeab8e82a65da18b00c5459509e[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Dec 6 15:35:26 2023 +0100
+
+    plotting zenith shifts
+
+[33mcommit 17289245220236c97278109c16697a0ee2e0ad4b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 5 20:22:10 2023 +0100
+
+    aligned communication period differences and changes
+
+[33mcommit 98f0d3273ac95bfc2da802c3f40e091ae09fa452[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 5 18:38:58 2023 +0100
+
+    sop stat interpolation evaluation
+
+[33mcommit 52ab14797204d2f50b4df22c6c994bd3bdbd5cec[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Dec 5 11:42:06 2023 +0100
+
+    duration change calculation
+
+[33mcommit 5cd5c8ef09214eb5073750d20e6fc39d20e2c7d8[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Dec 4 16:45:42 2023 +0100
+
+    added comm. period association based on local maximum idx (-> no additional matches)
+
+[33mcommit 2a4d47c729e64237b0af60c0be267edbd643aab6[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Dec 4 15:13:38 2023 +0100
+
+    calculation and plotting of overlapping period zenith shift
+
+[33mcommit e585e5641855cbabb67f28abe02b1ae824ef6678[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 3 14:57:13 2023 +0100
+
+    added check for multiple period overlaps/matches for new mobilities
+
+[33mcommit 61b8b8788450661e5f740b846d3e40e62c1bcec2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Dec 3 11:42:25 2023 +0100
+
+    refactoring and comments for statistics calculation scripts
+
+[33mcommit 7874c4e83602bd48e53fb674c9b460f63b90c2ea[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 21:52:29 2023 +0100
+
+    more fixes to plotting scripts
+
+[33mcommit e5d8f7c9559931ad686d468fbb1ba7ea7b44e886[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 20:43:04 2023 +0100
+
+    renamed plot_differences_both.py to plot_differences.py
+
+[33mcommit 32466258b256cfedad56ed4e045e7a979a9733a3[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 20:40:46 2023 +0100
+
+    unified positional difference plots with/without ECDF in one script
+
+[33mcommit b70219359906a916c7abfbe645a2e1adad2abdaa[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 20:23:05 2023 +0100
+
+    fixes to plotting scripts
+
+[33mcommit 00bff5130b72e4bb88413f2943f5148c7392f112[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 18:34:40 2023 +0100
+
+    changed scripts directory structure
+
+[33mcommit f2d291f1f07f4c9bea7b7f6a8de77016cafd3d43[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Dec 2 18:11:20 2023 +0100
+
+    snakefile cleanup
+
+[33mcommit ea5db3a787f1e2951d8c75a04e3c8f1f127f710d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Dec 1 15:23:13 2023 +0100
+
+    removed options for not using orekit and itrf traces from workflow
+
+[33mcommit d83781de6b1b9e4b0c4ad0a9da1361c1b4175534[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Dec 1 14:15:24 2023 +0100
+
+    changed plot outputs from PNG to SVG
+
+[33mcommit df99325abc73afea7c9c8e9dabb7b7ef55753896[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 28 10:07:49 2023 +0100
+
+    calculation and plots for differences of stats relative to SOP
+
+[33mcommit 6f76566ae8ea6603f0c7ea06fb560fcc70713a67[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Nov 26 21:07:05 2023 +0100
+
+    plots and summary stats for communication period comparison
+
+[33mcommit c754f15caaf5fdddb88275a64b992c8c0da6ad1c[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Nov 25 15:21:18 2023 +0100
+
+    changed delay values from s to ms
+
+[33mcommit ad9961c63b8d4b5f3cdc07d5dd3966731d54a7f2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Nov 25 15:11:51 2023 +0100
+
+    updated gitignore
+
+[33mcommit dd748e32b5ef3a2ed36d67bc11d20e218c9e9e9b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sat Nov 25 15:07:54 2023 +0100
+
+    labels for communication period comparison plots
+
+[33mcommit 50719a70856f9f7ecd07b49f7e637835e4b2c8a4[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 24 19:30:36 2023 +0100
+
+    plotting of SOP stats for communication periods overlapping between sgp4 and kepler
+
+[33mcommit 1d96dbbf5935b8dac2878b12cc4473c4028e2bb1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 24 16:10:45 2023 +0100
+
+    stats w.r.t. SOP for periods when communication is possible
+
+[33mcommit fdd7bd398b493aee2ca711d2e35be5521a7cdb92[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 24 14:29:15 2023 +0100
+
+    elevation angle, distance and delay to SOP + plotting that
+
+[33mcommit c76b8b32ac213f43a73aa1646fc34cb356e7bbd0[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Nov 22 11:48:05 2023 +0100
+
+    Implemented no orekit/orekit trace gen. comparison
+
+[33mcommit 8258e80994d94a7cd44d46ba4f20de848206a43b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 21 12:14:43 2023 +0100
+
+    modified snakemake rules so that traces won't be recreated without changes of config parameters
+
+[33mcommit 6dc76edc9225e846dde4e35397f0ac5e6464b3b8[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 21 09:45:06 2023 +0100
+
+    implemented comparative with/without orekit histogram
+
+[33mcommit 069f353c0f047a5dab4563fcf365e05166fe4a04[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 19:34:30 2023 +0100
+
+    added plots for difference sums & difference boxplot per constellation
+
+[33mcommit c7a829e97dfdc96b864bf45baf88cc892789b727[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 15:21:06 2023 +0100
+
+    updated SGP4 mobility
+
+[33mcommit bb582c56b2d5dc9ab0c58d2a2725c421c473790b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 15:06:01 2023 +0100
+
+    implemented separation of results for simulation based on traces with or without orekit
+
+[33mcommit 127e09dfdb66b38d51adf9fef88467272be10044[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 13:34:28 2023 +0100
+
+    notebook for testing difference distribution plots
+
+[33mcommit c29e9a2f912f5bd77cbe5638db69c9065237453a[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 11:16:53 2023 +0100
+
+    implemented orekit projection for each epoch of trace
+
+[33mcommit d556763885adb89cae639d4c9f358b4266dc5e44[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 20 10:49:17 2023 +0100
+
+    switched to ITRF traces as input for KeplerMobility
+
+[33mcommit 480ec5e5df7f01dd591f363197998b4170fa76f9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Nov 19 18:30:18 2023 +0100
+
+    simplified positional_differences.py
+
+[33mcommit 5a4d65a40977228b00921ea73c316e27773c4b24[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Nov 19 15:28:17 2023 +0100
+
+    delete environment.yml from testing a command
+
+[33mcommit 0853789baf529c7e8f7d40633e574c1bd2d551d9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Sun Nov 19 15:27:23 2023 +0100
+
+    added snakemake rule to plot differences of all satellites of a constellation
+
+[33mcommit b12e9f43f63cfce5f1d45868fcf0c8dccddf81f1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 17 12:51:04 2023 +0100
+
+    added timestamp as content to snakemake done files so snakemake sees updated inputs
+
+[33mcommit bb880ffa617cbec0cbd90bb0b73bf383ad5bcfda[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 17 08:19:39 2023 +0100
+
+    added scripts as inputs to snakemake rules
+
+[33mcommit 2e65d02b99440515b7dffa896abdfc4bfd7a2185[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 17 08:02:02 2023 +0100
+
+    fixed start time of traces
+
+[33mcommit e6b64830a8ce5a92557cc2f6ef6725fb6920be11[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 17 07:07:51 2023 +0100
+
+    more difference plots & fixed devcontainer
+
+[33mcommit 50c69d9f9e24ba193f9c0dc8a132ff938ef608f2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Nov 15 15:25:16 2023 +0100
+
+    integrated installation of conda, conda requirements and pip requirements to devcontainer build + fixed issue with install-omnetpp.sh by splitting in two parts (?)
+
+[33mcommit 3726dcea27542c4b838dddef036347131418941a[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 14 21:15:05 2023 +0100
+
+    reverted to old orbit coloring scheme
+
+[33mcommit 6e3ddc5cd09747a9e5b90d6ce9bd0576cb0f4ea8[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 14 20:31:09 2023 +0100
+
+    implemented snakemake rule to plot orbits from same constellation and different mobilities
+
+[33mcommit 252ca723c8bf7979b3e23af3be4707a25c7e3585[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 14 19:34:14 2023 +0100
+
+    implemented snakemake rule to plot orbits from same constellation and mobility
+
+[33mcommit 62de30062eec67837ee1f2c842ad8cab19688e46[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Nov 14 18:09:25 2023 +0100
+
+    implemented script to plot orbits from coordinate csv and itrf traces
+
+[33mcommit 7950ec0a7adfb98bb5f682f6e2782ac0ad0da55d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 18:44:24 2023 +0100
+
+    updated .gitignore
+
+[33mcommit 11bb776fb3a837efc3ea78d4ec87b36633d5e22a[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 18:34:05 2023 +0100
+
+    added snakemake rule to create line plot of positional differences
+
+[33mcommit 09f1b2dd1a1ce9dbb7c2d955d40d02ac1c41ac9b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 18:11:45 2023 +0100
+
+    updated calculation of positional differences and added snakemake rule for it
+
+[33mcommit ea2a859ab0b0a583db5de3a907ae6bd02dd4fefe[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 15:26:33 2023 +0100
+
+    updated snakemake rules for trace creation to flexibly work with orekit, IRTF output
+
+[33mcommit a61ea52fc2488df30bf5de98f0d5822133ab66a1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 15:00:33 2023 +0100
+
+    updated snakemake rules to not request ITRF coordscsv for Kepler simulations
+
+[33mcommit b5da3dbdfef5ffdb7b17b8b5b32b242f603b0990[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 11:32:31 2023 +0100
+
+    implemented simplified file names for sorted coordinate result csvs
+
+[33mcommit ca3bbb3ddb660b526528de24666693e31b602859[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 11:03:22 2023 +0100
+
+    implemented sorting of complete coordinate result csvs in Snakemake
+
+[33mcommit 1627287ae98c0c130c6855a3c44ecae72512d272[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 10:37:33 2023 +0100
+
+    changed variable and argument names using ITRS/itrs to ITRF/itrf
+
+[33mcommit deb9635ce0f0ccb553585d18a9e46608b5228363[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 13 10:19:00 2023 +0100
+
+    Implemented plotting prototype for earth orbits
+
+[33mcommit 5a99a5c0665b6ad4202efa24ffefafcc2fa76299[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 10 13:38:10 2023 +0100
+
+    Parsing of results into constellation/individual satellite csvs; calculation of ITRF, WGS84 distances
+
+[33mcommit 1e41904f92ae1eb9c56b8bf5ea09208ce7921af8[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 6 19:49:29 2023 +0100
+
+    implemented ITRS/ITRF trace creation and trace creation based on Orekit GCRS->IRTS transformation
+
+[33mcommit 77010a7add3b3a57dafef68eb1aa9fcd899fe776[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 6 16:46:13 2023 +0100
+
+    improved create_traces.py with different GCRS->WGS84 conversion
+
+[33mcommit 7b34153f18867a8b4593213613fffb16cbc53bd2[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Nov 6 11:14:22 2023 +0100
+
+    adapted Snakemake rules for csv creation: all sat mods in one file per coordinate
+
+[33mcommit 7344c88d91e61f367e9d3cdcc33eaaeb5d6a4ded[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 3 18:19:53 2023 +0100
+
+    added Snakemake rule for trace creation for one constellation instead of all
+
+[33mcommit eb58b479ee4c6bbd4b8438e09e35490d5c0f0d3f[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 3 13:07:18 2023 +0100
+
+    added recording of itrf coordinates
+
+[33mcommit e5c02a005d96eb1704694f691a35d08987ba1405[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Nov 3 11:24:27 2023 +0100
+
+    experimenting with coordinate systems for validation
+
+[33mcommit 7ff61c624603bf9ba6a2871dd8bd568500a411dd[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Nov 2 19:19:12 2023 +0100
+
+    implemented validation for true anomaly and semimajor axis calculation
+
+[33mcommit cc6cc2a304caba1eff8bc58d17ee59591fdd7e03[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Nov 2 12:22:05 2023 +0100
+
+    Snakemake rules for result to csv conversion
+
+[33mcommit eddadd00d4ad7a550447d833da4208a37a397e03[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Oct 31 17:38:03 2023 +0100
+
+    adapted Snakemake rules for creation of statistics csvs
+
+[33mcommit 990dc66b593ca707a5160f25f0e0e17b29b55cdd[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Oct 27 13:03:00 2023 +0200
+
+    updated tlefilter.py to also remove TLEs with a name that already occured in a list
+
+[33mcommit e4362a4c5615b126704a416753850c8603c84e20[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Oct 27 12:23:14 2023 +0200
+
+    implemented more flexible getConstellationAndSatNum function
+
+[33mcommit b93206851a35f5e957f55d9579b0aab7eccf0e06[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 20:21:21 2023 +0200
+
+    Snakemake rules for running simulations from runmaker files
+
+[33mcommit 8a4dfefa9c14684228578ab31aa2b9921b1089a6[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 16:52:57 2023 +0200
+
+    Snakemake rules for runmaker .txt and .log files; one run per config
+
+[33mcommit 76638a97cf6e95af2aabf18c8313a607779c0a9d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 16:15:56 2023 +0200
+
+    Snakemake rules for (re)building space_Veins in devcontainer
+
+[33mcommit 0ce51a62e305a617a0742b59189165b516705e24[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 14:12:38 2023 +0200
+
+    removed tracking of dag.svg
+
+[33mcommit 3bc3afd18332b4261be5e37ee87c5107b21b740f[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 14:09:24 2023 +0200
+
+    updated .gitignore
+
+[33mcommit 2562b7713f1defc4d3391911f9f9062c951ee648[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 14:04:41 2023 +0200
+
+    implemented Snakemake rule to generate traces
+
+[33mcommit 4388349b1b28f5d3435fd28ab6d51f80ec97aaf9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 26 11:34:08 2023 +0200
+
+    removed old code
+
+[33mcommit ed63ce09ad888a66ce57f59d4bf5de6d38ddde39[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 25 21:46:34 2023 +0200
+
+    updated .gitignore
+
+[33mcommit 0881907263400139d8cffb67f3986e1b1f8fa651[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 25 21:45:11 2023 +0200
+
+    implemtend 1st step of snakemake workflow: creation of consistent omnetpp.ini
+
+[33mcommit b3d9225c85a3b97388abec2578afa310feea97ce[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 15:54:03 2023 +0200
+
+    added filtering of Starlink and Iridium TLEs from SATNOGs TLEs to prevent doubles
+
+[33mcommit f81599d2d8428e92ac5a66dfadce5f4d51054f32[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 15:47:42 2023 +0200
+
+    removed filtering of eccentric Starlink TLEs which yields 'SHERPA-LTC2', which is also part of SATNOGs TLEs'
+
+[33mcommit 73b52410d19556132fed0d856e8d838d940d69a0[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 15:43:40 2023 +0200
+
+    changed output of filtered eccentric TLEs in one file per constellation to outputting them into on file of all eccentric TLEs
+
+[33mcommit 97029de74b08be9a5b0882c2f4ce7b22a9946bb6[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 15:36:54 2023 +0200
+
+    added filtering of eccentric Starlink TLEs to tlefilter.py
+
+[33mcommit b271465c1f3c00d77c5004eb862d93d2485fc784[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 15:16:23 2023 +0200
+
+    implemented automatic update of omnetpp.ini with configurations and adapted other scripts accordingly
+
+[33mcommit db37fd6e638754d55d409a86af36243020c2414e[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 13:22:14 2023 +0200
+
+    updated tlefilter.py to base file of derived TLE lists on average epoch of the TLEs
+
+[33mcommit 2cbc075f4120d03851a39e68a06238f16110b324[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 13:08:22 2023 +0200
+
+    updated tlefetch.py to filename of a TLE list on average epoch of the TLEs
+
+[33mcommit 34ac9d8c928eb29ebe04c235a1d66939ecc0e966[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Oct 23 12:34:27 2023 +0200
+
+    first part of implementing automatic omnetpp.ini update
+
+[33mcommit 42c091627bbe2eca028492e560fe1c0e236fb20e[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Oct 20 18:23:32 2023 +0200
+
+    updated .gitignore - now all example tle lists are tracked
+
+[33mcommit 70e3504666df4ce02991f95a6fe9b6ea1289f36d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Oct 20 18:16:37 2023 +0200
+
+    updated tlefilter.py - all resulting tle lists ready for trace creation are individual .txt per retrieval time, mere input files flagged by name prefix '_'
+
+[33mcommit 4ccf7cead4c85c7b8ada60d86553a0a6ceea6a7d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Fri Oct 20 17:39:38 2023 +0200
+
+    step (1/?) setting up basic snakemake rules
+
+[33mcommit 4a839217ca44fe0b8fdfe5150a2212eac731208c[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 17:44:06 2023 +0200
+
+    added comments for scripts in scripts/keplertraces
+
+[33mcommit af45a767e2a364d6719f479c3c348485b8e86847[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 17:23:57 2023 +0200
+
+    removed requirements.txt from scripts/, renamed to py-requirements in .devcontainer
+
+[33mcommit 60ee74e17783b2f20ab4bbe32e479fcdeedf90b3[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 16:01:00 2023 +0200
+
+    updated git ignore
+
+[33mcommit 954f39727be0fe7d5aa231f08d9807aea81bd719[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 15:58:20 2023 +0200
+
+    implemented filtering of true LEO sats and eccentric true LEO sats in tlefilter.py
+
+[33mcommit fdd45c00eaf5f56c1b8d90c9c98a3a0b5e1a5408[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 12:51:48 2023 +0200
+
+    adapted poliastro guide's gp loading to load recent TLEs for thesis
+
+[33mcommit 7524936fa180d8a350f0430813c61720f36a659b[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 19 11:36:45 2023 +0200
+
+    Included loading of recent TLEs from CelesTrak from poliastro guide (see description)
+    
+    https://docs.poliastro.space/en/stable/examples/Loading%20OMM%20and%20TLE%20satellite%20data.html
+
+[33mcommit a36495084abaee40ec4e3fff060ee1882113de11[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 18 15:43:23 2023 +0200
+
+    adapted parseomnetini.py to resolve config extensions according to 'https://doc.omnetpp.org/omnetpp/manual/#sec:config-sim:section-inheritance'
+
+[33mcommit b90793bbc5fcbcf4f5887ff56f952ab9e1fdcb01[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 18 15:27:04 2023 +0200
+
+    added parsing of 'wall_clock_sim_start_time_utc' from omnetpp.ini for python trace creation'
+
+[33mcommit a47e259c493676e7fa244a0de6a2612fc7fbe0f9[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 18 14:45:12 2023 +0200
+
+    Added RuntimeError to enforce consistency of '*.leo*[*].mobility.typename' and '*.satelliteInserter.mobilityType' params of omnetpp.ini
+
+[33mcommit 30929c428bb46b393b42f93bd5c3df3193be3640[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Wed Oct 18 11:07:26 2023 +0200
+
+    bugfixes
+    
+    - memory errors caused by unmanaged char pointers
+    - end of ifstream lifetime in KeplerMobility, caused by opening of stream in SatelliteInserter and passing via pointer
+
+[33mcommit 479b1a5cef749682a9984ed8da0b2f12c7a364e5[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 12 18:53:22 2023 +0000
+
+    +1 to all vector sizes from determineVectorSize
+
+[33mcommit 20ddbb0129813c6e53976b011076adbf929deaca[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 12 13:51:07 2023 +0200
+
+    added python requirements.txt for generating traces to .devcontainer; added pip install commands to Dockerfile
+
+[33mcommit cdea893237cad10f0f38d542159d9bce2243c73d[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 12 11:57:52 2023 +0200
+
+    moved kepler trace generation scripts to src/scripts/
+
+[33mcommit b6c173ddcce49e6e08aa1fb51f5e85bed27862c6[m
+Merge: 7a8b514 2dbaf90
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 12 11:55:53 2023 +0200
+
+    Merge 'origin/kepler-traces/ into kepler-mobility
+
+[33mcommit 7a8b514fb357aecb7792863a243caec05b98edb7[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 12 11:45:42 2023 +0200
+
+    Patched space_veins_run.in.py for absolute paths option
+    
+    Implemented changes from https://github.com/sommer/veins/commit/730b1d38fc40155f76850a1b2d366b0087269341
+
+[33mcommit b72b713d09e63aae2840eb5d73b6cad862e956e1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Oct 10 19:04:04 2023 +0200
+
+    adapted SatelliteInserter so it also can handle KeplerMobility (depending on 'mobilityType' OMNet param)
+
+[33mcommit 036a5032172bf73abc6d042022b7ffd9c31bd470[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Oct 10 17:07:01 2023 +0200
+
+    created KeplerMobility.ned
+
+[33mcommit db96905b0081b536350a314b881d974a86f4a2e1[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Oct 10 16:50:03 2023 +0200
+
+    created KeplerMobility.cc by adapting SGP4Mobility.cc - reads trace from ifstream
+
+[33mcommit aa8d6f79f1cef6ef23970daa70068b449ece2061[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Tue Oct 10 13:49:07 2023 +0200
+
+    created KeplerMobility.h by adapting SGP4Mobility.h
+
+[33mcommit 40f5ddfa8db9fcb5260e26d77f83cc9bd961110a[m[33m ([m[1;31morigin/devcontainer[m[33m)[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 5 19:54:15 2023 +0200
+
+    added compile_commands.json to .gitignore
+
+[33mcommit 4e63cbc51d0613d6eb1df37544ed6912b5a52a70[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 5 19:08:11 2023 +0200
+
+    removed .vscode dir from .gitignore
+
+[33mcommit db2f255e9861d60dd8cd8b4f74e519055328f0ba[m
+Author: s3997128--tu-dresden.de <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Oct 5 19:04:49 2023 +0200
+
+    added mirror-based sources.list to be used by container's apt
+
+[33mcommit 2dbaf904f01dbfb47b23f43ac05876b38e671393[m[33m ([m[1;31morigin/kepler-traces[m[33m)[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:55:23 2023 +0200
+
+    removed wrongfully tracked __pycache__ subdirectory
+
+[33mcommit 1b5cf087ae6333144ecb52cc01281fb36badac4f[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:50:10 2023 +0200
+
+    fixed gitignore for new directory names
+
+[33mcommit b4d3711f02d5fd53dda9ef2139ecc044c217910f[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:48:39 2023 +0200
+
+    removed result traces
+
+[33mcommit 2cb097dc2505f6104835755f08a7cd95d12ebdd7[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:47:16 2023 +0200
+
+    added 'results' subdirectory to gitignore
+
+[33mcommit af61e910f9d038b5bc1e219c70ce421fc9a81fbe[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:46:10 2023 +0200
+
+    renamed python package to 'keplertraces', 'traces' subdirectory to 'results'
+
+[33mcommit b800508764028b3d12b0d6ccda3c8fbedc82403f[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Thu Oct 5 10:42:01 2023 +0200
+
+    implemented more time tracking; satellite traces in individual files
+
+[33mcommit 5bd2990b83284b3c58a4951e1ec3c0541b3375fa[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Wed Oct 4 17:30:27 2023 +0200
+
+    Added output of execution time to each script execution.
+
+[33mcommit 774f4839bfa44064a5aed6c6e1dbbf3fd9cb03b5[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Wed Oct 4 17:22:37 2023 +0200
+
+    Implemented calculation of WGS84 coordinate traces and writing to file specified by command line argument for a file of TLEs and an omnetpp.ini; optionally for a specific configuration section from there
+
+[33mcommit 9b755375c0859be174ed61b34e91856d48d3fc18[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Wed Oct 4 16:24:07 2023 +0200
+
+    removed 'pre-commit' from requirements.txt
+
+[33mcommit c83a0f33d4f465889ff226e5bb29df81b47d151b[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Wed Oct 4 16:23:30 2023 +0200
+
+    removed artifacts of implementation via jupyter notebook
+
+[33mcommit f51fb35f0442aa7a1c744678e5f1dc9bc368bb28[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Wed Oct 4 16:18:59 2023 +0200
+
+    Implemented parsing of trace duration and sampling rate from omnetpp.ini + implemented current partial process in create_traces.py script instead of jupyter notebook
+
+[33mcommit a539945d8c8d1cd33b501dbb261db0259a9a79f0[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Fri Sep 8 16:21:06 2023 +0200
+
+    Added clearer exception for invalid TLEs file format
+
+[33mcommit 801871987f3dea7991e9d1a65ebe775d61fcacb7[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Fri Sep 8 16:12:16 2023 +0200
+
+    Implemented parsing of TLEs file to inputs for Kepler model
+
+[33mcommit 6687d0b1c417f31c0bd256de553945f71f7bcff4[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Fri Aug 25 13:54:27 2023 +0200
+
+    removed ZoneIdentifier files
+
+[33mcommit 65e48602f550282aec64fa03b128e7a6643fb135[m
+Author: Max <max.wendler@msx.tu-dresden.de>
+Date:   Fri Aug 25 13:53:26 2023 +0200
+
+    added .vscode dir
+
+[33mcommit 72fa38671c0a177ec8934a3cf3b3a859d835e9db[m
+Author: Max Wendler <max.wendler@mailbox.tu-dresden.de>
+Date:   Thu Aug 24 11:09:50 2023 +0200
+
+    added /.devcontainer, /.vscode'
+
+[33mcommit a3ceede5a3d404cfd556a9d3a2749d955dc1bdad[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: maxwendler <max.wendler@gmail.com>
+Date:   Tue Jul 18 16:37:43 2023 +0200
+
+    Linux-modified Readme
+
+[33mcommit beec62c21513b3b49dbfdc2df4b60b9823ffe37b[m[33m ([m[1;31morigin/space_veins[m[33m, [m[1;32mspace_veins[m[33m)[m
+Author: Mario Franke <research@m-franke.net>
+Date:   Mon Jul 17 17:50:29 2023 +0200
+
+    space_Veins version for master thesis Max Wendler.
+
+[33mcommit 510fd7ba38d369e4f8482d66d2761cd21ba62968[m
+Author: Max Wendler <max.wendler@mailbox.tu-dresden.de>
+Date:   Mon Jul 17 16:48:36 2023 +0200
+
+    Initial commit
