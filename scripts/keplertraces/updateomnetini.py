@@ -1,12 +1,10 @@
 import argparse
 
-CONFIG_TEMPLATE_PATH = "/workspaces/ma-max-wendler/scripts/keplertraces/config_template.txt"
-
-def update(ini_path: str, tles_paths: list[str], avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int, location: str):
+def update(ini_path: str, tles_paths: list[str], conf_template_path: str, avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int, location: str):
     
     # load config template
     template_str = None    
-    with open(CONFIG_TEMPLATE_PATH, "r") as template_f:
+    with open(conf_template_path, "r") as template_f:
         template_str = template_f.read()
     
     # get filenames of tles and parse constellation name and average wall time
@@ -97,6 +95,7 @@ if __name__ == "__main__":
                                                   "One configuration per (mobility model x TLE list).")
                                     )
     parser.add_argument('ini_path', help="Path of omnetpp.ini (for file update) or .ini template (for omnetpp.ini file).")
+    parser.add_argument("conf_template")
     parser.add_argument('traces_dir', help="Path of directory containing directories of traces indiviual TLE lists (named after TLE list files by 'create_traces.py').")
     parser.add_argument('--tles_paths', "-t", metavar='tle_path', type=str, nargs='+', help='Path of a TLE list.')
     parser.add_argument('--avg_sgp4_altitudes_paths', metavar="avg_sgp4_altitudes_path", type=str, nargs="+")
@@ -106,4 +105,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args.tles_paths)
     print(args.avg_sgp4_altitudes_paths)
-    update(args.ini_path, args.tles_paths , args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit, args.location)
+    update(args.ini_path, args.tles_paths, args.conf_template, args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit, args.location)

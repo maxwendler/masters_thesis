@@ -255,6 +255,7 @@ rule run:
     shell:
         """
         cd examples/space_veins
+        ../../lib/veins/bin/veins_launchd -vv -d
         python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
         date +%Y%m%d%H%M%S > {output}
         """
