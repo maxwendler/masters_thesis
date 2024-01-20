@@ -119,6 +119,8 @@ examples/space_veins/csv
 examples/space_veins/plots
 examples/space_veins/stats
 examples/space_veins/tles/*_times.json
+examples/space_veins/tles/*_modnames
+examples/space_veins/tles/modnames.done
 examples/space_veins/traces*
 examples/space_veins/benchmarks*
 .conda

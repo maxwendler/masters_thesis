@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 configfile: "smk.config.yaml"
+import os
+
+#### SINGULARITY CONTAINER ####
 
 rule buildContainer:
     input:
@@ -23,6 +26,8 @@ rule shell:
         """
         bash
         """
+
+#### DEPENDENCIES ####
 
 rule buildSpaceVeins:
     input:
@@ -52,133 +57,204 @@ rule cleanSpaceVeins:
         make cleanall
         """
 
-rule createRunmakerFiles:
-    input:
-        expand("{oppConfig}_runs.log", oppConfig=config["oppConfig"]),
-        expand("{oppConfig}_runs.txt", oppConfig=config["oppConfig"]),
-
-rule createRunmakerLogFile:
+rule init_conda_bash:
     output:
-        "{oppConfig}_runs.log"
+        "../../singularity/conda_initialized.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        conda init
+        echo "conda activate /opt/.conda" >> .bashrc
+        touch examples/space_veins/{output}
+        """
+
+rule install_conda_pip_deps:
+    input:
+        "../../singularity/conda_initialized.txt"
+    output:
+        "../../singularity/conda_pip_deps_done.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        echo "pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tle-tools" | cat > singularity/run_in_bash.sh
+        bash -i singularity/run_in_bash.sh
+        touch examples/space_veins/{output}
+        """
+
+rule get_modnames:
+    input:
+        script="../../scripts/statistics/get_modnames.py",
+    output:
+        "tles/{constellation}_modnames"
+    params:
+        tles_path=lambda wildcards: "tles/" + list(filter(lambda fname: fname.startswith(wildcards.constellation) and fname.endswith(".txt"), os.listdir("tles/")))[0]
+    shell:
+        "python3 {input.script} {params.tles_path} {output}"
+
+rule setup_modnames_files:
+    input:
+        expand("tles/{constellation}_modnames", constellation=config["constellations"])
+    output:
+        "tles/modnames.done"
     shell:
         "touch {output}"
 
-rule createRunFile:
+rule finish_dep_setup:
     input:
+        "../../singularity/conda_pip_deps_done.txt",
+        "tles/modnames.done",
+        "../../bin/space_veins_run"
+
+def get_const_sat_mods(constellation: str):
+    """
+    Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
+    """
+    with open("tles/" + constellation + "_modnames", "r") as name_f:
+        modnames = [mn.removesuffix("\n") for mn in name_f.readlines()]
+    
+    return modnames
+
+#### FUNCTIONS FOR READING PARAM FILES/ SMK CONFIG ####
+
+def quote_strs(strs: list[str]):
+    """
+    Puts quotes around given strings, as snakemake requires path strings without additional quotes,
+    while python scripts occasionally required quoted paths.
+    """
+    return ['"' + in_str + '"' for in_str in strs]
+
+def get_tles_paths():
+    """
+    Returns all paths of TLEs lists used according to the current snakemake configuration (-> constellations).
+
+    Used by rule 'update_omnetini'
+    """
+    tles_fname_prefixes = config["constellations"]
+    tles_fpaths = [] 
+    
+    for fname in os.listdir("./tles/"):
+        if fname.split("_")[0] in tles_fname_prefixes and fname.endswith(".txt"):
+            tles_fpaths.append(f'{"tles/" + fname}')
+    
+    return sorted(tles_fpaths)
+
+def get_avg_sgp4_altitudes_paths():
+
+    constellations = sorted(config["constellations"])
+    avg_sgp4_altitudes_dir = "csv/avg_alt/" + config["location"] + "/"
+    if os.path.isdir(avg_sgp4_altitudes_dir) and config["use_avg_sgp4_altitudes"]:
+        avg_alt_fnames = list(filter(lambda fname: fname.split("-")[0] in constellations, sorted(os.listdir( avg_sgp4_altitudes_dir ))))
+        
+        avg_sgp4_altitudes_paths = []
+        for c in constellations:
+            path = None
+            for fname in avg_alt_fnames:
+                if c in fname:
+                    path = avg_sgp4_altitudes_dir + fname
+            if path:
+                avg_sgp4_altitudes_paths.append(path)
+            else:
+                avg_sgp4_altitudes_paths.append("None")
+
+        return avg_sgp4_altitudes_paths
+    else:
+        return ["None"] * len(constellations)
+
+def get_debug_str():
+    """
+    Function for optionally including 'Debug-' prefix for simulation configuration names,
+    when debug_mode is set to true in snakemake config.
+    """
+    return "Debug-" if config["debug_mode"] else ""
+
+#### SETTING UP & RUNNING THE SIMULATION ####
+
+rule update_omnetini:
+    """
+    Adds debug and non-debug configuration generated from the template at ../../scripts/keplertraces/config_template.txt,
+    for the different mobilities and constellation-dependent TLEs list files, trace directories and simulation start times.
+    omnetpp.ini.template is overwritten after [Config Debug] section. omnetpp.ini.template contains example configs after [Config Debug] section.
+    """
+    input:
+        script="../../scripts/keplertraces/updateomnetini.py",
+        ini_template="omnetpp.ini.template",
+        conf_template="../../scripts/keplertraces/config_template.txt",
+        tles_paths=get_tles_paths()
+    params:
+        # as snakemake won't accept filepath strings containing quotes as input
+        # but call of python scripts requires them
+        quoted_tles_paths= lambda wildcards, input: quote_strs(input.tles_paths),
+        sim_time_limit = config["sim-time-limit"],
+        avg_sgp4_altitudes_paths = quote_strs(get_avg_sgp4_altitudes_paths()),
+        location = config["location"]
+    output:
+        "omnetpp.ini"
+    shell:
+        """python3 {input.script} {input.ini_template} {input.conf_template} traces/ {params.sim_time_limit} {params.location} --tles_paths {params.quoted_tles_paths} --avg_sgp4_altitudes_paths {params.avg_sgp4_altitudes_paths}"""
+
+def get_trace_requirement(wildcards):
+    """
+    Returns traces as input requirement for rule createRunFile only for Kepler configurations. 
+    """
+    if "kepler" in wildcards.oppConfig:
+        config_str = wildcards.oppConfig
+        config = config_str.replace("Debug-","")
+        constellation = config.split("-")[0]
+        return "traces/" + constellation + "_traces.done"
+    else: 
+        return []
+
+rule createRunFile:
+    """
+    Creates run files to run simulations with runmaker
+    """
+    input:
+        # only require trace files for Kepler-orbit-based runs
+        # ---
+        # placed here instead of in rule 'run' so that run file is regenerated with more recent traces
+        # otherwise, run file still has run marked as 'd', done
+        get_trace_requirement,
         "omnetpp.ini"
     output:
-        "{oppConfig}_runs.txt"
+        "runs/{oppConfig}_runs.txt"
     container:
         "../../singularity/singularity-space_veins.sif"
     shell:
+        #"""
+        #    echo '. ./run -u Cmdenv -c {wildcards.oppConfig} -r 1' > {output}
+        #"""
         """
-        cd examples/space_veins && perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}
+        cd examples/space_veins
+        perl ../../lib/veins_scripts/running/generateRunsFile.pl {wildcards.oppConfig} > {output}
         """
 
-rule runAll:
-    input:
-        expand("{oppConfig}_done.txt", oppConfig=config["oppConfig"])
-    # resources:
-    #     tasks=len(input.runs),
+rule createRunmakerLogFile:
+    """
+    Creates .log file for running simulations with runmaker.
+    """
+    output:
+        "runs/{oppConfig}_runs.log"
+    shell:
+        "touch {output}"
 
-# create a dummy output file such that snakemake's dependency management works
 rule run:
+    """
+    Runs OMNeT++ simulation for a configuration from omnetpp.ini.
+    """
     input:
-        logFile="{oppConfig}_runs.log",
-        runFile="{oppConfig}_runs.txt"
+        logFile="runs/{oppConfig}_runs.log",
+        runFile="runs/{oppConfig}_runs.txt"
     output:
-        "{oppConfig}_done.txt"
-    threads:
-        config["numJobsPerConfig"]
-    container:
-        "../../singularity/singularity-space_veins.sif"
-    shell:
-        """
-        cd examples/space_veins/ && python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} && touch {output}
-        """
-
-rule debugRun:
+        "runs/{oppConfig}_done.txt"
     threads:
         1
     container:
-        "../../singularity/singularity-space_veins.sif"
+       "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        cd examples/space_veins/ && ./run --debug --tool {config[tool]} -- -u {config[env]} -c {config[oppDebugConfig]} -r {config[debugRunNumber]}
-        """
-
-def formatScaCsvFileNames():
-    files = list()
-    f = ""
-    for c in config["oppConfig"]:
-        for s in config["scalars"]:
-            f = "csv/scalars/" + c + "-"
-            oppModule = ".".join(s.split(".")[:-1])
-            f += oppModule + "-"
-            scalar = s.split(".")[-1]
-            f += scalar + ".csv"
-            files.append(f)
-    return files
-
-rule sca2csvAll:
-    input:
-        formatScaCsvFileNames()
-    threads:
-        workflow.cores
-
-def formatItervars(wildcards):
-    i = ""
-    for s in config["itervars"]:
-        i += "-I " + s + " "
-    return i
-
-def formatScalar(wildcards):
-    s = wildcards.scalar.split(".")[-1]
-    flags = "-F " + s + "=" + s.replace(":", "_")
-    return flags
-
-def formatModuleRegex(wildcards):
-    regex = ".".join(wildcards.module.split(".")[:-1])
-    regex = regex.replace(".", "\.")
-    regex = regex.replace("[", "\[")
-    regex = regex.replace("]", "\]")
-    regex = regex.replace("*", "(?<module>[0-9]+)")
-    regex = "\'^" + regex + "\'"
-    return regex
-
-rule sca2csv:
-    output:
-        "csv/scalars/{oppConfig}-{module}-{scalar}.csv"
-    params:
-        itervars=formatItervars,
-        scalar=formatScalar,
-        moduleRegex=formatModuleRegex
-    threads:
-        1
-    shell:
-        """
-        perl ../../lib/veins_scripts/eval/opp_sca2csv.pl -v -M {params.moduleRegex} {params.scalar} -A repetition {params.itervars} results/{wildcards.oppConfig}*.sca > {output}
-        """
-
-def formatVecCsvFileNames():
-    files = list()
-    f = ""
-    for c in config["oppConfig"]:
-        for v in config["vectors"]:
-            oppModule = ".".join(v.split(".")[:-1])
-            vec = v.split(".")[-1]
-            f = "csv/vectors/" + c + "-" + oppModule + "-" + vec + ".csv"
-            files.append(f)
-    return files
-
-rule vec2csvAll:
-    input:
-        formatVecCsvFileNames()
-    output:
-        "vec2csvAll_done.txt"
-    threads:
-        workflow.cores
-    shell:
-        """
-        touch {output}
+        cd examples/space_veins
+        python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
+        date +%Y%m%d%H%M%S > {output}
         """
