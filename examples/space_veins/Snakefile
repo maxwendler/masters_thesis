@@ -4,6 +4,7 @@
 
 configfile: "smk.config.yaml"
 import os
+import glob
 
 #### SINGULARITY CONTAINER ####
 
@@ -83,6 +84,16 @@ rule install_conda_pip_deps:
         touch examples/space_veins/{output}
         """
 
+rule download_orekit_data:
+    output:
+        "orekit-data.zip"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins/
+        bash -i -c "python3 -c 'from orekit.pyhelpers import download_orekit_data_curdir;download_orekit_data_curdir()'"
+        """
 rule get_modnames:
     input:
         script="../../scripts/statistics/get_modnames.py",
@@ -105,7 +116,8 @@ rule finish_dep_setup:
     input:
         "../../singularity/conda_pip_deps_done.txt",
         "tles/modnames.done",
-        "../../bin/space_veins_run"
+        "../../bin/space_veins_run",
+        "orekit-data.zip"
 
 def get_const_sat_mods(constellation: str):
     """
@@ -193,6 +205,30 @@ rule update_omnetini:
         "omnetpp.ini"
     shell:
         """python3 {input.script} {input.ini_template} {input.conf_template} traces/ {params.sim_time_limit} {params.location} --tles_paths {params.quoted_tles_paths} --avg_sgp4_altitudes_paths {params.avg_sgp4_altitudes_paths}"""
+
+rule create_traces:
+    """
+    Creates ITRF traces of a constellation for either the normal or the debug configuration in omnetpp.ini,
+    from which parameters are derived.
+    """
+    input:
+        script="../../scripts/keplertraces/create_traces.py",
+        ini_path="omnetpp.ini",
+        tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    params:
+        configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
+                                        optional_Debug="Debug-" if config["debug_mode"] else "",
+                                        constellation=wildcards.constellation),
+    output:
+        "traces/{constellation}_traces.done"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c "conda activate /opt/.conda && python3 {input.script} {input.ini_path} {input.tles_path} traces/ -c {params.configname} -i -o"
+        date +%Y%m%d%H%M%S > {output}
+        """
 
 def get_trace_requirement(wildcards):
     """

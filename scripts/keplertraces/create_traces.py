@@ -14,12 +14,13 @@ from scripts.utility.satname_to_modname import satname_to_modname
 import json
 from pathlib import Path
 from astropy.time import Time
+from parseomnetini import parseomnetini
 
 start_t = timer()
 
 parser = argparse.ArgumentParser(prog="create_traces.py", description="Creates a .txt file with a satellite movement trace for each TLE in the given file; written to the given output directory.")
 
-parser.add_argument('params_path', help="Path of trace parameters from omnetpp.ini, 'sim-time-limit', '*.leo*[*].mobility.updateInterval' and '*.satelliteInserter.wall_clock_sim_start_time_utc'.")
+parser.add_argument('ini_path', help="Path omnetpp.ini with 'sim-time-limit', '*.leo*[*].mobility.updateInterval' and '*.satelliteInserter.wall_clock_sim_start_time_utc'. values assigned.")
 parser.add_argument('tlespath', help="Path of .txt with list of TLEs for which to create traces.")
 parser.add_argument('outputdir', help="Path of directory where .trace files (.txt-like contents) with satellite traces will be written to; one file per satellite.")
 parser.add_argument('-c','--config', help='Specifies configuration in omnetpp.ini of which values shall overwrite general settings.')
@@ -62,43 +63,7 @@ if args.orekit:
 else:
     print("Using astropy GCRS to ITRF conversion...")
 
-# get trace parameters (duration = sim-time-limit, spacing = updateInterval) 
-with open(args.params_path, "r") as params_f:
-    lines = [line.strip() for line in params_f.readlines()]
-    res_vals = []
-    for i in range(0, len(lines)):
-        line_components = lines[i].split(",")
-        if i == 2:
-            start_walltime = Time(line_components[1])
-            start_walltime.format = "datetime"
-            res_vals.append( start_walltime )
-        else:
-            res_vals.append( (float(line_components[1]) << u.s) )
-
-timelimit, update_interval, start_time = tuple(res_vals)
-params_str = "\n".join(["timelimit,"+str(timelimit.value), "updateInterval,"+str(update_interval.value), "wall_clock_time,"+str(start_time)])
-
-matches_old_params = False
-if Path(args.params_path.removesuffix(".txt") + "_old.txt").exists():
-
-    with open(args.params_path.removesuffix(".txt") + "_old.txt", "r") as params_f:
-        lines = [line.strip() for line in params_f.readlines()]
-        res_vals = []
-        for i in range(0, len(lines)):
-            line_components = lines[i].split(",")
-            if i == 2:
-                start_walltime = Time(line_components[1])
-                start_walltime.format = "datetime"
-                res_vals.append( start_walltime )
-            else:
-                res_vals.append( (float(line_components[1]) << u.s) )
-
-        timelimit_old, update_interval_old, start_time_old = tuple(res_vals)
-        if timelimit.value == timelimit_old.value and update_interval.value == update_interval_old.value and start_time.value == start_time_old.value:
-            matches_old_params = True
-
-else:
-    pass
+timelimit, update_interval, start_time = parseomnetini(args.ini_path, args.config)
 
 periods = int(timelimit / update_interval)
 
@@ -111,18 +76,6 @@ print(f"Time for parsing omnetpp.ini: {omnetparse_t-start_t} seconds")
 
 # create inputs for poliastro Kepler model from tles in file at given path
 named_orbits = parse_orbits(args.tlespath)
-
-all_traces_exist = True
-existing_traces =  list( filter( lambda fname: fname.endswith(".trace"), os.listdir(args.outputdir)) )
-for name_orbit_tuple in named_orbits:
-    trace_fname = name_orbit_tuple[0] + ".trace"
-    if not trace_fname in existing_traces:
-        all_traces_exist = False
-        break
-
-if matches_old_params and all_traces_exist:
-    print(f"Traces of all satellites already exist at {args.outputdir} and omnetpp parameters of config {args.config} did not change \n - trace creation was already done")
-    exit(0)
 
 orbits_t = timer()
 print(f"Time for creating poliastro orbits: {orbits_t - omnetparse_t} seconds")
@@ -198,10 +151,6 @@ with open(args.outputdir + "modname_to_satname_dict.json", "w") as dict_f:
     json.dump(modname_to_satname_dict, dict_f)
 
 print(f"Successfully wrote traces to {args.outputdir}!")
-
-# cache params as used
-with open(args.params_path.removesuffix(".txt") + "_old.txt", "w") as params_file:
-    params_file.writelines(params_str)
 
 end_t = timer()
 print(f"Time for creating traces: {end_t - orbits_t} seconds")
