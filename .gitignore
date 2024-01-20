@@ -123,3 +123,4 @@ examples/space_veins/traces*
 .conda
 **/orekit-data.zip
 scripts/plots/test_output/*
+.local
