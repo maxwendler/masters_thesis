@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+constellations: ["iridiumNEXT", "eccentric", "satnogs", "oneweb", "starlink1", "starlink2", "starlink3", "starlink4"]
+
 numJobsPerConfig: 12
 oppConfig: ["Iridium"]
 itervars: ["warmupPeriod", "simTimeLimit", "nodeXPos"]

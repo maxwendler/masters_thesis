@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-
 configfile: "smk.config.yaml"
+import os
 
 rule buildContainer:
     input:
@@ -42,6 +42,39 @@ rule install_conda_pip_deps:
         bash -i singularity/run_in_bash.sh
         touch examples/space_veins/{output}
         """
+
+# not run in container -> does not use examples/space_veins prefix
+rule get_modnames:
+    input:
+        script="../../scripts/statistics/get_modnames.py",
+    output:
+        "tles/{constellation}_modnames"
+    params:
+        tles_path=lambda wildcards: "tles/" + list(filter(lambda fname: fname.startswith(wildcards.constellation) and fname.endswith(".txt"), os.listdir("tles/")))[0]
+    shell:
+        "python3 {input.script} {params.tles_path} {output}"
+
+rule setup_modnames_files:
+    input:
+        expand("tles/{constellation}_modnames", constellation=config["constellations"])
+    output:
+        "tles/modnames.done"
+    shell:
+        "touch {output}"
+
+rule finish_dep_setup:
+    input:
+        "../../singularity/conda_pip_deps_done.txt",
+        "tles/modnames.done"
+
+def get_const_sat_mods(constellation: str):
+    """
+    Returns module names of satellites of a constellation, parsed from the according TLEs list and converted with satname_to_modname().
+    """
+    with open("tles/" + constellation + "_modnames", "r") as name_f:
+        modnames = [mn.removesuffix("\n") for mn in name_f.readlines()]
+    
+    return modnames
 
 rule shell:
     container:
