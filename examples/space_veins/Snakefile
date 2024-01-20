@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+
 configfile: "smk.config.yaml"
 
 rule buildContainer:
@@ -14,6 +15,32 @@ rule buildContainer:
     shell:
         """
         singularity build --fakeroot {output} {input}
+        """
+
+rule init_conda_bash:
+    output:
+        "../../singularity/conda_initialized.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        conda init
+        echo "conda activate /opt/.conda" >> .bashrc
+        touch examples/space_veins/{output}
+        """
+
+rule install_conda_pip_deps:
+    input:
+        "../../singularity/conda_initialized.txt"
+    output:
+        "../../singularity/conda_pip_deps_done.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        echo "pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tle-tools" | cat > singularity/run_in_bash.sh
+        bash -i singularity/run_in_bash.sh
+        touch examples/space_veins/{output}
         """
 
 rule shell:
