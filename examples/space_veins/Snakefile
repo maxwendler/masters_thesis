@@ -423,3 +423,80 @@ rule avg_sgp4_altitudes:
         "csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv"
     shell:
         "python3 {input.script} {input.sgp4_teme_csv} {output}"
+
+"""
+RULES FOR PLOTTING SATELLITE ORBITS
+"""
+
+rule satmod_csv:
+    """
+    Writes 3D coordinates in the specified coordinate frame for the specified satellite module of the specified OMNeT configuration
+    to an individual CSV file.
+    """
+    input:
+        script="../../scripts/utility/to_sat_csv.py",
+        in_csv="csv/vectors/{location}_{opp_config}_{coord_frame}_sorted.csv"
+    output:
+        "csv/vectors/satmod/{location}/{opp_config}_{coord_frame}_{leo_modname}.csv"
+    shell:
+        "python3 {input.script} {input.in_csv} '{wildcards.leo_modname}' > '{output}'"
+
+def get_satmod_csv_paths(wildcards, same_config=True):
+    """
+    Returns the paths of the CSVs of individual 3D coordinate for the satellite modules of the wildcards list "leo_modnames" of the specified constellation,
+    for the specified coordinate frame and either one or two OMNeT configurations, for (1) plotting orbits of one mobility and (2) comparative plot of the 
+    orbits of two mobilities.
+    """    
+    leo_modnames = wildcards.leo_modnames.split("+")
+
+    # one config (= one mobility) -> one csv per satmod 
+    if same_config:
+        base_path = "csv/vectors/satmod/" + wildcards.location + "/" + wildcards.opp_config + "_" + wildcards.coord_frame + "_"
+        return [(base_path + modname + ".csv") for modname in leo_modnames]
+
+    # tw0 configs (= two mobilities) -> two csvs per satmod 
+    else:
+        mob1_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility1
+        mob2_config_str = get_debug_str() + wildcards.constellation + "-" + wildcards.mobility2
+        mob1_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob1_config_str + "_" + wildcards.coord_frame + "_"
+        mob2_base_path = "csv/vectors/satmod/" + wildcards.location + "/" + mob2_config_str + "_" + wildcards.coord_frame + "_"
+        return [(mob1_base_path + modname + ".csv") for modname in leo_modnames] + [(mob2_base_path + modname + ".csv") for modname in leo_modnames]
+    
+rule plot_orbs_of_mobility:
+    """
+    Creates interactive plot of the orbits of the specified "leo_modnames" for the given coordinate frame and OMNeT configuration.
+    """
+    input:
+        script="../../scripts/plots/plot_orbs.py",
+        coord_paths=get_satmod_csv_paths
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/orbs/mobility/{location}/{opp_config}_{coord_frame}_{leo_modnames}.html"
+    params:
+        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths)
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} -c {params.csv_paths} -o '{output}' -e'
+        """
+
+rule plot_orbs_of_mobilities:
+    """
+    Creates interactive plot of the orbits of the specfiied "leo_modnames" for the given coordinate frame, with one orbit per satellite module
+    for both mobilities. I.e. enables visual comparison of orbits.
+    """
+    input:
+        script="../../scripts/plots/plot_orbs.py",
+        coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/orbs/mobilities/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_{mobility1}-{mobility2}_{leo_modnames}.html"
+    params:
+        csv_paths= lambda wildcards, input: quote_strs(input.coord_paths),
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} -c {params.csv_paths} -o '{output}' -e'
+        """
