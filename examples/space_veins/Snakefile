@@ -217,6 +217,8 @@ rule create_traces:
         tles_path=lambda wildcards: glob.glob("tles/" + wildcards.constellation + "_*.txt")
     container:
         "../../singularity/singularity-space_veins.sif"
+    benchmark:
+        "benchmarks/{constellation}_traces.benchmark.txt"
     params:
         configname=lambda wildcards: expand("{optional_Debug}{constellation}-kepler", 
                                         optional_Debug="Debug-" if config["debug_mode"] else "",
@@ -280,12 +282,14 @@ rule run:
     Runs OMNeT++ simulation for a configuration from omnetpp.ini.
     """
     input:
-        logFile="runs/{oppConfig}_runs.log",
-        runFile="runs/{oppConfig}_runs.txt"
+        logFile="runs/" + get_debug_str() + "{const_comp}-{mobility}_runs.log",
+        runFile="runs/" + get_debug_str() + "{const_comp}-{mobility}_runs.txt"
     output:
-        "runs/{oppConfig}_done.txt"
+        "runs/" + get_debug_str() + "{const_comp}-{mobility}_done.txt"
     threads:
         1
+    benchmark:
+        "benchmarks/{const_comp}-{mobility}_run.benchmark.txt"
     container:
        "../../singularity/singularity-space_veins.sif"
     shell:
@@ -295,3 +299,23 @@ rule run:
         python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
         date +%Y%m%d%H%M%S > {output}
         """
+
+#### RUNTIME METRICS ####
+# calculating total runtime of rules create_traces (Kepler mobility only) and run
+
+def get_const_comp_benchmarks(wildcards):
+    constellation_components = config["constellation_compositions"][wildcards.constellation]
+    benchmark_paths = []
+    benchmark_paths += expand("benchmarks/{const_comp}-{mobility}_run.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
+    if wildcards.mobility == "kepler":
+        benchmark_paths += expand("benchmarks/{const_comp}_traces.benchmark.txt", const_comp=constellation_components)
+    return benchmark_paths
+
+rule calc_runtime:
+    input:
+        script="../../scripts/statistics/runtime_from_benchmarks.py",
+        benchmarks=get_const_comp_benchmarks
+    output:
+        "stats/runtime/{constellation}_{mobility}_runtime.txt"
+    shell:
+        "python3 {input.script} {output} {input.benchmarks}"
