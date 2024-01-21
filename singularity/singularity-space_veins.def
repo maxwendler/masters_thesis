@@ -127,7 +127,6 @@ MirrorURL:  http://archive.ubuntu.com/ubuntu
     mamba install -n base  -c conda-forge -c bioconda snakemake
 
     conda create -p /opt/.conda --file /opt/conda-requirements.txt -c conda-forge -y
-    #conda init bash
 
     cd /opt
     case "$OPP_VERSION" in
