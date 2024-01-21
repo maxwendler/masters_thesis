@@ -30,23 +30,3 @@ location: "kunlun"
 locations_xml: {"quito": '    <node id="n0_0" x="-78.45" y="0" type="priority"/>\n    <node id="n1_0" x="-78.2" y="0" type="priority"/>',
                 "sofia": '    <node id="n0_0" x="23.319941" y="42.698334" type="priority"/>\n    <node id="n1_0" x="23.4" y="42.5" type="priority"/>',
                 "kunlun": '    <node id="n0_0" x="77.11611" y="-80" type="priority"/>\n    <node id="n1_0" x="78" y="-80" type="priority"/>'}
-
-numJobsPerConfig: 12
-oppConfig: ["Iridium"]
-itervars: ["warmupPeriod", "simTimeLimit", "nodeXPos"]
-# scalars contains a list of module regular expressions and their scalars.
-scalars: ["SatelliteExampleScenario.leoIRIDIUM[*].app[0].packetReceived:count",
-          "SatelliteExampleScenario.node[*].app[0].packetSent:count"]
-# vectors contains a list of module regular expressions and their vector.
-vectors: ["SatelliteExampleScenario.globalStatistics.packetsReceived:vector",
-          "SatelliteExampleScenario.globalStatistics.receivingSatelliteIds:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.omnetCoordX:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.omnetCoordY:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.omnetCoordZ:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.wgs84CoordLat:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.wgs84CoordLon:vector",
-          "SatelliteExampleScenario.node[*].vehicleStatistics.wgs84CoordAlt:vector"]
-oppDebugConfig: "DebugIridium"
-env: "Qtenv"
-debugRunNumber: "0"
-tool: "gdb"

@@ -5,5 +5,4 @@
 jobs: all
 printshellcmds: True
 use-singularity: True
-#singularity-args: "-H ../../:/space_veins -C --net --network none"
-singularity-args: "-H ../../:/space_veins"
+singularity-args: "-H ../../:/space_veins -C --net --network none"
