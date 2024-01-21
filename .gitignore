@@ -123,6 +123,8 @@ examples/space_veins/tles/*_modnames
 examples/space_veins/tles/modnames.done
 examples/space_veins/traces*
 examples/space_veins/benchmarks*
+examples/space_veins/two-nodes.nod.xml
+examples/space_veins/two-nodes.net.xml
 .conda
 **/orekit-data.zip
 scripts/plots/test_output/*

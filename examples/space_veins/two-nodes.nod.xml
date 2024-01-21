@@ -1,9 +1,0 @@
-<!--
-SPDX-FileCopyrightText: 2023 Mario Franke <research@m-franke.net>
-
-SPDX-License-Identifier: GPL-2.0-or-later
--->
-<nodes>
-    <node id="n0_0" x="-78.45" y="0" type="priority"/>
-    <node id="n1_0" x="-78.2" y="0" type="priority"/>
-</nodes>

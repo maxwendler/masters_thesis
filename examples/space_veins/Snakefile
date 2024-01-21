@@ -188,12 +188,10 @@ rule update_nod_xml:
         nod_template="two-nodes.nod.xml.template"
     output:
         "two-nodes.nod.xml"
-    container:
-        "../../singularity/singularity-space_veins.sif"
     params:
         location_str=lambda wildcards: config["locations_xml"][config["location"]]
     shell:
-        "cd examples/space_veins && python3 {input.script} {input.nod_template} '{params.location_str}' {output}"
+        "python3 {input.script} {input.nod_template} '{params.location_str}' {output}"
 
 rule update_net_xml:
     input:
