@@ -498,5 +498,167 @@ rule plot_orbs_of_mobilities:
     shell:
         """
         cd examples/space_veins
-        bash -i -c 'python3 {input.script} -c {params.csv_paths} -o '{output}' -e'
+        bash -i -c 'python3 {input.script} -c {params.csv_paths} -o "{output}" -e'
         """
+
+#### CALCULATE & PLOT POSITIONAL DIFFERENCES BETWEEN MODELS ###
+
+rule calc_pos_diffs:
+    """
+    Calculates differences between 3D coordinate CSVs of the two specified mobilities and the specified coordinate frame, 
+    and outputs them to new CSV, with satellite module name + list of differences at sim. second per row.
+    """
+    input:
+        script="../../scripts/statistics/positional_differences.py",
+        mob1_csv="csv/vectors/{location}_{constellation}-sgp4_{coord_frame}_sorted.csv",
+        mob2_csv="csv/vectors/{location}_{constellation}-{mobility2}_{coord_frame}_sorted.csv"
+    output:
+        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
+    shell:
+        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
+
+def get_tle_path(constellation: str):
+    """
+    Returns path of TLEs list in tles/ for given constellation, which should start with given
+    constellation name. For options see config -> constellations.
+
+    Used by rule 'calc_tle_times.' 
+    """
+    for fname in os.listdir("./tles/"):
+        if constellation in fname and fname.endswith(".txt"):
+            return "tles/" + fname
+
+rule calc_tle_times:
+    """
+    Creates JSON with start time as well as epochs of a TLEs list in numpy datetime64 format,
+    as well as the offset of each epoch to the start time in days. 
+    """
+    input:
+        script="../../scripts/keplertraces/tletimes.py",
+        tles=lambda wildcards: get_tle_path(wildcards.constellation)
+    output:
+        "tles/{constellation}_times.json"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        "cd examples/space_veins && bash -i -c 'python3 {input.script} {input.tles}'"
+
+rule plot_pos_diffs_with_ecdf:
+    """
+    Creates 3D coordinate difference line plot for the two specified mobilities, coordinate frame, and satellite module,
+    as well as ECDF plot of distances. 
+    """
+    input:
+        script="../../scripts/plots/plot_differences.py",
+        tle_times="tles/{constellation}_times.json",
+        in_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/pos_diff/{location}/{constellation}/"+ get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.in_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --ecdf'
+        """
+
+def get_const_pos_diff_paths(wildcards):
+    """
+    Returns all paths of 3D coordinate difference plots of the constellation, coordframe and the two mobilities specified in wildcards.
+    """
+    return expand("plots/pos_diff/{location}/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_{leo_modname}_distances{with_or_without_ecdf}.svg",
+                location=wildcards.location,
+                constellation=wildcards.constellation, 
+                coord_frame=wildcards.coord_frame, 
+                mobility2=wildcards.mobility2,
+                leo_modname=get_const_sat_mods(wildcards.constellation),
+                with_or_without_ecdf=["_with_ecdf"])
+
+rule plot_const_pos_diffs:
+    """
+    Plots all line plots of 3D coordinate differences for the specified two mobilities and coordinate frame,
+    one file with ECDF plot, one file without it.
+    """
+    input:
+        get_const_pos_diff_paths
+    output:
+        "plots/pos_diff/{location}/{constellation}/" + get_debug_str() + "{coord_frame}_sgp4-{mobility2}_distances.done"
+    shell:
+        "touch {output}"
+
+rule plot_diff_distributions:
+    """
+    Plots sum histogram plot and box plot for the 3D coordinate differences of all satellite modules of the given constellation,
+    for the specified two mobilities and coordinate frame.  
+    """
+    input:
+        script="../../scripts/plots/plot_difference_distributions.py",
+        in_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
+    output:
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.svg",
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_boxplot.html",
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_avg_difference.txt"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    params:
+        output_basepath="plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.in_csv} {params.output_basepath}'
+        """
+
+rule calc_pos_diff_diffs_itrf_omnet:
+    """
+    Calculates the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation.
+    """
+    input:
+        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/itrf_sgp4-{mobility2}_differences.csv",
+        "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/omnet_sgp4-{mobility2}_differences.csv",
+        script="../../scripts/statistics/diff_differences.py"
+    output:
+        "csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv" 
+    shell:
+        "python3 {input.script} '{input[0]}' '{input[1]}' > {output}"
+
+rule plot_pos_diff_diffs_with_ecdf:
+    """
+    Creates line plot the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities, constellation and satellite module name,
+    as well as ECDF plot of differences.
+    """
+    input:
+        script="../../scripts/plots/plot_differences.py",
+        in_csv="csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv",
+        tle_times='tles/eccentric_times.json'
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/pos_diff_diffs/{location}/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.in_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --ecdf'
+        """
+
+def get_const_pos_diff_diffs_paths(wildcards):
+    """
+    Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
+    """
+    return expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
+                location=wildcards.location,
+                constellation=wildcards.constellation,   
+                mobility2=wildcards.mobility2,
+                leo_modname=get_const_sat_mods(wildcards.constellation))
+
+rule plot_const_pos_diff_diffs:
+    """
+    Plots all plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities.
+    """
+    input:
+        get_const_pos_diff_diffs_paths
+    output:
+        "plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done"
+    shell:
+        "touch {output}"

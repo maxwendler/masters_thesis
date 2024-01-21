@@ -19,7 +19,7 @@ constellation_compositions: { "starlink": ["starlinkShortHighest", "starlinkShor
 debug_mode: false
 # determines coordinate frames for which sat. pos. csvs will be created
 # teme only supported by sgp4 and circular model, as input for kepler model are itrf traces
-coord_frames: [ "teme" , "itrf"] #, "omnet"] # "wgs84"]
+coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
 
 # omnetpp.ini parameters
 sim-time-limit: 25
