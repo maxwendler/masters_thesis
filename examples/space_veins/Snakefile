@@ -319,3 +319,70 @@ rule calc_runtime:
         "stats/runtime/{constellation}_{mobility}_runtime.txt"
     shell:
         "python3 {input.script} {output} {input.benchmarks}"
+
+#### EXTRACTING COORDINATE DATA ####
+
+def format_coord_vectors(wildcards):
+    """
+    Determines coordinate vectors that should be written from simulation results to a CSV by "../../lib/veins_scripts/eval/opp_vec2csv.pl",
+    depending on coordinate frame requested for rule vec2csv.
+    """
+    if (wildcards.coordframe == "wgs84"):
+        return ("--list -F " + "wgs84CoordLat:vector=wgs84CoordLat_vector" +
+                                " -F wgs84CoordLon:vector=wgs84CoordLon_vector " +
+                                " -F wgs84CoordAlt:vector=wgs84CoordAlt_vector")
+    elif (wildcards.coordframe == "itrf"):
+        return ("--list -F " + "itrfCoordX:vector=itrfCoordX_vector" +
+                                " -F itrfCoordY:vector=itrfCoordY_vector" +
+                                " -F itrfCoordZ:vector=itrfCoordZ_vector")
+    elif (wildcards.coordframe == "omnet"):
+        return ("--list -F " + "omnetCoordX:vector=omnetCoordX_vector" +
+                                " -F omnetCoordY:vector=omnetCoordY_vector" +
+                                " -F omnetCoordZ:vector=omnetCoordZ_vector")
+    elif (wildcards.coordframe == "teme"):
+        return ("--list -F " + "temeCoordX:vector=temeCoordX_vector" +
+                                " -F temeCoordY:vector=temeCoordY_vector" +
+                                " -F temeCoordZ:vector=temeCoordZ_vector")
+    else:
+        raise ValueError(f"coordinate frame {wildcards.coordframe} is not supported for csv results")
+
+rule vec2csv:
+    """
+    Parses coordinate vectors from simulation results to a 3D-coordinate CSV for specified coordinate frame.
+    Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
+    """
+    input:
+        "runs/{oppConfig}_done.txt",
+        sort_script="../../scripts/time_sort_csv.py"
+    output:
+        "csv/vector_components/{location}_{oppConfig}_{coordframe}_sorted.csv"
+    params:
+        vectors=format_coord_vectors,
+        moduleRegex='^SatelliteExampleScenario\.leo',
+        unsorted_path="csv/vector_components/{location}_{oppConfig}_{coordframe}.csv",
+        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+    threads:
+        1
+    shell:
+        """
+        perl ../../lib/veins_scripts/eval/opp_vec2csv.pl -v -m emt -M {params.moduleRegex} {params.vectors} {params.vec_file} > {params.unsorted_path}
+        python3 {input.sort_script} {params.unsorted_path}  
+        rm {params.unsorted_path}
+        """
+
+def get_csvs_to_compose(wildcards):
+    constellation = wildcards.composed_constellation
+    const_components = config["constellation_compositions"][constellation]
+    in_csvs = []
+    for const_comp in const_components:
+        in_csvs.append(f"csv/vector_components/{wildcards.location}_{const_comp}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv")
+    return in_csvs
+
+rule compose_pos_csvs:
+    input:
+        script="../../scripts/utility/compose_pos_csvs.py",
+        in_csvs=get_csvs_to_compose
+    output:
+        "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
+    shell:
+        "python3 {input.script} {output} {input.in_csvs}"
