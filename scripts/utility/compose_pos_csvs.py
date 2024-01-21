@@ -14,6 +14,7 @@ for path in args.in_csvs:
         rows = in_csv.readlines()
         if not header:
             header = rows[0]
+            out_csv_lines.append(header)
     
         out_csv_lines += rows[1:]
 

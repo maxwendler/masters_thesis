@@ -412,3 +412,14 @@ rule compose_pos_csvs:
         "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
     shell:
         "python3 {input.script} {output} {input.in_csvs}"
+
+#### SETUP OPTIONAL KEPLER PARAMS FROM SGP4 RESULTS ####
+
+rule avg_sgp4_altitudes:
+    input:
+        script="../../scripts/statistics/avg_sgp4_altitudes.py",
+        sgp4_teme_csv="csv/vectors/{location}_{constellation}-sgp4_teme_sorted.csv"
+    output:
+        "csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv"
+    shell:
+        "python3 {input.script} {input.sgp4_teme_csv} {output}"

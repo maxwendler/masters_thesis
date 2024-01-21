@@ -24,7 +24,7 @@ coord_frames: [ "teme" , "itrf"] #, "omnet"] # "wgs84"]
 # omnetpp.ini parameters
 sim-time-limit: 25
 
-use_avg_sgp4_altitudes: false
+use_avg_sgp4_altitudes: true
 
 location: "kunlun"
 locations_xml: {"quito": '    <node id="n0_0" x="-78.45" y="0" type="priority"/>\n    <node id="n1_0" x="-78.2" y="0" type="priority"/>',
