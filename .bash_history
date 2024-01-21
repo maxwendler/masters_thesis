@@ -148,3 +148,21 @@ pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tle-tools
 exit
 snakemake --version
 exit
+../../lib/veins/bin/veins_launchd -vv -d
+        python3 ../../lib/runmaker/runmaker4.py --jobs=1 -l runs/eccentric-sgp4_runs.log --loglines=200 runs/eccentric-sgp4_runs.txt
+        date +%Y%m%d%H%M%S > runs/eccentric-sgp4_done.txt
+../../lib/veins/bin/veins_launchd -vv -d
+cd examples/space_veins/
+../../lib/veins/bin/veins_launchd -vv -d
+        python3 ../../lib/runmaker/runmaker4.py --jobs=1 -l runs/eccentric-sgp4_runs.log --loglines=200 runs/eccentric-sgp4_runs.txt
+        date +%Y%m%d%H%M%S > runs/eccentric-sgp4_done.txt
+eexit
+exit
+exit
+exot
+exit
+cd examples/space_veins/
+./run -u Cmdenv -c eccentric-circular -r 0
+exit
+cd examples/space_veins/ && ./run -u Cmdenv -c eccentric-circular -r 0
+exit

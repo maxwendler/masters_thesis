@@ -120,14 +120,16 @@ void SatelliteObservationPoint::handleMessage(cMessage* message)
 
 void SatelliteObservationPoint::handleSelfMessage(cMessage* message)
 {
-    switch (message->getKind()) {
-    case 0: {
+    //switch (message->getKind()) {
+    //case 0: {
         // draw SOP in SUMO
+        /*
         annotations->drawPoint(sop_omnet_coord, "red", "SOP");
         EV_TRACE << "SOP: drawn SOP in SUMO at veins::Coord: " << sop_omnet_coord << std::endl;
         break;
-    }
-    }
+        */
+    //}
+    //}
 }
 
 void SatelliteObservationPoint::initialize(int stage)
@@ -136,11 +138,11 @@ void SatelliteObservationPoint::initialize(int stage)
         mobility = static_cast<inet::StationaryMobility*>(getSubmodule("mobility"));
         ASSERT(mobility);
         // get AnnotationManager
-        annotations = veins::AnnotationManagerAccess().getIfExists();
-        ASSERT(annotations);
+        //annotations = veins::AnnotationManagerAccess().getIfExists();
+        //ASSERT(annotations);
 
-        cMessage *drawPosition = new cMessage("drawMessage", 0);
-        scheduleAt(simTime() + 0.01, drawPosition);
+        //cMessage *drawPosition = new cMessage("drawMessage", 0);
+        //scheduleAt(simTime() + 0.01, drawPosition);
     }
     if (stage == 3) {
         // Initialize projections after lastPosition of the mobility submodule is initialized

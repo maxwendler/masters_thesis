@@ -54,20 +54,20 @@ network SatelliteExampleScenario
 
     submodules:
         // Veins
-        annotations: AnnotationManager {
-            @display("p=750,744.98");
-        }
+        //annotations: AnnotationManager {
+        //    @display("p=750,744.98");
+        //}
         roadsCanvasVisualizer: RoadsCanvasVisualizer {
             @display("p=750,750");
         }
 
         // Veins INET
-        manager: <default("VeinsInetManager")> like IVeinsInetManager {
-            @display("p=192,320");
-        }
-        vehicleInserter : VeinsInetTraCIVehicleInserter {
-            @display("p=64,612");
-        }
+        //manager: <default("VeinsInetManager")> like IVeinsInetManager {
+         //   @display("p=192,320");
+        //}
+        //vehicleInserter : VeinsInetTraCIVehicleInserter {
+        //     @display("p=64,612");
+        //}
 
         // INET
         physicalEnvironment: PhysicalEnvironment {
