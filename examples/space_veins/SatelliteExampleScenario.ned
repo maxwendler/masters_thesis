@@ -57,9 +57,9 @@ network SatelliteExampleScenario
         //annotations: AnnotationManager {
         //    @display("p=750,744.98");
         //}
-        roadsCanvasVisualizer: RoadsCanvasVisualizer {
-            @display("p=750,750");
-        }
+        //roadsCanvasVisualizer: RoadsCanvasVisualizer {
+        //    @display("p=750,750");
+        //}
 
         // Veins INET
         //manager: <default("VeinsInetManager")> like IVeinsInetManager {

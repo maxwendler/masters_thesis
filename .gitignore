@@ -129,3 +129,5 @@ examples/space_veins/two-nodes.net.xml
 **/orekit-data.zip
 scripts/plots/test_output/*
 .local
+singularity/conda_initialized.txt
+singularity/conda_pip_deps_done

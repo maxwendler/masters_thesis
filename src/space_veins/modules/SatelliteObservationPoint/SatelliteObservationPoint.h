@@ -71,7 +71,7 @@ public:
 
 protected:
     inet::StationaryMobility* mobility;
-    veins::AnnotationManager* annotations;
+    //veins::AnnotationManager* annotations;
     veins::Coord sop_omnet_coord;
     veins::TraCICoord sop_traci_coord;    // SUMO coordinate
     veins::TraCICoord sop_utm_ups_coord;      // UTM coordinate: sumo coordinates + sumo netOffset

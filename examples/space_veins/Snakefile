@@ -99,7 +99,7 @@ rule get_modnames:
     output:
         "tles/{constellation}_modnames"
     params:
-        tles_path=lambda wildcards: "tles/" + list(filter(lambda fname: fname.startswith(wildcards.constellation) and fname.endswith(".txt"), os.listdir("tles/")))[0]
+        tles_path=lambda wildcards: "tles/" + list(filter(lambda fname: fname.startswith(wildcards.constellation + "_") and fname.endswith(".txt"), os.listdir("tles/")))[0]
     shell:
         "python3 {input.script} {params.tles_path} {output}"
 
@@ -321,7 +321,6 @@ rule run:
     shell:
         """
         cd examples/space_veins
-        ../../lib/veins/bin/veins_launchd -vv -d
         python3 ../../lib/runmaker/runmaker4.py --jobs={threads} -l {input.logFile} --loglines=200 {input.runFile} 
         date +%Y%m%d%H%M%S > {output}
         """
@@ -525,7 +524,7 @@ def get_tle_path(constellation: str):
     Used by rule 'calc_tle_times.' 
     """
     for fname in os.listdir("./tles/"):
-        if constellation in fname and fname.endswith(".txt"):
+        if fname.startswith(constellation + "_") and fname.endswith(".txt"):
             return "tles/" + fname
 
 rule calc_tle_times:
@@ -998,22 +997,31 @@ rule calc_comm_period_info:
     shell:
         "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
 
-def get_const_comm_period_infos(wildcards):
+def get_const_comm_period_paths(wildcards):
     return expand("stats/comm_periods/{location}/{constellation}/{mobility}/{modname}_communication-periods.json",
                     location=wildcards.location,
                     constellation=wildcards.constellation,
                     mobility=wildcards.mobility,
                     modname=get_const_sat_mods(wildcards.constellation))
 
+rule get_const_comm_periods:
+    input:
+        get_const_comm_period_paths
+    output:
+        "stats/comm_periods/{location}/{constellation}/{mobility}.done"
+    shell:
+        "touch {output}"
+
 rule const_comm_periods_csv:
     input:
-        get_const_comm_period_infos,
-        script="../../scripts/statistics/all_const_periods.py",
-        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
+        "stats/comm_periods/{location}/{constellation}/{mobility}.done",
+        script="../../scripts/statistics/all_const_periods.py"
     output:
         "csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv"
+    params:
+        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
     shell:
-        "python3 {input.script} {input.period_infos_dir} {output}"
+        "python3 {input.script} {params.period_infos_dir} {output}"
 
 rule plot_const_comm_periods:
     input:
@@ -1033,17 +1041,17 @@ rule plot_const_comm_periods:
 
 rule const_comm_period_intervals_csvs:
     input:
-        get_const_comm_period_infos,
+        "stats/comm_periods/{location}/{constellation}/{mobility}.done",
         script="../../scripts/statistics/const_period_intervals.py",
-        all_periods="csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv",
-        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
+        all_periods="csv/comm_periods/{location}/{constellation}_{mobility}_all_periods.csv"
     output:
         period_intervals="csv/comm_period_intervals/{location}/{constellation}_{mobility}_period_intervals.csv",
         zenith_intervals="csv/comm_period_intervals/{location}/{constellation}_{mobility}_zenith_intervals.csv"
     params:
-        sim_time_limit = config["sim-time-limit"]
+        sim_time_limit = config["sim-time-limit"],
+        period_infos_dir="stats/comm_periods/{location}/{constellation}/{mobility}/"
     shell:
-        "python3 {input.script} {input.all_periods} {input.period_infos_dir} {params.sim_time_limit} {output.period_intervals} {output.zenith_intervals}"
+        "python3 {input.script} {input.all_periods} {params.period_infos_dir} {params.sim_time_limit} {output.period_intervals} {output.zenith_intervals}"
 
 rule sat_comm_period_zenith_interval_changes:
     input:
@@ -1076,16 +1084,18 @@ rule plot_sat_comm_period_zenith_interval_changes:
 rule const_comm_period_all_interval_changes:
     input:
         ref_periods="csv/comm_periods/{location}/{constellation}_sgp4_all_periods.csv",
-        ref_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/sgp4",
+        ref_periods_jsons="stats/comm_periods/{location}/{constellation}/sgp4.done",
         new_periods="csv/comm_periods/{location}/{constellation}_{new_mobility}_all_periods.csv",
-        new_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/{new_mobility}",
+        new_periods_jsons="stats/comm_periods/{location}/{constellation}/{new_mobility}.done",
         script="../../scripts/statistics/all_interval_changes.py",
     output:
         "stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
     params:
+        ref_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/sgp4",
+        new_periods_jsons_dir="stats/comm_periods/{location}/{constellation}/{new_mobility}",
         sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} {input.ref_periods} {input.ref_periods_jsons_dir} {input.new_periods} {input.new_periods_jsons_dir} {params.sim_time_limit} {output}"
+        "python3 {input.script} {input.ref_periods} {params.ref_periods_jsons_dir} {input.new_periods} {params.new_periods_jsons_dir} {params.sim_time_limit} {output}"
 
 rule plot_const_comm_period_zenith_interval_changes_at_offset_diff:
     input:
@@ -1279,30 +1289,48 @@ rule plot_const_periods_zenith_shifts_in_one:
 
 #### SATELLITE AVAILABILITY METRICS & PLOTS ####
 
+rule all_availability_results:
+    input:
+        expand("stats/available_sats/{location}/{constellation}_{mobility}_available_sats.json",
+                location=config["location"],
+                constellation=config["constellations"],
+                mobility=["sgp4", "kepler", "circular"]),
+        expand("plots/available_sats_diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.svg",
+                location=config["location"],
+                constellation=config["constellations"],
+                new_mobility=["kepler", "circular"])
+        output:
+            "stats/availablity.done"
+        shell:
+            "touch {output}"
+
 rule available_sats:
     input:
-        get_const_comm_period_infos,
-        script="../../scripts/statistics/available_sats_at_simtime.py",
-        comm_period_info_dir="stats/comm_periods/{location}/{constellation}/{mobility}"
+        "stats/comm_periods/{location}/{constellation}/{mobility}.done",
+        script="../../scripts/statistics/available_sats_at_simtime.py"
     output:
         "stats/available_sats/{location}/{constellation}_{mobility}_available_sats.json"
     params:
+        comm_period_info_dir="stats/comm_periods/{location}/{constellation}/{mobility}",
         sim_time_limit = config["sim-time-limit"]
     shell:
-        "python3 {input.script} {input.comm_period_info_dir} 15 {params.sim_time_limit} {output}"
+        "python3 {input.script} {params.comm_period_info_dir} 15 {params.sim_time_limit} {output}"
 
 rule available_sat_diffs:
     input:
         script="../../scripts/statistics/available_sats_diffs.py",
         ref_availables="stats/available_sats/{location}/{constellation}_sgp4_available_sats.json",
-        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4",
+        ref_comm_periods="stats/comm_periods/{location}/{constellation}/sgp4.done",
         new_availables="stats/available_sats/{location}/{constellation}_{new_mobility}_available_sats.json",
-        new_comm_periods_dir="stats/comm_periods/{location}/{constellation}/kepler",
+        new_comm_periods="stats/comm_periods/{location}/{constellation}/kepler.done",
         all_interval_changes="stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
+    params:
+        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4",
+        new_comm_periods_dir="stats/comm_periods/{location}/{constellation}/kepler"
     output:
         "stats/available_sats/diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
     shell:
-        "python3 {input.script} {input.ref_availables} {input.new_availables} {input.all_interval_changes} {input.ref_comm_periods_dir} {input.new_comm_periods_dir} {output}"
+        "python3 {input.script} {input.ref_availables} {input.new_availables} {input.all_interval_changes} {params.ref_comm_periods_dir} {params.new_comm_periods_dir} {output}"
 
 rule plot_available_sats_diffs:
     input:
