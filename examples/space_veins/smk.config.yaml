@@ -22,7 +22,7 @@ debug_mode: false
 coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
 
 # omnetpp.ini parameters
-sim-time-limit: 25
+sim-time-limit: 21620
 
 use_avg_sgp4_altitudes: true
 
