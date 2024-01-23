@@ -34,43 +34,47 @@ if len(abs_interval_differences) == 0:
                     yref="paper"))
     
 else:
-    # fitting of linear function
-    # fit linear function including outliers
-    all_vals_fun = Polynomial.fit(abs_offset_differences, abs_interval_differences, deg=1)
 
-    # remove fixed num of outliers
-    predictions = [all_vals_fun(x) for x in abs_offset_differences]
-    errors = []
-    for i in range(len(abs_interval_differences)):
-        diff = abs_interval_differences[i]
-        prediction = predictions[i]
-        errors.append(abs(diff - prediction))
+    if len(abs_interval_differences) > 1:
+        # fitting of linear function
+        # fit linear function including outliers
+        all_vals_fun = Polynomial.fit(abs_offset_differences, abs_interval_differences, deg=1)
 
-    # use max x from before removal of outliers
-    inliers_fun_xs = [0, max(abs_offset_differences)]
+        # remove fixed num of outliers
+        predictions = [all_vals_fun(x) for x in abs_offset_differences]
+        errors = []
+        for i in range(len(abs_interval_differences)):
+            diff = abs_interval_differences[i]
+            prediction = predictions[i]
+            errors.append(abs(diff - prediction))
 
-    # find 0 most outlying points
-    outlier_xs = []
-    outlier_ys = []
-    for i in range(0):
-        outlier_idx = errors.index(max(errors))
-        errors.pop(outlier_idx)
-        outlier_xs.append(abs_offset_differences.pop(outlier_idx))
-        outlier_ys.append(abs_interval_differences.pop(outlier_idx))
+        # use max x from before removal of outliers
+        inliers_fun_xs = [0, max(abs_offset_differences)]
 
-    print("outliers:")
-    print(outlier_xs)
-    print(outlier_ys)
+        # find 0 most outlying points
+        outlier_xs = []
+        outlier_ys = []
+        for i in range(0):
+            outlier_idx = errors.index(max(errors))
+            errors.pop(outlier_idx)
+            outlier_xs.append(abs_offset_differences.pop(outlier_idx))
+            outlier_ys.append(abs_interval_differences.pop(outlier_idx))
 
-    # fit new linear function ignoring the outliers
-    inliers_fun = Polynomial.fit(abs_offset_differences, abs_interval_differences, deg=1)
-    inliers_fun_ys = [inliers_fun(0), inliers_fun(inliers_fun_xs[1])]
+        print("outliers:")
+        print(outlier_xs)
+        print(outlier_ys)
+
+        # fit new linear function ignoring the outliers
+        inliers_fun = Polynomial.fit(abs_offset_differences, abs_interval_differences, deg=1)
+        inliers_fun_ys = [inliers_fun(0), inliers_fun(inliers_fun_xs[1])]
 
     fig = go.Figure(data=go.Scatter(x=abs_offset_differences, y=abs_interval_differences, mode='markers',line=dict(color="blue")))
     fig.update_xaxes(title_text='absolute seconds difference in offset to epoch')
-    fig.update_layout(title=f"y={str(inliers_fun.convert())}")
-    fig.add_trace(go.Scatter(x=outlier_xs, y=outlier_ys, mode='markers', line=dict(color="red")))
-    fig.add_trace(go.Scatter(x=inliers_fun_xs, y=inliers_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
+    
+    if len(abs_interval_differences) > 1:
+        fig.update_layout(title=f"y={str(inliers_fun.convert())}")
+        fig.add_trace(go.Scatter(x=outlier_xs, y=outlier_ys, mode='markers', line=dict(color="red")))
+        fig.add_trace(go.Scatter(x=inliers_fun_xs, y=inliers_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
 
     fig.update_yaxes(title_text='absolute interval difference in seconds')
     

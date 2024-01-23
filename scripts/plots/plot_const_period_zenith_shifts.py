@@ -70,16 +70,18 @@ else:
             pos_offset_zenith_shifts.append(zenith_shift)
         
 
-    linear_fun = Polynomial.fit(pos_offsets, pos_offset_zenith_shifts, deg=1)
-    linear_fun_xs = [0, max(pos_offsets)]
-    linear_fun_ys = [linear_fun(0), linear_fun(linear_fun_xs[1])]
-
     fig = go.Figure(data=go.Scatter(x=offsets, y=zenith_shifts, mode='markers'))
-    fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
-
-    fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0: {str(linear_fun.convert())}')
     fig.update_xaxes(title_text='seconds to epoch')
     fig.update_yaxes(title_text='zenith shift in seconds')
+    fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0')
+
+    if len(pos_offsets) > 1:
+    
+        linear_fun = Polynomial.fit(pos_offsets, pos_offset_zenith_shifts, deg=1)
+        linear_fun_xs = [0, max(pos_offsets)]
+        linear_fun_ys = [linear_fun(0), linear_fun(linear_fun_xs[1])]
+        fig.add_trace(go.Scatter(x=linear_fun_xs, y=linear_fun_ys, mode='lines', line=dict(color="blue", dash="dash")))
+        fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0: {str(linear_fun.convert())}')
 
     # estimate from just trying!
     average_pixel_width_per_char = 6

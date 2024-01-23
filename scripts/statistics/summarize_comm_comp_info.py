@@ -39,11 +39,11 @@ for path in info_json_paths:
 
     for unmatched_period in comm_periods["unmatched_periods"]:
         if ref_mobility in unmatched_period.keys():
-            coverages.append(period_group["ref_coverage"])
+            coverages.append(unmatched_period["ref_coverage"])
             unmatched_ref_periods_num += 1
 
         if new_mobility in unmatched_period.keys():
-            exclusions.append(period_group["new_excluded"])
+            exclusions.append(unmatched_period["new_excluded"])
             unmatched_new_periods_num += 1
 
     total_excluded_time_to_ref_times.append(comm_periods["total_excluded_time_to_ref_time"])
