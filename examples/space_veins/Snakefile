@@ -389,15 +389,17 @@ rule vec2csv:
     Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
     """
     input:
-        "runs/{oppConfig}_done.txt",
+        "runs/{constellation}-{mobility}_done.txt",
         sort_script="../../scripts/time_sort_csv.py"
     output:
-        "csv/vector_components/{location}_{oppConfig}_{coordframe}_sorted.csv"
+        "csv/vector_components/{location}_{constellation}-{mobility}_{coordframe}_sorted.csv"
     params:
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vector_components/{location}_{oppConfig}_{coordframe}.csv",
-        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+        unsorted_path="csv/vector_components/{location}_{constellation}-{mobility}_{coordframe}.csv",
+        vec_file = lambda wildcards: "results/" + wildcards.constellation + "-" + wildcards.mobility + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+    resources:
+        mem_mb=lambda wildcards: config["mem_mb_limits"][wildcards.constellation]
     threads:
         1
     shell:
@@ -421,6 +423,8 @@ rule compose_pos_csvs:
         in_csvs=get_csvs_to_compose
     output:
         "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
+    resources:
+        mem_mb = lambda wildcards: sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
     shell:
         "python3 {input.script} {output} {input.in_csvs}"
 
@@ -516,10 +520,10 @@ rule plot_orbs_of_mobilities:
 
 rule all_positional_metrics:
     input:
-        # plot pos diff / poss diff distr stats separately when desired, are not included here
-        # expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
+        #plot pos diff / poss diff distr stats separately when desired, are not included here
+        #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
         #        location=config["location"], 
-        #       constellation=config["constellations"], 
+        #        constellation=config["constellations"], 
         #        coord_frame=["itrf"]),
         #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-circular_distances.done",
         #        location=config["location"], 
@@ -538,7 +542,6 @@ rule all_positional_metrics:
         #        location=config["location"], 
         #        constellation=config["constellations"], 
         #        mobility2=["kepler", "circular"])
-
     output:
         "stats/pos_metrics.done"
     shell:
@@ -720,7 +723,6 @@ rule all_sop_metrics:
         expand("stats/local_aligned_sop_diffs/{location}/{constellation}.done",
                 location=config["location"],
                 constellation=config["constellations"]),
-        # plot when necessary
         #expand("plots/aligned_sop_diffs/{location}/{constellation}.done",
         #        location=config["location"],
         #        constellation=config["constellations"]),
@@ -755,10 +757,15 @@ rule calc_sop_stats:
         "csv/sop/{location}_{oppConfig}_distances.csv",
         "csv/sop/{location}_{oppConfig}_angles.csv",
         "csv/sop/{location}_{oppConfig}_delays.csv"
+    container:
+        "../../singularity/singularity-space_veins.sif"
     params:
         output_dir="csv/sop/"
     shell:
-        "python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25"
+        """
+        cd examples/space_veins/ 
+        bash -i -c 'python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25'
+        """
 
 rule plot_sop_stats:
     """
@@ -1003,13 +1010,14 @@ rule group_const_aligned_local_sop_stat_diffs:
     input:
         get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
         script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
-        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4"
+        ref_comm_periods="stats/comm_periods/{location}/{constellation}/sgp4.done"
     params:
-        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{location}/{constellation}"
+        aligned_stat_diffs_dir="stats/local_aligned_sop_diffs/{location}/{constellation}",
+        ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4"
     output:
         "stats/local_aligned_sop_diffs/{location}/{constellation}_sgp4-{new_mobility}_groups.json"
     shell:
-        """python3 {input.script} {input.ref_comm_periods_dir} {params.aligned_stat_diffs_dir} {wildcards.new_mobility} 5 {output}"""
+        """python3 {input.script} {params.ref_comm_periods_dir} {params.aligned_stat_diffs_dir} {wildcards.new_mobility} 5 {output}"""
 
 rule plot_anglegroup_delay_duration_diffs_at_offset:
     input:
@@ -1077,7 +1085,7 @@ rule all_communication_metrics:
                 location=config["location"],
                 constellation=config["constellations"],
                 new_mobility=["kepler","circular"]),
-        # don't plot all zenith_shifts, too laborous
+        # requires communication periods to be done, hence don't plan plotting this here
         # expand("plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}.done",
         #        location=config["location"],
         #        constellation=config["constellations"],
@@ -1435,7 +1443,7 @@ rule all_availability_results:
                 constellation=config["constellations"],
                 new_mobility=["kepler", "circular"])
     output:
-        "stats/availablity.done"
+        "stats/availability.done"
     shell:
         "touch {output}"
 
