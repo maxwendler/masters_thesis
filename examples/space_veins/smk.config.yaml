@@ -15,6 +15,19 @@ constellation_compositions: { "starlink": ["starlinkShortHighest", "starlinkShor
                               "onewebMiddle": ["onewebMiddle"],
                               "onewebHigh": ["onewebHigh"],
                               "satnogs": ["satnogs"] }
+
+mem_mb_limits: { "starlinkShortHighest": 1400,
+                  "starlinkShortHigh": 3500,
+                  "starlinkShortLow": 17000,
+                  "starlinkShortLowest": 6500,
+                  "iridiumNEXThigh": 2000,
+                  "iridiumNEXTlow": 500,
+                  "eccentric": 500,
+                  "onewebLow": 500,
+                  "onewebMiddle": 1000,
+                  "onewebHigh": 16000,
+                  "satnogs": 24000 }
+
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
 # determines coordinate frames for which sat. pos. csvs will be created
@@ -22,11 +35,11 @@ debug_mode: false
 coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
 
 # omnetpp.ini parameters
-sim-time-limit: 50
+sim-time-limit: 86420
 
 use_avg_sgp4_altitudes: false
 
-location: "quito"
+location: "sofia"
 locations_xml: {"quito": '    <node id="n0_0" x="-78.45" y="0" type="priority"/>\n    <node id="n1_0" x="-78.2" y="0" type="priority"/>',
                 "sofia": '    <node id="n0_0" x="23.319941" y="42.698334" type="priority"/>\n    <node id="n1_0" x="23.4" y="42.5" type="priority"/>',
                 "kunlun": '    <node id="n0_0" x="77.11611" y="-80" type="priority"/>\n    <node id="n1_0" x="78" y="-80" type="priority"/>'}

@@ -389,15 +389,17 @@ rule vec2csv:
     Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
     """
     input:
-        "runs/{oppConfig}_done.txt",
+        "runs/{constellation}-{mobility}_done.txt",
         sort_script="../../scripts/time_sort_csv.py"
     output:
-        "csv/vector_components/{location}_{oppConfig}_{coordframe}_sorted.csv"
+        "csv/vector_components/{location}_{constellation}-{mobility}_{coordframe}_sorted.csv"
     params:
         vectors=format_coord_vectors,
         moduleRegex='^SatelliteExampleScenario\.leo',
-        unsorted_path="csv/vector_components/{location}_{oppConfig}_{coordframe}.csv",
-        vec_file = lambda wildcards: "results/" + wildcards.oppConfig + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+        unsorted_path="csv/vector_components/{location}_{constellation}-{mobility}_{coordframe}.csv",
+        vec_file = lambda wildcards: "results/" + wildcards.constellation + "-" + wildcards.mobility + "-warmupPeriod=15,simTimeLimit=" + str(config["sim-time-limit"]) + "," + "location=" + config["location"] + "*.vec"
+    resources:
+        mem_mb=lambda wildcards: config["mem_mb_limits"][wildcards.constellation]
     threads:
         1
     shell:
@@ -421,6 +423,8 @@ rule compose_pos_csvs:
         in_csvs=get_csvs_to_compose
     output:
         "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
+    resources:
+        mem_mb = lambda wildcards: sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
     shell:
         "python3 {input.script} {output} {input.in_csvs}"
 

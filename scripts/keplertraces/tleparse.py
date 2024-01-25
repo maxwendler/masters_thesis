@@ -67,15 +67,6 @@ def get_avg_epoch_str(tles_as_lines: str) -> str:
     
     avg_epoch_unix = epoch_sum / int(len(tles_as_lines) / 3)
     avg_epoch_time = Time(avg_epoch_unix, format='unix' ,scale='utc')
-    epoch_sum = 0
-    for i in range(0, len(tles_as_lines), 3):
-        tle = TLE.from_lines(tles_as_lines[i], tles_as_lines[i+1], tles_as_lines[i+2])
-        epoch = tle.epoch
-        epoch.format = 'unix'
-        epoch_sum += epoch.value
-    
-    avg_epoch_unix = epoch_sum / int(len(tles_as_lines) / 3)
-    avg_epoch_time = Time(avg_epoch_unix, format='unix' ,scale='utc')
     avg_epoch_time.format = 'datetime'
     avg_epoch_dt_str = avg_epoch_time.value.strftime("%Y-%m-%d-%H-%M-%S")
     
