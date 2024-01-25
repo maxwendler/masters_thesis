@@ -16,3 +16,4 @@ unset __conda_setup
 conda activate /opt/.conda
 
 export GOPATH=${HOME}/go
+conda activate /opt/.conda
