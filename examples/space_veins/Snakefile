@@ -923,14 +923,31 @@ rule plot_const_sop_stat_diffs:
     shell:
         "touch {output}"
 
-rule calc_and_plot_aligned_local_sop_stat_diffs:
+rule calc_aligned_local_sop_stat_diffs:
     input:
         script="../../scripts/statistics/aligned_period_sop_stat_differences.py",
         comm_comp="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
         ref_mob_period_stats="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
         new_mob_period_stats="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json"
     output:
-        json="stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+        json="stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    params:
+        changes_option=lambda wildcards: "--changes" if wildcards.diffs_or_changes == "changes" else ""
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} "{input.comm_comp}" sgp4 "{input.ref_mob_period_stats}" {wildcards.new_mobility} "{input.new_mob_period_stats}" {params.changes_option} --json "{output.json}"'
+        """
+
+rule plot_aligned_local_sop_stat_diffs:
+    input:
+        script="../../scripts/statistics/aligned_period_sop_stat_differences.py",
+        comm_comp="stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_{modname}_communication_comparison.json",
+        ref_mob_period_stats="stats/comm_periods/{location}/{constellation}/sgp4/{modname}_communication-periods.json",
+        new_mob_period_stats="stats/comm_periods/{location}/{constellation}/{new_mobility}/{modname}_communication-periods.json"
+    output:
         plot="plots/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg"
     container:
         "../../singularity/singularity-space_veins.sif"
@@ -939,34 +956,43 @@ rule calc_and_plot_aligned_local_sop_stat_diffs:
     shell:
         """
         cd examples/space_veins
-        bash -i -c 'python3 {input.script} "{input.comm_comp}" sgp4 "{input.ref_mob_period_stats}" {wildcards.new_mobility} "{input.new_mob_period_stats}" "{output.json}" "{output.plot}" {params.changes_option}'
+        bash -i -c 'python3 {input.script} "{input.comm_comp}" sgp4 "{input.ref_mob_period_stats}" {wildcards.new_mobility} "{input.new_mob_period_stats}" {params.changes_option} --plot "{output.plot}"'
         """
 
-def get_const_aligned_local_sop_stat_diffs_jsons_and_plots(wildcards):
-    paths = expand("stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
+def get_const_aligned_local_sop_stat_diffs_jsons(wildcards):
+    return expand("stats/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.json",
                     location=wildcards.location,
                     constellation=wildcards.constellation,
                     new_mobility=["circular", "kepler"],
                     modname=get_const_sat_mods(wildcards.constellation),
                     diffs_or_changes=["differences", "changes"])
-    paths += expand("plots/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
+
+def get_const_aligned_local_sop_stat_diffs_plots(wildcards):
+    return expand("plots/local_aligned_sop_diffs/{location}/{constellation}/sgp4-{new_mobility}_{modname}_aligned_{diffs_or_changes}.svg",
                     location=wildcards.location,
                     constellation=wildcards.constellation,
                     new_mobility=["circular", "kepler"],
                     modname=get_const_sat_mods(wildcards.constellation),
                     diffs_or_changes=["differences", "changes"])
-    return paths
-            
-rule calc_and_plot_const_aligned_local_sop_stat_diffs:
+
+rule calc_const_aligned_local_sop_stat_diffs:
     input:
-        get_const_aligned_local_sop_stat_diffs_jsons_and_plots
+        get_const_aligned_local_sop_stat_diffs_jsons
     output:
-        "stats/local_aligned_sop_diffs/{location}/{constellation}.done",
+        "stats/local_aligned_sop_diffs/{location}/{constellation}.done"
+    shell:
+        """
+        touch {output}
+        """
+
+rule plot_const_aligned_local_sop_stat_diffs:
+    input:
+        get_const_aligned_local_sop_stat_diffs_plots
+    output:
         "plots/local_aligned_sop_diffs/{location}/{constellation}.done"
     shell:
         """
-        touch {output[0]}
-        touch {output[1]}
+        touch {output}
         """
 
 rule plot_aligned_sop_stat_diffs_or_changes_at_offset:
@@ -1003,7 +1029,7 @@ rule plot_const_aligned_sop_stat_diffs_or_changes_at_offset:
 
 rule plot_const_aligned_sop_stat_diffs_at_offset_in_one:
     input:
-        get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
+        get_const_aligned_local_sop_stat_diffs_jsons,
         script="../../scripts/plots/plot_const_aligned_sop_stats_at_offset.py"
     container:
         "../../singularity/singularity-space_veins.sif"
@@ -1019,7 +1045,7 @@ rule plot_const_aligned_sop_stat_diffs_at_offset_in_one:
 
 rule group_const_aligned_local_sop_stat_diffs:
     input:
-        get_const_aligned_local_sop_stat_diffs_jsons_and_plots,
+        get_const_aligned_local_sop_stat_diffs_jsons,
         script="../../scripts/statistics/group_aligned_period_sop_stat_diffs_by_angle.py",
         ref_comm_periods="stats/comm_periods/{location}/{constellation}/sgp4.done"
     params:

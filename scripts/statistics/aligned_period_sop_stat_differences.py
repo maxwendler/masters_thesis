@@ -10,10 +10,13 @@ parser.add_argument("ref_mobility", help="Name of reference mobility.")
 parser.add_argument("ref_mobility_periods_path", help="Path of the JSON with communication periods of the reference mobility and their elevations angles, distances and delays relative to the SOP.")
 parser.add_argument("new_mobility", help="Name of the alternative (new) mobility.")
 parser.add_argument("new_mobility_periods_path", help="Path of the JSON with communication periods of the reference mobility and their elevations angles, distances and delays relative to the SOP.")
-parser.add_argument("output_path", help="Path where result JSON will be written to.")
-parser.add_argument("plot_path", help="Path where result plot will be written to.")
 parser.add_argument("--changes", action="store_true", help="If flag is set, calculates changes from reference mobility to alternative (new) mobility instead of differences.")
+parser.add_argument("--plot")
+parser.add_argument("--json")
 args = parser.parse_args()
+
+if not args.plot and not args.json:
+    raise SyntaxError("Use option --plot or --json to specify an image/json output path.")
 
 ### load communication period statistics ###
 ref_mobility = args.ref_mobility
@@ -33,51 +36,52 @@ with open(args.comm_period_groups_path, "r") as in_json:
 period_groups = comm_periods["period_groups"]
 row_num = len(period_groups)
 
-fig = None
-# nothing to display: just add that as text in figure
-if not row_num > 0:
-    fig = go.Figure()
+if args.plot:
+    fig = None
+    # nothing to display: just add that as text in figure
+    if not row_num > 0:
+        fig = go.Figure()
 
-    fig.add_annotation(dict(font=dict(color="black",size=40),
-                        x=0.5,
-                        y=0.5,
-                        showarrow=False,
-                        text="No common communication periods to display.",
-                        textangle=0,
-                        xref="paper",
-                        yref="paper"))
-
-else:
-    fig = make_subplots(rows=row_num, cols=3)   
-    fig.update_layout(showlegend=False)
-
-    #annotations identifying plot line color with respective mobility or differences/changes
-    fig.add_annotation(dict(font=dict(color="red",size=14),
-                            x=0,
-                            y=1.15,
+        fig.add_annotation(dict(font=dict(color="black",size=40),
+                            x=0.5,
+                            y=0.5,
                             showarrow=False,
-                            text=f"{ref_mobility} values",
+                            text="No common communication periods to display.",
                             textangle=0,
                             xref="paper",
                             yref="paper"))
 
-    fig.add_annotation(dict(font=dict(color="blue",size=14),
-                            x=0,
-                            y=1.1,
-                            showarrow=False,
-                            text=f"{new_mobility} values",
-                            textangle=0,
-                            xref="paper",
-                            yref="paper"))
+    else:
+        fig = make_subplots(rows=row_num, cols=3)   
+        fig.update_layout(showlegend=False)
 
-    fig.add_annotation(dict(font=dict(color="green",size=14),
-                            x=0,
-                            y=1.05,
-                            showarrow=False,
-                            text="changes" if args.changes else "differences",
-                            textangle=0,
-                            xref="paper",
-                            yref="paper"))
+        #annotations identifying plot line color with respective mobility or differences/changes
+        fig.add_annotation(dict(font=dict(color="red",size=14),
+                                x=0,
+                                y=1.15,
+                                showarrow=False,
+                                text=f"{ref_mobility} values",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
+
+        fig.add_annotation(dict(font=dict(color="blue",size=14),
+                                x=0,
+                                y=1.1,
+                                showarrow=False,
+                                text=f"{new_mobility} values",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
+
+        fig.add_annotation(dict(font=dict(color="green",size=14),
+                                x=0,
+                                y=1.05,
+                                showarrow=False,
+                                text="changes" if args.changes else "differences",
+                                textangle=0,
+                                xref="paper",
+                                yref="paper"))
 
 output = {"modname": comm_periods["modname"],
           "period_groups": []}
@@ -156,29 +160,30 @@ for p_group_idx in range(len(period_groups)):
         new_p_group_dict["angle_differences_avg"] = angle_diffs_or_changes_avg
         new_p_group_dict["angle_differences_max"] = angle_diffs_or_changes_max
     
-    fig.add_trace(
-        go.Scatter(x=ref_sec_range, 
-                y=ref_angles,
-                line=dict(color='Red')),
-        row=plot_row_idx, col=1
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=aligned_new_sec_range, 
-                y=new_angles,
-                line=dict(color='Blue')),
-        row=plot_row_idx, col=1
-    )
+    if args.plot:
+        fig.add_trace(
+            go.Scatter(x=ref_sec_range, 
+                    y=ref_angles,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=1
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=aligned_new_sec_range, 
+                    y=new_angles,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=1
+        )
 
-    fig.add_trace(
-        go.Scatter(x=diff_sec_range, 
-                y=angle_diffs_or_changes,
-                line=dict(color='Green')),
-        row=plot_row_idx, col=1
-    )
+        fig.add_trace(
+            go.Scatter(x=diff_sec_range, 
+                    y=angle_diffs_or_changes,
+                    line=dict(color='Green')),
+            row=plot_row_idx, col=1
+        )
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
-    fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=1)
+        fig.update_yaxes(title_text="elevation angle in °", row=plot_row_idx, col=1)
 
     # distances 
     ref_distances = ref_mobility_stats["distances"][ p_group[ref_mobility]["period_idx"] ]
@@ -222,34 +227,35 @@ for p_group_idx in range(len(period_groups)):
         new_p_group_dict["distance_differences_avg"] = distance_diffs_or_changes_avg
         new_p_group_dict["distance_differences_max"] = distance_diffs_or_changes_max
 
-    fig.add_trace(
-        go.Scatter(x=ref_sec_range, 
-                y=ref_distances,
-                line=dict(color='Red')),
-        row=plot_row_idx, col=2
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=aligned_new_sec_range, 
-                y=new_distances,
-                line=dict(color='Blue')),
-        row=plot_row_idx, col=2
-    )
+    if args.plot:
 
-    fig.add_trace(
-        go.Scatter(x=diff_sec_range, 
-                y=distance_diffs_or_changes,
-                line=dict(color='Green')),
-        row=plot_row_idx, col=2
-    )
+        fig.add_trace(
+            go.Scatter(x=ref_sec_range, 
+                    y=ref_distances,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=2
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=aligned_new_sec_range, 
+                    y=new_distances,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=2
+        )
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=2)
-    fig.update_yaxes(title_text="distance in km", row=plot_row_idx, col=2)
+        fig.add_trace(
+            go.Scatter(x=diff_sec_range, 
+                    y=distance_diffs_or_changes,
+                    line=dict(color='Green')),
+            row=plot_row_idx, col=2
+        )
+
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=2)
+        fig.update_yaxes(title_text="distance in km", row=plot_row_idx, col=2)
 
     # delays 
     ref_delays = ref_mobility_stats["delays"][ p_group[ref_mobility]["period_idx"] ]
     new_delays = new_mobility_stats["delays"][ p_group[new_mobility]["period_idx"] ]
-
 
     delay_diffs_or_changes = []
     if len(ref_delays) < len(new_delays):
@@ -289,36 +295,37 @@ for p_group_idx in range(len(period_groups)):
         new_p_group_dict["delay_differences_avg"] = delay_diffs_or_changes_avg
         new_p_group_dict["delay_differences_max"] = delay_diffs_or_changes_max
 
-    fig.add_trace(
-        go.Scatter(x=ref_sec_range, 
-                y=ref_delays,
-                line=dict(color='Red')),
-        row=plot_row_idx, col=3
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=aligned_new_sec_range, 
-                y=new_delays,
-                line=dict(color='Blue')),
-        row=plot_row_idx, col=3
-    )
+    if args.plot:
+        fig.add_trace(
+            go.Scatter(x=ref_sec_range, 
+                    y=ref_delays,
+                    line=dict(color='Red')),
+            row=plot_row_idx, col=3
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=aligned_new_sec_range, 
+                    y=new_delays,
+                    line=dict(color='Blue')),
+            row=plot_row_idx, col=3
+        )
 
-    fig.add_trace(
-        go.Scatter(x=diff_sec_range, 
-                y=delay_diffs_or_changes,
-                line=dict(color='Green')),
-        row=plot_row_idx, col=3
-    )
+        fig.add_trace(
+            go.Scatter(x=diff_sec_range, 
+                    y=delay_diffs_or_changes,
+                    line=dict(color='Green')),
+            row=plot_row_idx, col=3
+        )
 
-    fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
-    fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
+        fig.update_xaxes(title_text="sim. second", row=plot_row_idx, col=3)
+        fig.update_yaxes(title_text="delay in ms", row=plot_row_idx, col=3)
 
     output["period_groups"].append(new_p_group_dict)
 
-os.makedirs("/".join(args.output_path.split("/")[:-1]), exist_ok=True)
-os.makedirs("/".join(args.plot_path.split("/")[:-1]), exist_ok=True)
-
-with open(args.output_path, "w") as out_f:
-    json.dump(output, out_f, indent=4)
-
-fig.write_image(args.plot_path, width=1920, height=1080)
+if args.json:
+    os.makedirs("/".join(args.json.split("/")[:-1]), exist_ok=True)
+    with open(args.output_path, "w") as out_f:
+        json.dump(output, out_f, indent=4)
+elif args.plot:
+    os.makedirs("/".join(args.plot.split("/")[:-1]), exist_ok=True)
+    fig.write_image(args.plot_path, width=1920, height=1080)
