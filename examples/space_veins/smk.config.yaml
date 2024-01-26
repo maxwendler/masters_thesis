@@ -1,32 +1,44 @@
 # constellations that are processed
-constellations: ["iridiumNEXThigh", "iridiumNEXTlow", "eccentric", "satnogs", "onewebHigh", "onewebMiddle", "onewebLow", "starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow", "starlinkShortLowest"] # "oneweb", "satnogs" , "starlink"]
+constellations: ["iridiumNEXThigh", "iridiumNEXTlow", 
+                  "eccentric", 
+                  "satnogs", "satnogs1", "satnogs2", "satnogs3",
+                  "onewebHigh", "onewebHigh1", "onewebHigh2", "onewebMiddle", "onewebLow", 
+                  "starlinkShort", "starlinkShortHighest", "starlinkShortHigh", "starlinkShortLowest",
+                  "starlinkShortLow", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3" 
+                ]
+
 # includes components themselves to allow plotting / statistic calculation for them, not just main constellation
-constellation_compositions: { "starlink": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow", "starlinkShortLowest"],
+constellation_compositions: { "starlinkShort": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3", "starlinkShortLowest"],
+                              "starlinkShortLow": ["starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3"],
                               "starlinkShortHighest": ["starlinkShortHighest"],
                               "starlinkShortHigh": ["starlinkShortHigh"],
-                              "starlinkShortLow": ["starlinkShortLow"],
                               "starlinkShortLowest": ["starlinkShortLowest"],
                               "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
                               "iridiumNEXThigh": ["iridiumNEXThigh"],
-                              "iridiumNEXTlow": ["iridiumNEXTlow"],
                               "eccentric": ["eccentric"],
-                              "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh"],
+                              "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh1", "onewebHigh2"],
                               "onewebLow": ["onewebLow"],
                               "onewebMiddle": ["onewebMiddle"],
-                              "onewebHigh": ["onewebHigh"],
-                              "satnogs": ["satnogs"] }
+                              "onewebHigh": ["onewebHigh1", "onewebHigh2"],
+                              "satnogs": ["satnogs1", "satnogs2", "satnogs3"]
+                            }
 
 mem_mb_limits: { "starlinkShortHighest": 1400,
                   "starlinkShortHigh": 3500,
-                  "starlinkShortLow": 17000,
+                  "starlinkShortLow1": 5700, # split in three
+                  "starlinkShortLow2": 5700,
+                  "starlinkShortLow3": 5700,
                   "starlinkShortLowest": 6500,
                   "iridiumNEXThigh": 2000,
                   "iridiumNEXTlow": 500,
                   "eccentric": 500,
                   "onewebLow": 500,
                   "onewebMiddle": 1000,
-                  "onewebHigh": 16000,
-                  "satnogs": 24000 }
+                  "onewebHigh1": 8000,
+                  "onewebHigh2": 8000, # split in two
+                  "satnogs1": 8000,
+                  "satnogs2": 8000,
+                  "satnogs3": 8000  } # split in three
 
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
