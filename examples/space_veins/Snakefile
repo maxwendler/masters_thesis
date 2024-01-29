@@ -324,7 +324,7 @@ rule run:
     threads:
         1
     benchmark:
-        "benchmarks/{const_comp}-{mobility}_run.benchmark.txt"
+        "benchmarks/" + config["location"] + "_{const_comp}-{mobility}_run.benchmark.txt"
     container:
        "../../singularity/singularity-space_veins.sif"
     shell:
@@ -338,7 +338,8 @@ rule run:
 
 rule run_all:
     input:
-        expand("stats/runtime/{constellation}_{mobility}_runtime.txt",
+        expand("stats/runtime/{location}_{constellation}_{mobility}_runtime.txt",
+                location=config["location"],
                 constellation=get_composed_constellations(),
                 mobility=["sgp4","kepler","circular"]),
         "stats/pos_metrics.done",
@@ -346,13 +347,27 @@ rule run_all:
         "stats/communication.done",
         "stats/availability.done"
 
+rule run_all_sop_related:
+    input:
+        expand("stats/runtime/{location}_{constellation}_{mobility}_runtime.txt",
+                location=config["location"],
+                constellation=get_composed_constellations(),
+                mobility=["sgp4","kepler","circular"]),
+        "stats/sop.done",
+        "stats/communication.done",
+        "stats/availability.done",
+        expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done",
+                location=config["location"], 
+                constellation=get_composed_constellations(), 
+                mobility2=["kepler", "circular"])
+
 #### RUNTIME METRICS ####
 # calculating total runtime of rules create_traces (Kepler mobility only) and run
 
 def get_const_comp_benchmarks(wildcards):
     constellation_components = config["constellation_compositions"][wildcards.constellation]
     benchmark_paths = []
-    benchmark_paths += expand("benchmarks/{const_comp}-{mobility}_run.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
+    benchmark_paths += expand("benchmarks/" + config["location"] +"_{const_comp}-{mobility}_run.benchmark.txt", const_comp=constellation_components, mobility=wildcards.mobility)
     if wildcards.mobility == "kepler":
         benchmark_paths += expand("benchmarks/{const_comp}_traces.benchmark.txt", const_comp=constellation_components)
     return benchmark_paths
@@ -362,7 +377,7 @@ rule calc_runtime:
         script="../../scripts/statistics/runtime_from_benchmarks.py",
         benchmarks=get_const_comp_benchmarks
     output:
-        "stats/runtime/{constellation}_{mobility}_runtime.txt"
+        "stats/runtime/" + config["location"] + "_{constellation}_{mobility}_runtime.txt"
     shell:
         "python3 {input.script} {output} {input.benchmarks}"
 
@@ -427,19 +442,62 @@ def get_csvs_to_compose(wildcards):
         in_csvs.append(f"csv/vector_components/{wildcards.location}_{const_comp}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv")
     return in_csvs
 
+def get_other_location_coord_csv(wildcards):
+    
+    if wildcards.coordframe in ["teme", "itrf"]:
+        
+        mobility_coordframe_csvs_suffix = wildcards.composed_constellation + "-" + wildcards.mobility + "_" + wildcards.coordframe + "_sorted.csv"
+        all_locations_mobility_coordframe_csv_fnames = list(filter(lambda fname: fname.endswith(mobility_coordframe_csvs_suffix) and not fname.startswith(wildcards.location), os.listdir("csv/vectors/")))
+        
+        if len(all_locations_mobility_coordframe_csv_fnames) > 0:
+            for fname in all_locations_mobility_coordframe_csv_fnames:
+                # remove if you want to visualize DAG
+                if not os.path.islink("csv/vectors/" + fname):
+                    return "csv/vectors/" + fname
+                else:
+                    print("registered symbolic link:", "csv/vectors/" + fname)
+    return None
+
+def get_compose_csvs_inputs(wildcards):
+    other_location_coord_csv = get_other_location_coord_csv(wildcards)
+    if other_location_coord_csv:
+        return (True, other_location_coord_csv)
+    else:
+        return (False, get_csvs_to_compose(wildcards))
+
+def get_compose_csvs_shell(compose_csvs_inputs, wildcards):
+    if compose_csvs_inputs[0]:
+        other_location_coord_csv = compose_csvs_inputs[1]
+        return f"ln -s {other_location_coord_csv} csv/vectors/{wildcards.location}_{wildcards.composed_constellation}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv"
+    else:
+        return "python3 {input.script} {output} {input.in_csvs}"
+
 rule compose_pos_csvs:
     input:
         script="../../scripts/utility/compose_pos_csvs.py",
-        in_csvs=get_csvs_to_compose
+        in_csvs=lambda wildcards: get_compose_csvs_inputs(wildcards)[1]
     output:
         "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
+    params:
+        shell = lambda wildcards, input: get_compose_csvs_shell(get_compose_csvs_inputs(wildcards), wildcards)
     resources:
         # sum of component job mem_mb limit / 3, as input csv only contains one of 3 result coordinate frames
-        mem_mb = lambda wildcards: sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
+        mem_mb = lambda wildcards, input: 10 if input.in_csvs[0] else sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
     shell:
-        "python3 {input.script} {output} {input.in_csvs}"
+        "{params.shell}"
 
 #### SETUP OPTIONAL KEPLER PARAMS FROM SGP4 RESULTS ####
+
+def get_deactivated_locations(wildcards):
+    locations = ["sofia", "quito", "kunlun"]
+    locations.remove(wildcards.location)
+    return locations
+
+def get_other_locations_avg_alt_symlink_commands(wildcards):
+    other_locations = get_deactivated_locations(wildcards)
+    shell_str = f"ln -s csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[0]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
+    shell_str += " && "
+    shell_str += f"ln -s csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[1]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
 
 rule avg_sgp4_altitudes:
     input:
@@ -447,8 +505,10 @@ rule avg_sgp4_altitudes:
         sgp4_teme_csv="csv/vectors/{location}_{constellation}-sgp4_teme_sorted.csv"
     output:
         "csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv"
+    params:
+        other_locations_symlink_commands = lambda wildcards: get_other_locations_avg_alt_symlink_commands(wildcards)
     shell:
-        "python3 {input.script} {input.sgp4_teme_csv} {output}"
+        "python3 {input.script} {input.sgp4_teme_csv} {output} && {params.other_locations_symlink_commands}"
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS
@@ -548,11 +608,10 @@ rule all_positional_metrics:
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
                 coord_frame=["teme"]),
-        # too laborous, request sum-histogram for avg difference output 
-        #expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done",
-        #        location=config["location"], 
-        #        constellation=get_composed_constellations(), 
-        #        mobility2=["kepler", "circular"])
+        expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done",
+                location=config["location"], 
+                constellation=get_composed_constellations(), 
+                mobility2=["kepler", "circular"])
     output:
         "stats/pos_metrics.done"
     shell:
@@ -775,7 +834,7 @@ rule calc_sop_stats:
     shell:
         """
         cd examples/space_veins/ 
-        bash -i -c 'python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 25'
+        bash -i -c 'python3 {input.script} {input.in_csv} 0 0 0 {params.output_dir} -e 10'
         """
 
 rule plot_sop_stats:
@@ -807,7 +866,7 @@ rule plot_sop_stats:
     shell:
         """
         cd examples/space_veins
-        bash -i -c 'python3 {input.script} "{wildcards.modname}" --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 25 --tle_times_path {input.tle_times} "{params.output_base_path}" --formats svg html'
+        bash -i -c 'python3 {input.script} "{wildcards.modname}" --angles_csv_paths {input.angle_csvs} --distances_csv_paths {input.dist_csvs} --delays_csv_paths {input.delay_csvs} --min_angle 10 --tle_times_path {input.tle_times} "{params.output_base_path}" --formats svg html'
         """
 
 def get_const_sop_stats_plot_paths(wildcards):
@@ -1141,7 +1200,7 @@ rule all_communication_metrics:
 rule calc_comm_period_info:
     """
     Creates JSON of periods where communication is possible for the specified constellation, mobility and satellite module name,
-    using minimum elevation angle 25 °.
+    using minimum elevation angle 10 °.
     Each JSON contains the minimum elevation angles, distances and delays relative to the SOP for each communication period,
     as well as the offset to the used TLE's epoch.
     """
@@ -1163,7 +1222,7 @@ rule calc_comm_period_info:
     output:
         "stats/comm_periods/{location}/{constellation}/{mobility}/{modname}_communication-periods.json"
     shell:
-        "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 25 '{output}'"
+        "python3 {input.script} {input.angle_csv} {input.dist_csv} {input.delay_csv} {input.tle_times} '{wildcards.modname}' 10 '{output}'"
 
 def get_const_comm_period_paths(wildcards):
     return expand("stats/comm_periods/{location}/{constellation}/{mobility}/{modname}_communication-periods.json",

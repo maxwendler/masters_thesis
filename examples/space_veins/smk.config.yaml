@@ -1,8 +1,8 @@
 # constellations that are processed
 constellations: ["iridiumNEXThigh", "iridiumNEXTlow", 
                   "eccentric", 
-                  "satnogs", "satnogs1", "satnogs2", "satnogs3",
-                  "onewebHigh", "onewebHigh1", "onewebHigh2", "onewebMiddle", "onewebLow", 
+                  "satnogs", "satnogs1", "satnogs2", "satnogs3", "satnogs4",
+                  "onewebHigh", "onewebHigh1", "onewebHigh2", "onewebHigh3", "onewebMiddle", "onewebLow", 
                   "starlinkShort", "starlinkShortHighest", "starlinkShortHigh", "starlinkShortLowest",
                   "starlinkShortLow", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3" 
                 ]
@@ -20,7 +20,7 @@ constellation_compositions: { "starlinkShort": ["starlinkShortHighest", "starlin
                               "onewebLow": ["onewebLow"],
                               "onewebMiddle": ["onewebMiddle"],
                               "onewebHigh": ["onewebHigh1", "onewebHigh2"],
-                              "satnogs": ["satnogs1", "satnogs2", "satnogs3"]
+                              "satnogs": ["satnogs1", "satnogs2", "satnogs3", "satnogs4"]
                             }
 
 mem_mb_limits: { "starlinkShortHighest": 1400,
@@ -34,11 +34,13 @@ mem_mb_limits: { "starlinkShortHighest": 1400,
                   "eccentric": 500,
                   "onewebLow": 500,
                   "onewebMiddle": 1000,
-                  "onewebHigh1": 8000,
-                  "onewebHigh2": 8000, # split in two
-                  "satnogs1": 8000,
-                  "satnogs2": 8000,
-                  "satnogs3": 8000  } # split in three
+                  "onewebHigh1": 5400,
+                  "onewebHigh2": 5400,
+                  "onewebHigh3": 5400, # split in three
+                  "satnogs1": 6000,
+                  "satnogs2": 6000,
+                  "satnogs3": 6000,
+                  "satnogs4": 6000  } # split in four
 
 # determines if debug configs from omnetpp.ini are used
 debug_mode: false
