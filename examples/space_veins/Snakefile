@@ -162,16 +162,19 @@ def get_tles_paths():
 
 def get_avg_sgp4_altitudes_paths():
 
-    constellations = sorted(get_constellation_components())
+    constellations = sorted(list(set(get_constellation_components())))
+    print("constellations")
+    print(constellations)
     avg_sgp4_altitudes_dir = "csv/avg_alt/" + config["location"] + "/"
     if os.path.isdir(avg_sgp4_altitudes_dir) and config["use_avg_sgp4_altitudes"]:
         avg_alt_fnames = list(filter(lambda fname: fname.split("-")[0] in constellations, sorted(os.listdir( avg_sgp4_altitudes_dir ))))
-        
-        avg_sgp4_altitudes_paths = []
+        print("avg_alt_fnames")
+        print(avg_alt_fnames)
+        avg_sgp4_altitudes_paths = [ ]
         for c in constellations:
             path = None
             for fname in avg_alt_fnames:
-                if c in fname:
+                if (c + "-") in fname:
                     path = avg_sgp4_altitudes_dir + fname
             if path:
                 avg_sgp4_altitudes_paths.append(path)
@@ -465,12 +468,15 @@ def get_compose_csvs_inputs(wildcards):
     else:
         return (False, get_csvs_to_compose(wildcards))
 
-def get_compose_csvs_shell(compose_csvs_inputs, wildcards):
-    if compose_csvs_inputs[0]:
-        other_location_coord_csv = compose_csvs_inputs[1]
-        return f"ln -s {other_location_coord_csv} csv/vectors/{wildcards.location}_{wildcards.composed_constellation}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv"
+def get_compose_csvs_shell(input, copy_other_location: bool, wildcards, output):
+    in_csvs = input.in_csvs
+    if copy_other_location:
+        other_location_coord_csv = in_csvs
+        return f"ln {other_location_coord_csv} csv/vectors/{wildcards.location}_{wildcards.composed_constellation}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv && touch {output}"
+    elif len(in_csvs) == 1:
+        return f"ln {in_csvs[0]} csv/vectors/{wildcards.location}_{wildcards.composed_constellation}-{wildcards.mobility}_{wildcards.coordframe}_sorted.csv && touch {output}"
     else:
-        return "python3 {input.script} {output} {input.in_csvs}"
+        return f"python3 {input.script} {output} {input.in_csvs}"
 
 rule compose_pos_csvs:
     input:
@@ -479,10 +485,10 @@ rule compose_pos_csvs:
     output:
         "csv/vectors/{location}_{composed_constellation}-{mobility}_{coordframe}_sorted.csv"
     params:
-        shell = lambda wildcards, input: get_compose_csvs_shell(get_compose_csvs_inputs(wildcards), wildcards)
+        shell = lambda wildcards, input, output: get_compose_csvs_shell(input, get_compose_csvs_inputs(wildcards)[0], wildcards, output)
     resources:
         # sum of component job mem_mb limit / 3, as input csv only contains one of 3 result coordinate frames
-        mem_mb = lambda wildcards, input: 10 if input.in_csvs[0] else sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
+        mem_mb = lambda wildcards, input: 10 if get_compose_csvs_inputs(wildcards)[0] or len(input.in_csvs) == 1 else sum( map(lambda const_comp: config["mem_mb_limits"][const_comp], config["constellation_compositions"][wildcards.composed_constellation])) / 3
     shell:
         "{params.shell}"
 
@@ -495,9 +501,12 @@ def get_deactivated_locations(wildcards):
 
 def get_other_locations_avg_alt_symlink_commands(wildcards):
     other_locations = get_deactivated_locations(wildcards)
-    shell_str = f"ln -s csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[0]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
+    os.makedirs(f"csv/avg_alt/{other_locations[0]}", exist_ok=True)
+    os.makedirs(f"csv/avg_alt/{other_locations[1]}", exist_ok=True)
+    shell_str = f"ln csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[0]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
     shell_str += " && "
-    shell_str += f"ln -s csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[1]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
+    shell_str += f"ln csv/avg_alt/{wildcards.location}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv csv/avg_alt/{other_locations[1]}/{wildcards.constellation}-sgp4_teme_avg_altitudes.csv"
+    return shell_str
 
 rule avg_sgp4_altitudes:
     input:
@@ -509,6 +518,11 @@ rule avg_sgp4_altitudes:
         other_locations_symlink_commands = lambda wildcards: get_other_locations_avg_alt_symlink_commands(wildcards)
     shell:
         "python3 {input.script} {input.sgp4_teme_csv} {output} && {params.other_locations_symlink_commands}"
+
+
+rule all_avg_sgp4_altitudes:
+    input:
+        lambda wildcards: expand("csv/avg_alt/{location}/{constellation}-sgp4_teme_avg_altitudes.csv", location=config["location"], constellation=get_constellation_components(wildcards))
 
 """
 RULES FOR PLOTTING SATELLITE ORBITS
@@ -592,14 +606,14 @@ rule plot_orbs_of_mobilities:
 rule all_positional_metrics:
     input:
         #plot pos diff / poss diff distr stats separately when desired, are not included here
-        #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
-        #        location=config["location"], 
-        #        constellation=get_composed_constellations(), 
-        #        coord_frame=["itrf"]),
-        #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-circular_distances.done",
-        #        location=config["location"], 
-        #        constellation=get_composed_constellations(), 
-        #        coord_frame=["teme"]),
+        expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
+                location=config["location"], 
+                constellation=get_composed_constellations(), 
+                coord_frame=["itrf"]),
+        expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-circular_distances.done",
+                location=config["location"], 
+                constellation=get_composed_constellations(), 
+                coord_frame=["teme"]),
         expand("plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-kepler_sum-histogram.svg",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
@@ -611,7 +625,7 @@ rule all_positional_metrics:
         expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
-                mobility2=["kepler", "circular"])
+                mobility2=["kepler"])
     output:
         "stats/pos_metrics.done"
     shell:

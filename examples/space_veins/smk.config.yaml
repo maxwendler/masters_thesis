@@ -14,6 +14,7 @@ constellation_compositions: { "starlinkShort": ["starlinkShortHighest", "starlin
                               "starlinkShortHigh": ["starlinkShortHigh"],
                               "starlinkShortLowest": ["starlinkShortLowest"],
                               "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
+                              "iridiumNEXTlow": ["iridiumNEXTlow"],
                               "iridiumNEXThigh": ["iridiumNEXThigh"],
                               "eccentric": ["eccentric"],
                               "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh1", "onewebHigh2"],
@@ -51,9 +52,9 @@ coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
 # omnetpp.ini parameters
 sim-time-limit: 86420
 
-use_avg_sgp4_altitudes: false
+use_avg_sgp4_altitudes: true
 
-location: "sofia"
+location: "kunlun"
 locations_xml: {"quito": '    <node id="n0_0" x="-78.45" y="0" type="priority"/>\n    <node id="n1_0" x="-78.2" y="0" type="priority"/>',
                 "sofia": '    <node id="n0_0" x="23.319941" y="42.698334" type="priority"/>\n    <node id="n1_0" x="23.4" y="42.5" type="priority"/>',
                 "kunlun": '    <node id="n0_0" x="77.11611" y="-80" type="priority"/>\n    <node id="n1_0" x="78" y="-80" type="priority"/>'}
