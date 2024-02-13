@@ -12,6 +12,7 @@ parser.add_argument('leo_modname', help='A satellite module name.')
 parser.add_argument('tle_times_path', help="Path of JSON with simulation start time and epoch times of TLEs in numpy's datetime64 format.")
 parser.add_argument("output_path", help="Directory where resulting plot will be saved.")
 parser.add_argument("--ecdf", action="store_true", help="If flag is set, ECDF plot is plotted as well in second column.")
+parser.add_argument("--comparison_csv")
 
 args = parser.parse_args()
 csv_path = args.csv_path
@@ -34,6 +35,7 @@ with open(csv_path, "r") as csv_f:
     end_sec = int(header[-1])
     sec_range = list(range(start_sec, end_sec + 1))
 
+    row_idx = 1
     for row in row_reader:
         # positional_differences.py already shortens module name to leo.*[.*] part
         if row[0] == args.leo_modname:
@@ -50,9 +52,30 @@ with open(csv_path, "r") as csv_f:
                 fig.add_trace(ecdf.data[0], row=1, col=2)
 
             else:
-                fig.add_trace(
-                   go.Scatter(x=sec_range, y=differences)
-                )
+
+                if args.comparison_csv:
+                    
+                    fig.add_trace(
+                        go.Scatter(x=sec_range, y=differences, name="kepler")
+                    )
+
+                    with open(args.comparison_csv) as comp_csv:
+                        
+                        comp_row_reader = csv.reader(comp_csv, delimiter=",")
+                        comp_row = None
+                        for i in range(row_idx + 1):
+                            comp_row = comp_row_reader.__next__()
+                        
+                        comp_differences = [float(d) for d in comp_row[1:]]
+
+                        fig.add_trace(
+                            go.Scatter(x=sec_range, y=comp_differences, name="circular")
+                        )
+                
+                else: 
+                    fig.add_trace(
+                        go.Scatter(x=sec_range, y=differences)
+                    )
 
             # add start time marking
             offset_to_start_time_days = float(tle_times["sat_times"][mod_leoname]["offset_to_start"])
@@ -86,3 +109,5 @@ with open(csv_path, "r") as csv_f:
                     font=dict(size=14, color="Red")
                 )
             fig.write_image(args.output_path)
+
+        row_idx += 1

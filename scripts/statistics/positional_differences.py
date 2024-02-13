@@ -36,7 +36,7 @@ if __name__ == "__main__":
         mod_coords_1 = coord_dict_1[leo_modname]
         mod_coords_2 = coord_dict_2[leo_modname]
         if len(mod_coords_1) != len(mod_coords_2):
-            error_str = f"First input file at {csv_path1} has {len(mod_coords_1)} coordinates from start second {start_second}, while second file at {csv_path2} has {len(mod_coords_2)}!"
+            error_str = f"First input file at {csv_path1} has {len(mod_coords_1)} coordinates from start second {start_second}, while second file at {csv_path2} has {len(mod_coords_2)}! Module: {leo_modname}"
             raise AssertionError(error_str)
 
         dists = []

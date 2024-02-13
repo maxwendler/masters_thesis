@@ -606,22 +606,26 @@ rule plot_orbs_of_mobilities:
 rule all_positional_metrics:
     input:
         #plot pos diff / poss diff distr stats separately when desired, are not included here
-        expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
+        #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler_distances.done",
+        #        location=config["location"], 
+        #        constellation=get_composed_constellations(), 
+        #        coord_frame=["omnet"]),
+        #expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-circular_distances.done",
+        #        location=config["location"], 
+        #        constellation=get_composed_constellations(), 
+        #        coord_frame=["omnet"]),
+        expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-kepler-circular_distances.done",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
-                coord_frame=["itrf"]),
-        expand("plots/pos_diff/{location}/{constellation}/{coord_frame}_sgp4-circular_distances.done",
-                location=config["location"], 
-                constellation=get_composed_constellations(), 
-                coord_frame=["teme"]),
+                coord_frame=["omnet"]),        
         expand("plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-kepler_sum-histogram.svg",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
-                coord_frame=["itrf"]),
+                coord_frame=["omnet"]),
         expand("plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-circular_sum-histogram.svg",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
-                coord_frame=["teme"]),
+                coord_frame=["omnet"]),
         expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done",
                 location=config["location"], 
                 constellation=get_composed_constellations(), 
@@ -690,6 +694,37 @@ rule plot_pos_diffs_with_ecdf:
         bash -i -c 'python3 {input.script} {input.in_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --ecdf'
         """
 
+rule plot_kepler_and_circular_pos_diffs:
+    input:
+        script="../../scripts/plots/plot_differences.py",
+        tle_times="tles/{constellation}_times.json",
+        kepler_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/omnet_sgp4-kepler_differences.csv",
+        circular_csv="csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/omnet_sgp4-circular_differences.csv"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/pos_diff/{location}/{constellation}/"+ get_debug_str() + "omnet_sgp4-kepler-circular_{leo_modname}_distances.svg"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.kepler_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --comparison_csv {input.circular_csv}'
+        """
+
+def get_kepler_circular_pos_diff_plots(wildcards):
+    return expand("plots/pos_diff/{location}/{constellation}/"+ get_debug_str() + "omnet_sgp4-kepler-circular_{leo_modname}_distances.svg",
+            location=wildcards.location,
+            constellation=wildcards.constellation, 
+            leo_modname=get_const_sat_mods(wildcards.constellation))
+
+rule plot_const_kepler_and_circular_pos_diffs:
+    input:
+        get_kepler_circular_pos_diff_plots
+    output:
+        "plots/pos_diff/{location}/{constellation}/" + get_debug_str() + "omnet_sgp4-kepler-circular_distances.done"
+    shell:
+        "touch {output}"
+    
+
 def get_const_pos_diff_paths(wildcards):
     """
     Returns all paths of 3D coordinate difference plots of the constellation, coordframe and the two mobilities specified in wildcards.
@@ -700,7 +735,8 @@ def get_const_pos_diff_paths(wildcards):
                 coord_frame=wildcards.coord_frame, 
                 mobility2=wildcards.mobility2,
                 leo_modname=get_const_sat_mods(wildcards.constellation),
-                with_or_without_ecdf=["_with_ecdf"])
+                with_or_without_ecdf=["_with_ecdf"]
+            )
 
 rule plot_const_pos_diffs:
     """
