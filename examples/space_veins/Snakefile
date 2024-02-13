@@ -643,7 +643,7 @@ rule calc_pos_diffs:
     output:
         "csv/pos_diff/{location}/" + get_debug_str() + "{constellation}/{coord_frame}_sgp4-{mobility2}_differences.csv"
     shell:
-        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} -c > {output}"
+        "python3 {input.script} {input.mob1_csv} {input.mob2_csv} {wildcards.coord_frame} > {output}"
 
 def get_tle_path(constellation: str):
     """
