@@ -75,8 +75,8 @@ else:
     fig.update_yaxes(title_text='zenith shift in seconds')
     fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} zenith shifts relative to TLE epoch at second 0')
 
-    if len(pos_offsets) > 1:
-    
+    if len(set(pos_offsets)) > 1:
+        
         linear_fun = Polynomial.fit(pos_offsets, pos_offset_zenith_shifts, deg=1)
         linear_fun_xs = [0, max(pos_offsets)]
         linear_fun_ys = [linear_fun(0), linear_fun(linear_fun_xs[1])]

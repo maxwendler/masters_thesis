@@ -70,7 +70,7 @@ if args.tle_times_path:
     with open(args.tle_times_path, "r") as times_f:
         tle_times = json.load(times_f)
         offset_to_start_time_days = float(tle_times["sat_times"][args.leo_modname]["offset_to_start"])
-        offset_to_start_sec = offset_to_start_time_days * 86400 
+        offset_to_start_sec = offset_to_start_time_days * 43200
 
         y_pos = 1.05
 

@@ -41,16 +41,5 @@ if __name__ == "__main__":
     fig.write_image(args.output_basepath + "sum-histogram.svg")
     fig.write_html(args.output_basepath + "sum-histogram.html")
 
-    # distances boxplot
-    satnames_list = []
-    for name in satnames:
-        satnames_list += [name] * len(sat_distances[0]) 
-    distances_list = []
-    for distance_list in sat_distances:
-        distances_list += distance_list
-
-    fig = px.box(x=satnames_list, y=distances_list, labels={'y': "difference in km"})
-    fig.write_image(args.output_basepath + "boxplot.svg")
-    fig.write_html(args.output_basepath + "boxplot.html")
     with open(args.output_basepath + "avg_difference.txt", "w") as avg_difference_f:
         avg_difference_f.write("avg_diff_sum: " + str(avg_distsum) + "\n" + "avg_diff: " + str(avg_dist))

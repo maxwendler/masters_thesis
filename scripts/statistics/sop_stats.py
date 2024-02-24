@@ -25,11 +25,24 @@ header = "modname"
 for i in range(start_second, start_second + len(list(sat_coord_dict.values())[0])):
     header += "," + str(i)
 
+distances_path = output_dir + output_base_fname + "_distances.csv"
+distance_f = open(distances_path, "w")
+distance_f.write(header + "\n")
+
+angles_path = output_dir + output_base_fname + "_angles.csv"
+elev_angles_f = open(angles_path, "w")
+elev_angles_f.write(header + "\n")
+
+propagation_delay_path = output_dir + output_base_fname + "_delays.csv"
+prop_delay_f = open(propagation_delay_path, "w")
+prop_delay_f.write(header + "\n")
+
 distance_csv_lines = [header]
 elev_angles_csv_lines = [header]
 propagation_delay_csv_lines = [header]
 
 # calculate elevation angles, distances and delays to SOP 
+sat_counter = 0
 for satname in sat_coord_dict.keys():
     
     sop_sat_distances = [] 
@@ -67,27 +80,21 @@ for satname in sat_coord_dict.keys():
     new_line = satname
     for d in sop_sat_distances:
         new_line += "," + str(d)
-    distance_csv_lines.append(new_line)
+    distance_f.write(new_line + "\n")
 
     new_line = satname
     for a in sop_sat_elev_angles:
         new_line += "," + str(a)
-    elev_angles_csv_lines.append(new_line)
+    elev_angles_f.write(new_line + "\n")
 
     new_line = satname
     for d in sat_propagation_delays:
         new_line += "," + str(d)
-    propagation_delay_csv_lines.append(new_line)
+    prop_delay_f.write(new_line + "\n")
 
+    sat_counter += 1
+    print(args.csv_path.split("/")[-1] + ": " + f"{sat_counter}/{len(sat_coord_dict)}")
 
-distances_path = output_dir + output_base_fname + "_distances.csv"
-with open(distances_path, "w") as csv_f:
-    csv_f.write( "\n".join(distance_csv_lines) )
-
-angles_path = output_dir + output_base_fname + "_angles.csv"
-with open(angles_path, "w") as csv_f:
-    csv_f.write( "\n".join(elev_angles_csv_lines) )
-
-propagation_delay_path = output_dir + output_base_fname + "_delays.csv"
-with open(propagation_delay_path, "w") as csv_f:
-    csv_f.write( "\n".join(propagation_delay_csv_lines) )
+distance_f.close()
+elev_angles_f.close()
+prop_delay_f.close()

@@ -23,40 +23,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: all_interval_changes.py iridiumNEXT",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/all_interval_changes.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/iridiumNEXT_sgp4_all_periods.csv", 
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/iridiumNEXT/sgp4",
-            "/workspaces/ma-max-wendler/examples/space_veins/csv/comm_periods/iridiumNEXT_kepler_all_periods.csv",
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_periods/iridiumNEXT/kepler",
-            "86400",
-            "/workspaces/ma-max-wendler/examples/space_veins/stats/comm_period_all_interval_changes/iridiumNEXT/sgp4-kepler_all_interval_changes.json"],
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
-            "name": "Python to_sat_csv",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/utility/to_sat_csv.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-circular_teme_sorted.csv",
-            "leoIRIDIUM[169]"],
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
-            "name": "Python validate_circular_mobility_direction",
-            "type": "python",
-            "request": "launch",
-            "program": "/workspaces/ma-max-wendler/scripts/statistics/validate_circular_mobility_direction.py",
-            "args": ["/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-sgp4_teme_sorted.csv",
-            "/workspaces/ma-max-wendler/examples/space_veins/csv/vectors/iridiumNEXT-circular_teme_sorted.csv"],
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
             "type": "lldb",
             "request": "attach",
             "name": "attach to running simulation (debug mode)",

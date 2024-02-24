@@ -324,8 +324,8 @@ for p_group_idx in range(len(period_groups)):
 
 if args.json:
     os.makedirs("/".join(args.json.split("/")[:-1]), exist_ok=True)
-    with open(args.output_path, "w") as out_f:
+    with open(args.json, "w") as out_f:
         json.dump(output, out_f, indent=4)
 elif args.plot:
     os.makedirs("/".join(args.plot.split("/")[:-1]), exist_ok=True)
-    fig.write_image(args.plot_path, width=1920, height=1080)
+    fig.write_image(args.plot, width=1920, height=1080)

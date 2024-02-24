@@ -58,6 +58,10 @@ max_z = -inf
 if csv_paths:
     # plot orbits of each satellite module
     for csv_p in csv_paths:
+
+        fname = csv_p.split("/")[-1]
+        constellation = fname.split("_")[0].split("-")[0]
+        mobility = fname.split("_")[0].split("-")[1]
         
         coords, csv_start_second = parse_coords_csv_to_list(csv_p)
         
@@ -92,12 +96,12 @@ if csv_paths:
 
         color = color_cycle[color_idx % len(color_cycle)]
 
-        orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=leo_modname, line=dict(
+        orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=f"{leo_modname} - {mobility}", line=dict(
                 color=color
             )
         )
         
-        orb_start = go.Scatter3d(x=xs[:1], y=ys[:1], z=zs[:1], mode='markers', name=leo_modname + "_start", line=dict(
+        orb_start = go.Scatter3d(x=xs[:1], y=ys[:1], z=zs[:1], mode='markers', name=f"{leo_modname} - {mobility} - start", line=dict(
                 color=color
             )
         )

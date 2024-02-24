@@ -25,6 +25,7 @@ if args.ecdf:
 else:
     fig = go.Figure()
 
+comp_differences = []
 with open(csv_path, "r") as csv_f:
     
     row_reader = csv.reader(csv_f, delimiter=",")
@@ -85,12 +86,12 @@ with open(csv_path, "r") as csv_f:
             if args.ecdf:
                 fig.add_shape(
                     type="line",
-                    x0=epoch_in_start_time_frame, y0=min(differences), x1=epoch_in_start_time_frame, y1=max(differences),
+                    x0=epoch_in_start_time_frame, y0=min(differences + comp_differences), x1=epoch_in_start_time_frame, y1=max(differences + comp_differences),
                     line=dict(color="Red", width=1, dash="dash"),
                     row=1, col=1
                 )
                 fig.add_annotation(
-                    x=epoch_in_start_time_frame, y=max(differences),
+                    x=epoch_in_start_time_frame, y=max(differences + comp_differences),
                     text="epoch of satellite",
                     showarrow=False,
                     font=dict(size=14, color="Red"),
@@ -99,11 +100,11 @@ with open(csv_path, "r") as csv_f:
             else:
                 fig.add_shape(
                     type="line",
-                    x0=epoch_in_start_time_frame, y0=min(differences), x1=epoch_in_start_time_frame, y1=max(differences),
+                    x0=epoch_in_start_time_frame, y0=min(differences + comp_differences), x1=epoch_in_start_time_frame, y1=max(differences + comp_differences),
                     line=dict(color="Red", width=1, dash="dash")
                 )
                 fig.add_annotation(
-                    x=epoch_in_start_time_frame, y=max(differences),
+                    x=epoch_in_start_time_frame, y=max(differences + comp_differences),
                     text="epoch of satellite",
                     showarrow=False,
                     font=dict(size=14, color="Red")

@@ -166,3 +166,6 @@ cd examples/space_veins/
 exit
 cd examples/space_veins/ && ./run -u Cmdenv -c eccentric-circular -r 0
 exit
+which tle-tools
+pip list
+exit
