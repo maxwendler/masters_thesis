@@ -60,6 +60,8 @@ with open(csv_path, "r") as csv_f:
                         go.Scatter(x=sec_range, y=differences, name="kepler")
                     )
 
+                    fig.update_yaxes(title_text="distance to SGP4 in km")
+
                     with open(args.comparison_csv) as comp_csv:
                         
                         comp_row_reader = csv.reader(comp_csv, delimiter=",")
@@ -79,8 +81,7 @@ with open(csv_path, "r") as csv_f:
                     )
 
             # add start time marking
-            offset_to_start_time_days = float(tle_times["sat_times"][mod_leoname]["offset_to_start"])
-            offset_to_start_sec = offset_to_start_time_days * 86400
+            offset_to_start_sec = tle_times["sat_times"][mod_leoname]["offset_to_start"]
             epoch_in_start_time_frame = offset_to_start_sec
 
             if args.ecdf:
@@ -92,7 +93,7 @@ with open(csv_path, "r") as csv_f:
                 )
                 fig.add_annotation(
                     x=epoch_in_start_time_frame, y=max(differences + comp_differences),
-                    text="epoch of satellite",
+                    text="epoch of TLE",
                     showarrow=False,
                     font=dict(size=14, color="Red"),
                     row=1, col=1
@@ -105,10 +106,11 @@ with open(csv_path, "r") as csv_f:
                 )
                 fig.add_annotation(
                     x=epoch_in_start_time_frame, y=max(differences + comp_differences),
-                    text="epoch of satellite",
+                    text="epoch of TLE",
                     showarrow=False,
                     font=dict(size=14, color="Red")
                 )
+                fig.update_yaxes(title_text="distance to SGP4 in km")
             fig.write_image(args.output_path)
 
         row_idx += 1

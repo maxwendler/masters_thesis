@@ -17,12 +17,23 @@ tles_dir = args.tles_dir if args.tles_dir.endswith("/") else args.tles_dir + "/"
 avg_alts_dir = args.avg_alts_dir if args.avg_alts_dir.endswith("/") else args.avg_alts_dir + "/"
 output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
 
+"""
 tles_paths = [tles_dir + fname for fname in filter( lambda fname: not fname.endswith("_times.json") , os.listdir(tles_dir))]
-constellation_compositions = constellation_compositions = { "starlink": ["starlink1", "starlink2", "starlink3", "starlink4"],
-                              "iridiumNEXT": ["iridiumNEXT"],
+constellation_compositions = { 2"starlinkShort": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3", "starlinkShortLowest"],
+                              "starlinkShortLow": ["starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3"],
+                              "starlinkShortHighest": ["starlinkShortHighest"],
+                              "starlinkShortHigh": ["starlinkShortHigh"],
+                              "starlinkShortLowest": ["starlinkShortLowest"],
+                              "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
+                              "iridiumNEXTlow": ["iridiumNEXTlow"],
+                              "iridiumNEXThigh": ["iridiumNEXThigh"],
                               "eccentric": ["eccentric"],
-                              "oneweb": ["oneweb"],
-                              "satnogs": ["satnogs"] }
+                              "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh1", "onewebHigh2","onewebHigh3"],
+                              "onewebLow": ["onewebLow"],
+                              "onewebMiddle": ["onewebMiddle"],
+                              "onewebHigh": ["onewebHigh1", "onewebHigh2", "onewebHigh3"],
+                              "satnogs": ["satnogs1", "satnogs2", "satnogs3", "satnogs4"]
+                            }
 
 constellation_tles_paths = {}
 for constellation in constellation_compositions.keys():
@@ -34,6 +45,16 @@ for constellation in constellation_compositions.keys():
                 current_const_tles_paths.append(p)
     constellation_tles_paths[constellation] = current_const_tles_paths
 
+"""
+
+constellation_tles_paths = {
+    "IridiumNEXT": "/workspaces/ma-max-wendler/examples/space_veins/tles/iridiumNEXT_2023-10-22-15-22-02.txt",
+    "Starlink": "/workspaces/ma-max-wendler/examples/space_veins/tles/avg_epoch_timestamps/undecomposed/starlink_2023-10-22-21-18-24.txt",
+    "OneWeb": "/workspaces/ma-max-wendler/examples/space_veins/tles/avg_epoch_timestamps/undecomposed/oneweb_2023-10-22-22-28-26.txt",
+    "SatNOGS": "/workspaces/ma-max-wendler/examples/space_veins/tles/satnogs_2023-10-22-20-54-21.txt",
+    "Eccentric": "/workspaces/ma-max-wendler/examples/space_veins/tles/eccentric_2023-10-22-15-30-23.txt",
+}
+ 
 all_tles_incs = []
 all_tles_eccs = []
 all_tles_meanmotions = []
@@ -117,6 +138,7 @@ all_const_fig.update_layout(title="all constellations")
 all_const_fig.update_yaxes(title="mean motion in rev/day")
 all_const_fig.write_image(output_dir + "all_meanmotions.svg")
 
+"""
 # average altitudes separately as not from tles
 all_tles_avg_alts = []
 all_tles_avg_alts_categories = []
@@ -205,3 +227,5 @@ all_approx_velocities_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_catego
 all_approx_velocities_fig.update_layout(title=constellation)
 all_approx_velocities_fig.update_yaxes(title="approx. velocity in km/day")
 all_approx_velocities_fig.write_image(output_dir + "all_approx_velocities.svg")
+
+"""

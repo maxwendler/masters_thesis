@@ -44,13 +44,31 @@ for sim_time in range(args.measurement_start_time, args.sim_time_limit + 1):
         "sats": current_available_sats
     })
 
+at_least_one_available_time = 0
+at_least_two_available_time = 0
+at_least_three_available_time = 0
+for sat_num in availability_num_times.keys():
+    if sat_num > 0:
+        at_least_one_available_time += availability_num_times[sat_num]
+        if sat_num > 1:
+            at_least_two_available_time += availability_num_times[sat_num]
+            if sat_num > 2:
+                at_least_three_available_time += availability_num_times[sat_num]
+
 availability_num_ratios = {}
 for availability_num_time in availability_num_times.items():
     availability_num_ratios[availability_num_time[0]] = availability_num_time[1] / args.sim_time_limit
+at_least_one_available_ratio = at_least_one_available_time / args.sim_time_limit
+at_least_two_available_ratio = at_least_two_available_time / args.sim_time_limit
+at_least_three_available_ratio = at_least_three_available_time / args.sim_time_limit
 
 output = {
     "availability_num_times": availability_num_times,
+    "at_least_one_time": at_least_one_available_time,
     "availability_num_ratios": availability_num_ratios,
+    "at_least_one_ratio": at_least_one_available_ratio,
+    "at_least_two_ratio": at_least_two_available_ratio,
+    "at_least_three_ratio": at_least_three_available_ratio,
     "available_sats": available_sats
 }
 

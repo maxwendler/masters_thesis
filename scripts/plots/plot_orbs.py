@@ -7,15 +7,19 @@ from math import inf
 import os, sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.parse_csvs import parse_coords_csv_to_list
+import json
 
 parser = argparse.ArgumentParser(prog="plot_orbs.py", 
                                  description="""Plots the orbits from the given coordinate CSVs using cartesian coordinates.""")
-
+parser.add_argument("tle_times")
 parser.add_argument('-c', '--csv_paths', metavar='csv_path', type=str, nargs='*', help='One or more paths of a CSV with cartesian coordinate list of *one* satellite module.')
 parser.add_argument('-o', '--output_path', metavar='output_path', type=str, required=True, help="Path where plot of orbits will be saved.")
 parser.add_argument('-e', "--earth", action="store_true", help="If flag is set, also plots sphere with average earth radius.")
 
 args = parser.parse_args()
+
+with open(args.tle_times, "r") as json_f:
+    tle_times = json.load(json_f)
 
 output_dir = "/".join(args.output_path.split("/")[:-1])
 os.makedirs(output_dir, exist_ok=True)
@@ -105,11 +109,19 @@ if csv_paths:
                 color=color
             )
         )
+
+        mod_epoch_sec = int(float(tle_times["sat_times"][leo_modname]["offset_to_start"]))
+
+        orb_epoch = go.Scatter3d(x=xs[mod_epoch_sec:mod_epoch_sec+1], y=ys[mod_epoch_sec:mod_epoch_sec+1], z=zs[mod_epoch_sec:mod_epoch_sec+1], mode='markers', name=f"{leo_modname} - {mobility} - epoch", line=dict(
+                color=color
+            )
+        )
         
         color_idx += 1
 
         fig.add_trace(orb_start)
         fig.add_trace(orb_line)
+        fig.add_trace(orb_epoch)
 
 # start second was not set because no csv paths are used, so just read traces from first entry
 if not start_second:

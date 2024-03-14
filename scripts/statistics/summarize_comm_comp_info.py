@@ -5,12 +5,13 @@ from statistics import median
 
 parser = argparse.ArgumentParser(prog="summarize_comm_comp_info.py")
 parser.add_argument("comp_info_dir", help="Path of directory with all the *_communication_comparison.json files of a constellation.")
+parser.add_argument("mob2")
 parser.add_argument("output_path")
 args = parser.parse_args()
 
 comp_info_dir = args.comp_info_dir if args.comp_info_dir.endswith("/") else args.comp_info_dir + "/"
 # create paths of JSON files in comp_info_dir
-info_json_paths = [ comp_info_dir + fname for fname in list( filter( lambda fname: fname.endswith("_communication_comparison.json"), os.listdir(comp_info_dir) ) ) ] 
+info_json_paths = [ comp_info_dir + fname for fname in list( filter( lambda fname: args.mob2 in fname and fname.endswith("_communication_comparison.json"), os.listdir(comp_info_dir) ) ) ] 
 
 mobilities = info_json_paths[0].split("/")[-1].split("_")[0].split("-")
 ref_mobility = mobilities[0]

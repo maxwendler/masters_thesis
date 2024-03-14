@@ -32,6 +32,7 @@ with open(tles_path, "r") as tles_f:
         modname = satname_to_modname(satname)
         tle.epoch.format = "datetime64"
         offset_to_start = tle.epoch - start_time
+        offset_to_start.format = "sec"
         # offset_to_start.format = "datetime"
         sat_times_dict[modname] = {"epoch": str(tle.epoch), "offset_to_start": str(offset_to_start)}
 

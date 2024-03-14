@@ -1,10 +1,11 @@
 import argparse
 import json
+from math import inf
 
 parser = argparse.ArgumentParser()
 parser.add_argument("ref_mobility_availables_json")
 parser.add_argument("new_mobility_availables_json")
-parser.add_argument("all_interval_changes_json")
+# parser.add_argument("all_interval_changes_json")
 parser.add_argument("ref_comm_periods_dir")
 parser.add_argument("new_comm_periods_dir")
 parser.add_argument("output_path")
@@ -19,8 +20,8 @@ with open(args.ref_mobility_availables_json, "r") as json_f:
 with open(args.new_mobility_availables_json, "r") as json_f:
     new_availability_stats = json.load(json_f)
 
-with open(args.all_interval_changes_json, "r") as json_f:
-    all_interval_changes = json.load(json_f)
+#with open(args.all_interval_changes_json, "r") as json_f:
+#    all_interval_changes = json.load(json_f)
 
 measurement_start_time = ref_availability_stats["available_sats"][0]["sim_time"]
 
@@ -81,13 +82,20 @@ availability_num_ratio_diffs = {}
 for availability_num in ref_availability_stats["availability_num_ratios"].keys():
     ref_availability_num_ratio = ref_availability_stats["availability_num_ratios"][availability_num]
     new_availability_num_ratio = new_availability_stats["availability_num_ratios"][availability_num] if availability_num in new_availability_stats["availability_num_ratios"].keys() else 0
-    availability_num_ratio_diffs[availability_num] = new_availability_num_ratio - ref_availability_num_ratio
+    availability_num_ratio_diffs_of_av_num = {}
+    availability_num_ratio_diffs_of_av_num["to_total"] = new_availability_num_ratio - ref_availability_num_ratio
+    if ref_availability_num_ratio > 0:
+        availability_num_ratio_diffs_of_av_num["to_ref"] = new_availability_num_ratio / ref_availability_num_ratio
+    else:
+        availability_num_ratio_diffs_of_av_num["to_ref"] = inf 
+    availability_num_ratio_diffs[availability_num] = availability_num_ratio_diffs_of_av_num
 
 for availability_num in new_availability_stats["availability_num_ratios"].keys():
     if availability_num not in availability_num_ratio_diffs.keys():
         availability_num_ratio_diffs[availability_num] = new_availability_stats["availability_num_ratios"][availability_num]
 
 # lost period effects
+"""
 lost_period_effects = []
 lost_periods_total_time = 0
 lost_periods_total_availability_reductions_by_one = {}
@@ -166,22 +174,35 @@ for current_consecutive_added_periods in all_interval_changes["consecutive_added
             "duration": period_duration,
             "availability_increases_by_one": availability_increases_by_one
         })
+"""
+at_least_one_diff =  new_availability_stats["at_least_one_time"] - ref_availability_stats["at_least_one_time"]
+at_least_one_ratio_diff = new_availability_stats["at_least_one_ratio"] - ref_availability_stats["at_least_one_ratio"]
+at_least_one_ratio_diff_ratio = None
+if ref_availability_stats["at_least_one_ratio"] > 0:
+    at_least_one_ratio_diff_ratio = new_availability_stats["at_least_one_ratio"] / ref_availability_stats["at_least_one_ratio"]
+else:
+    at_least_one_ratio_diff_ratio = inf
 
 output = {
+    "at_least_one_diff": at_least_one_diff,
+    "at_least_one_ratio_diff": at_least_one_ratio_diff,
+    "at_least_one_ratio_ratio": at_least_one_ratio_diff_ratio,
+    "at_least_two_ratio_ratio": (new_availability_stats["at_least_two_ratio"] / ref_availability_stats["at_least_two_ratio"]) if ref_availability_stats["at_least_two_ratio"] > 0 else inf,
+    "at_least_three_ratio_ratio": (new_availability_stats["at_least_three_ratio"] / ref_availability_stats["at_least_three_ratio"]) if ref_availability_stats["at_least_three_ratio"] > 0 else inf, 
     "avg_abs_sat_num_diff": abs_diff_sum / len(available_sat_diffs),
     "time_with_num_diff_to_total_time": times_with_num_diff / len(available_sat_diffs),
     "availability_num_time_diffs": availability_num_time_diffs,
     "availability_num_ratio_diffs": availability_num_ratio_diffs,
-    "lost_periods_effects": {
-        "total_time": lost_periods_total_time,
-        "total_availability_reductions_by_one": lost_periods_total_availability_reductions_by_one,
-        "instances": lost_period_effects
-    },
-    "added_periods_effects": {
-        "total_time": added_periods_total_time,
-        "total_availability_increases_by_one": added_periods_total_availability_increases_by_one,
-        "instances": added_period_effects
-    },
+    #"lost_periods_effects": {
+    #    "total_time": lost_periods_total_time,
+    #    "total_availability_reductions_by_one": lost_periods_total_availability_reductions_by_one,
+    #    "instances": lost_period_effects
+    #},
+    #"added_periods_effects": {
+    #    "total_time": added_periods_total_time,
+    #   "total_availability_increases_by_one": added_periods_total_availability_increases_by_one,
+    #    "instances": added_period_effects
+    #},
     "available_sat_diffs": available_sat_diffs
 }
 

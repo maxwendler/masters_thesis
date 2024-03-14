@@ -1,6 +1,7 @@
 import argparse
 import csv
 import plotly.express as px
+import json
 
 def parse_difference_csv(csv_path):
     with open(csv_path, "r") as csv_f:
@@ -40,6 +41,16 @@ if __name__ == "__main__":
 
     fig.write_image(args.output_basepath + "sum-histogram.svg")
     fig.write_html(args.output_basepath + "sum-histogram.html")
+    
+    out_dict = {}
+    out_dict["avg_diff_sum"] = avg_distsum
+    out_dict["avg_diff"] = avg_dist
+    out_dict["sats"] = {}
+    for i in range(len(satnames)):
+        out_dict["sats"][satnames[i]] = {
+            "diff_sum": sat_distsums[i],
+            "avg_diff": sat_distsums[i] / len(sat_distances[0])
+        }
 
-    with open(args.output_basepath + "avg_difference.txt", "w") as avg_difference_f:
-        avg_difference_f.write("avg_diff_sum: " + str(avg_distsum) + "\n" + "avg_diff: " + str(avg_dist))
+    with open(args.output_basepath + "avg_difference.json", "w") as avg_difference_f:
+        json.dump(out_dict, avg_difference_f, indent=4)

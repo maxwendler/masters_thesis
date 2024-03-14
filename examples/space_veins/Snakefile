@@ -10,7 +10,8 @@ configfile: "smk.config.yaml"
 
 # for reading the config
 def get_composed_constellations(wildcards=None):
-    return config["constellation_compositions"].keys()
+    #return config["constellation_compositions"].keys()
+    return ["eccentric","satnogs","onewebLow","onewebMiddle","onewebHigh","starlinkShortHigh","starlinkShortHighest","starlinkShortLow","starlinkShortLowest","iridiumNEXThigh","iridiumNEXTlow"]
 
 def get_constellation_components(wildcards=None):
     return list(reduce(lambda all_comps_list, const_comp_list: all_comps_list + const_comp_list, config["constellation_compositions"].values()))
@@ -293,7 +294,7 @@ rule createRunFile:
         get_trace_requirement,
         "omnetpp.ini"
     output:
-        "runs/{oppConfig}_runs.txt"
+        "runs/" + "{location}" + "_{oppConfig}_runs.txt"
     container:
         "../../singularity/singularity-space_veins.sif"
     shell:
@@ -310,7 +311,7 @@ rule createRunmakerLogFile:
     Creates .log file for running simulations with runmaker.
     """
     output:
-        "runs/{oppConfig}_runs.log"
+        "runs/" + config["location"] + "_{oppConfig}_runs.log"
     shell:
         "touch {output}"
 
@@ -320,10 +321,10 @@ rule run:
     """
     input:
         net_xml="two-nodes.net.xml",
-        logFile="runs/" + get_debug_str() + "{const_comp}-{mobility}_runs.log",
-        runFile="runs/" + get_debug_str() + "{const_comp}-{mobility}_runs.txt"
+        logFile="runs/" + config["location"] + "_" + get_debug_str() + "{const_comp}-{mobility}_runs.log",
+        runFile="runs/" + config["location"] + "_" + get_debug_str() + "{const_comp}-{mobility}_runs.txt"
     output:
-        "runs/" + get_debug_str() + "{const_comp}-{mobility}_done.txt"
+        "runs/" + config["location"] + "_" + get_debug_str() + "{const_comp}-{mobility}_done.txt",
     threads:
         1
     benchmark:
@@ -412,7 +413,7 @@ rule vec2csv:
     Uses ../../scripts/time_sort_csv.py to sort after (1) satellite module and (2) simulation time.
     """
     input:
-        "runs/{constellation}-{mobility}_done.txt",
+        "runs/" + config["location"] + "_" + get_debug_str() + "{constellation}-{mobility}_done.txt",
         sort_script="../../scripts/time_sort_csv.py"
     output:
         "csv/vector_components/{location}_{constellation}-{mobility}_{coordframe}_sorted.csv"
@@ -586,7 +587,8 @@ rule plot_orbs_of_mobilities:
     """
     input:
         script="../../scripts/plots/plot_orbs.py",
-        coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False)
+        coord_paths=lambda wildcards: get_satmod_csv_paths(wildcards, False),
+        tle_times="tles/{constellation}_times.json"
     container:
         "../../singularity/singularity-space_veins.sif"
     output:
@@ -596,7 +598,7 @@ rule plot_orbs_of_mobilities:
     shell:
         """
         cd examples/space_veins
-        bash -i -c 'python3 {input.script} -c {params.csv_paths} -o "{output}" -e'
+        bash -i -c 'python3 {input.script} {input.tle_times} -c {params.csv_paths} -o "{output}" -e'
         """
 
 #### CALCULATE & PLOT POSITIONAL DIFFERENCES BETWEEN MODELS ###
@@ -759,7 +761,7 @@ rule plot_diff_distributions:
     output:
         "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.svg",
         "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_sum-histogram.html",
-        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_avg_difference.txt"
+        "plots/pos_diff_distr/{location}/" + get_debug_str() + "{constellation}_{coord_frame}_sgp4-{mobility2}_avg_difference.json"
     container:
         "../../singularity/singularity-space_veins.sif"
     params:
@@ -783,11 +785,7 @@ rule calc_pos_diff_diffs_itrf_omnet:
     shell:
         "python3 {input.script} '{input[0]}' '{input[1]}' > {output}"
 
-rule plot_pos_diff_diffs_with_ecdf:
-    """
-    Creates line plot the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities, constellation and satellite module name,
-    as well as ECDF plot of differences.
-    """
+rule plot_pos_diff_diffs:
     input:
         script="../../scripts/plots/plot_differences.py",
         in_csv="csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-{mobility2}_differences.csv",
@@ -795,22 +793,47 @@ rule plot_pos_diff_diffs_with_ecdf:
     container:
         "../../singularity/singularity-space_veins.sif"
     output:
-        "plots/pos_diff_diffs/{location}/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg"
+        "plots/pos_diff_diffs/{location}/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_{mobility2}-sgp4_{leo_modname}_distances.svg"
     shell:
         """
         cd examples/space_veins
-        bash -i -c 'python3 {input.script} {input.in_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --ecdf'
+        bash -i -c 'python3 {input.script} {input.in_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}"'
+        """
+
+rule plot_kepler_circular_pos_diff_diffs:
+    """
+    Creates line plot the differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities, constellation and satellite module name,
+    as well as ECDF plot of differences.
+    """
+    input:
+        script="../../scripts/plots/plot_differences.py",
+        kepler_csv="csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-kepler_differences.csv",
+        circular_csv="csv/pos_diff_diffs/{location}/" + get_debug_str() + "{constellation}_itrf2omnet_sgp4-circular_differences.csv",
+        tle_times='tles/{constellation}_times.json'
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    output:
+        "plots/pos_diff_diffs/{location}/" + "{constellation}/"+ get_debug_str() + "itrf2omnet_sgp4-kepler-circular_{leo_modname}_distances.svg"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.kepler_csv} "{wildcards.leo_modname}" {input.tle_times} "{output}" --comparison_csv {input.circular_csv}'
         """
 
 def get_const_pos_diff_diffs_paths(wildcards):
     """
     Returns all paths for line plots of differences of the differences of 3D coordinates between the ITRF and OMNeT coordinate frame for the specified two mobilities and constellation. 
     """
-    return expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_{leo_modname}_distances_with_ecdf.svg",
+    paths = expand("plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-kepler-circular_{leo_modname}_distances.svg",
                 location=wildcards.location,
                 constellation=wildcards.constellation,   
-                mobility2=wildcards.mobility2,
+                leo_modname=get_const_sat_mods(wildcards.constellation)) + expand(
+                "plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_{mobility2}-sgp4_{leo_modname}_distances.svg",
+                location=wildcards.location,
+                constellation=wildcards.constellation,
+                mobility2=["kepler","circular"],   
                 leo_modname=get_const_sat_mods(wildcards.constellation))
+    return paths
 
 rule plot_const_pos_diff_diffs:
     """
@@ -819,9 +842,59 @@ rule plot_const_pos_diff_diffs:
     input:
         get_const_pos_diff_diffs_paths
     output:
-        "plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-{mobility2}_distances.done"
+        "plots/pos_diff_diffs/{location}/{constellation}/" + get_debug_str() + "itrf2omnet_sgp4-kepler-circular_distances.done"
     shell:
         "touch {output}"
+
+rule plot_extrema_zs:
+    input:
+        script="../../scripts/plots/plot_const_diff_extrema_positions.py",
+        tles=lambda wildcards: get_tle_path(wildcards.constellation),
+        diff_csv="csv/pos_diff/{location}/{constellation}/omnet_{mob1}-{mob2}_differences.csv",
+        mob1_pos_csv="csv/vectors/{location}_{constellation}-{mob1}_{coord_frame}_sorted.csv",
+        mob2_pos_csv="csv/vectors/{location}_{constellation}-{mob2}_{coord_frame}_sorted.csv"
+    params:
+        output_basepath="plots/pos_diff_extrema/{location}/{constellation}_{coord_frame}_{mob1}-{mob2}_"
+    output:
+        "plots/pos_diff_extrema/{location}/{constellation}_{coord_frame}_{mob1}-{mob2}_max_min_zs.svg",
+        "plots/pos_diff_extrema/{location}/{constellation}_{coord_frame}_{mob1}-{mob2}_max_min_coords.txt",
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {wildcards.constellation} {input.tles} {input.diff_csv} {input.mob1_pos_csv} {wildcards.mob1} {input.mob2_pos_csv} {wildcards.mob2} {params.output_basepath}'
+        """
+
+rule const_pos_diff_fit:
+    input:
+        script="../../scripts/statistics/pos_diff_fit.py",
+        pos_diffs="csv/pos_diff/{location}/{constellation}/omnet_sgp4-{mob2}_differences.csv",
+        tle_times="tles/{constellation}_times.json"
+    output:
+        "stats/pos_diff_fits2/{location}/{constellation}_omnet_sgp4-{mob2}_differences_linefits.json"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.pos_diffs} {input.tle_times} {output}'
+        """
+
+rule const_worst_case_diffs:
+    input:
+        script="../../scripts/statistics/worst_case_estimates.py",
+        pos_diffs="csv/pos_diff/{location}/{constellation}/omnet_sgp4-{mob2}_differences.csv",
+        tle_times="tles/{constellation}_times.json"
+    output:
+        "stats/pos_diff_worst_case/{location}/{constellation}_omnet_sgp4-{mob2}_differences_worst_case.json"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.pos_diffs} {input.tle_times} {output}'
+        """
 
 #### RULES TO CALCULATE AND PLOT METRICS RELATIVE TO SOP ####
 
@@ -855,7 +928,7 @@ rule all_sop_metrics:
         expand("plots/grouped_aligned_delay_diffs/{location}/{constellation}/sgp4-{new_mobility}_all_groups_delay_differences.svg",
                 location=config["location"],
                 constellation=get_composed_constellations(),
-                new_mobility=["kepler", "circular"])
+                new_mobility=["kepler", "circular"]),
     output:
         "stats/sop.done"
     shell:
@@ -1201,32 +1274,49 @@ rule plot_anglegroups_delay_duration_diffs_all_groups:
         bash -i -c 'python3 {input.script} {input.grouped_periods} 5 {wildcards.new_mobility} {params.delay_output_dir} {params.duration_output_dir}'
         """
 
+rule worst_case_delay_change_estimate:
+    input:
+        script="../../scripts/statistics/worst_case_delay_changes.py",
+        delay_changes_csv = "csv/sop_diffs/{location}/{constellation}_sgp4-{mob2}_delays_differences.csv",
+        tle_times="tles/{constellation}_times.json"
+    params:
+        comm_comp_dir = "stats/compare_comm_periods/{location}/{constellation}"
+    output:
+        "stats/worst_case_delays/{location}_{constellation}_sgp4-{mob2}_worstcase_delay_change.json"
+    container:
+        "../../singularity/singularity-space_veins.sif"
+    shell:
+        """
+        cd examples/space_veins
+        bash -i -c 'python3 {input.script} {input.delay_changes_csv} {params.comm_comp_dir} {input.tle_times} {wildcards.mob2} {output}'
+        """
+
 #### CALCULATING AND PLOTTING COMMUNICATION PERIODS ####
 # communication with SOP
 
 rule all_communication_metrics:
     input:
-        expand("plots/comm_periods/{location}/{constellation}_{mobility}_all_periods.svg",
-                location=config["location"],
-                constellation=get_composed_constellations(),
-                mobility=["sgp4","kepler","circular"]),
-        expand("csv/comm_period_intervals/{location}/{constellation}_{mobility}_period_intervals.csv",
-                location=config["location"],
-                constellation=get_composed_constellations(),
-                mobility=["sgp4","kepler","circular"]),
-        expand("stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json",
-                location=config["location"],
-                constellation=get_composed_constellations(),
-                new_mobility=["kepler","circular"]),
-        expand("plots/comm_period_zenith_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_offset_difference.svg",
-                location=config["location"],
-                constellation=get_composed_constellations(),
-                new_mobility=["kepler","circular"]),
-        expand("plots/compare_comm_periods/{location}/{constellation}_communication_comparisons.done",
-                location=config["location"],
-                constellation=get_composed_constellations()),
+        #expand("plots/comm_periods/{location}/{constellation}_{mobility}_all_periods.svg",
+        #        location=config["location"],
+        #        constellation=get_composed_constellations(),
+        #        mobility=["sgp4","kepler","circular"]),
+        #expand("csv/comm_period_intervals/{location}/{constellation}_{mobility}_period_intervals.csv",
+        #        location=config["location"],
+        #        constellation=get_composed_constellations(),
+        #        mobility=["sgp4","kepler","circular"]),
+        #expand("stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json",
+        #        location=["quito","sofia","kunlun"],
+        #        constellation=get_composed_constellations(),
+        #        new_mobility=["kepler","circular"]),
+        #expand("plots/comm_period_zenith_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_zenith_interval_difference_at_offset_difference.svg",
+        #        location=config["location"],
+        #        constellation=get_composed_constellations(),
+        #        new_mobility=["kepler","circular"]),
+        #expand("plots/compare_comm_periods/{location}/{constellation}_communication_comparisons.done",
+        #        location=config["location"],
+        #        constellation=get_composed_constellations()),
         expand("stats/compare_comm_periods/{location}/{constellation}/sgp4-{new_mobility}_summary.json",
-                location=config["location"],
+                location=["kunlun","quito","sofia"],
                 constellation=get_composed_constellations(),
                 new_mobility=["kepler","circular"]),
         # requires communication periods to be done, hence don't plan plotting this here
@@ -1234,11 +1324,11 @@ rule all_communication_metrics:
         #        location=config["location"],
         #        constellation=get_composed_constellations(),
         #        new_mobility=["kepler","circular"]),
-        expand("plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.svg",
-                location=config["location"],
-                constellation=get_composed_constellations(),
-                new_mobility=["kepler","circular"],
-                differences_or_changes=["differences","changes"])
+        #expand("plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}_all_{differences_or_changes}.svg",
+        #        location=["kunlun","quito","sofia"],
+        #        constellation=get_composed_constellations(),
+        #        new_mobility=["kepler","circular"],
+        #        differences_or_changes=["changes"])
     output:
         "stats/communication.done"
     shell:
@@ -1493,7 +1583,7 @@ rule calc_communication_period_comparison_summary:
     params:
         comp_jsons_dir="stats/compare_comm_periods/{location}/{constellation}/"
     shell:
-        "python3 {input.script} {params.comp_jsons_dir} {output}"
+        "python3 {input.script} {params.comp_jsons_dir} {wildcards.new_mobility} {output}"
 
 rule plot_const_overlap_stats:
     """
@@ -1533,7 +1623,7 @@ def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
     
     multiple_overlapping_periods_modnames = []
     for comm_comp_fname in filter( lambda fname: fname.endswith("communication_comparison.json") and wildcards.new_mobility in fname, 
-                                    os.listdir(f"stats/{wildcards.location}/compare_comm_periods/{wildcards.constellation}") ):
+                                    os.listdir(f"stats/compare_comm_periods/{wildcards.location}/{wildcards.constellation}") ):
         
         with open(f"stats/compare_comm_periods/{wildcards.location}/{wildcards.constellation}/" + comm_comp_fname) as json_f:
             comm_comp = json.load(json_f)
@@ -1550,6 +1640,7 @@ def get_const_multiple_overlapping_periods_zenith_shift_paths(wildcards):
 
 rule plot_const_multiple_overlapping_periods_zenith_shifts:
     input:
+        "stats/compare_comm_periods/{location}/{constellation}_communication_comparisons.done",
         get_const_multiple_overlapping_periods_zenith_shift_paths
     output:
         "plots/zenith_shifts/{location}/{constellation}_sgp4-{new_mobility}.done"
@@ -1581,11 +1672,11 @@ rule plot_const_periods_zenith_shifts_in_one:
 rule all_availability_results:
     input:
         expand("stats/available_sats/{location}/{constellation}_{mobility}_available_sats.json",
-                location=config["location"],
+                location=["quito","sofia","kunlun"],
                 constellation=get_composed_constellations(),
                 mobility=["sgp4", "kepler", "circular"]),
         expand("plots/available_sats_diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.svg",
-                location=config["location"],
+                location=["quito","sofia","kunlun"],
                 constellation=get_composed_constellations(),
                 new_mobility=["kepler", "circular"])
     output:
@@ -1612,14 +1703,14 @@ rule available_sat_diffs:
         ref_comm_periods="stats/comm_periods/{location}/{constellation}/sgp4.done",
         new_availables="stats/available_sats/{location}/{constellation}_{new_mobility}_available_sats.json",
         new_comm_periods="stats/comm_periods/{location}/{constellation}/kepler.done",
-        all_interval_changes="stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
+        # all_interval_changes="stats/comm_period_all_interval_changes/{location}/{constellation}/sgp4-{new_mobility}_all_interval_changes.json"
     params:
         ref_comm_periods_dir="stats/comm_periods/{location}/{constellation}/sgp4",
         new_comm_periods_dir="stats/comm_periods/{location}/{constellation}/kepler"
     output:
         "stats/available_sats/diffs/{location}/{constellation}_sgp4-{new_mobility}_available_sat_diffs.json"
     shell:
-        "python3 {input.script} {input.ref_availables} {input.new_availables} {input.all_interval_changes} {params.ref_comm_periods_dir} {params.new_comm_periods_dir} {output}"
+        "python3 {input.script} {input.ref_availables} {input.new_availables} {params.ref_comm_periods_dir} {params.new_comm_periods_dir} {output}"
 
 rule plot_available_sats_diffs:
     input:

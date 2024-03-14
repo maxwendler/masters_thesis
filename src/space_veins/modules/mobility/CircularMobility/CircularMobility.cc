@@ -213,19 +213,30 @@ void CircularMobility::initialize(int stage)
             double raanRad = raan * PI/180;
             std::string inclinationStr = tle.get_tle_line2().substr(8, 8);
             double inclination = std::stod(inclinationStr);
-            if (inclination > 90)
-            {
-                inclination = 180 - inclination;
-            }
             std::string argpStr = tle.get_tle_line2().substr(34,8);
             double argp = std::stod(argpStr);
             std::string meanAnomStr = tle.get_tle_line2().substr(43,8);
             double meanAnom = std::stod(meanAnomStr);
             
             // lowest polar angle lies at half of way between ascension and descension => +90°
-            double lowestPolarAngleAzimuthRad = fmod(raan + 90, 360) * PI/180;
+            double lowestPolarAngleAzimuthRad = 0;
+            double lowestPolarAngleRad = 0;
+            if (inclination > 90)
+            {
+                lowestPolarAngleAzimuthRad = (raan - 90) * PI/180;
+                if (lowestPolarAngleAzimuthRad < 0)
+                {
+                    lowestPolarAngleAzimuthRad = 2*PI + lowestPolarAngleAzimuthRad;
+                }
+                lowestPolarAngleRad = (inclination - 90) * PI/180;
+            }
+            else
+            {
+                lowestPolarAngleAzimuthRad = fmod(raan + 90, 360) * PI/180;
+                lowestPolarAngleRad = (90 - inclination) * PI/180;
+            }
             // lowest polar angle: 90 - inclination
-            double lowestPolarAngleRad = (90 - inclination) * PI/180;
+            
 
             // first point for CirclePlane: ascending node
             veins::Coord ascendingNode = PolarCoordinates(M_PI_2, raanRad, radius).getCartesianCoords();
