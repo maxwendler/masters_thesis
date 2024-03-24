@@ -1,5 +1,6 @@
 //
 // Copyright (C) 2023 Mario Franke <research@m-franke.net>
+// Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
 //
 // Documentation for these modules is at http://sat.car2x.org/
 //
