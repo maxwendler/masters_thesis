@@ -1,6 +1,7 @@
 //
 // Copyright (C) 2006-2017 Christoph Sommer <sommer@ccs-labs.org>
 // Copyright (C) 2023 Mario Franke <research@m-franke.net>
+// Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
 //
 // Documentation for these modules is at http://sat.car2x.org/
 //
@@ -21,6 +22,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+#include "dirent.h"
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -33,10 +35,6 @@
 #include <utility>
 #include <vector>
 #include <boost/algorithm/string/trim.hpp>
-
-
- 
-#include <iostream>
 
 #include "space_veins/modules/mobility/KeplerMobility/KeplerMobility.h"
 #include "space_veins/modules/mobility/SatelliteInserter/SatelliteInserter.h"

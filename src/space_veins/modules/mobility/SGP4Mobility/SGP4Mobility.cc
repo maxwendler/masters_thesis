@@ -1,7 +1,8 @@
 //
 // Copyright (C) 2006-2012 Christoph Sommer <christoph.sommer@uibk.ac.at>
-// Copyright (C) 2021 Mario Franke <research@m-franke.net>
-//
+// Copyright (C) 2021-2023 Mario Franke <research@m-franke.net>
+// Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
 // Documentation for these modules is at http://sat.car2x.org/
 //
 // SPDX-License-Identifier: GPL-2.0-or-later

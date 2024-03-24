@@ -1,20 +1,36 @@
+//
+// Copyright (C) 2006-2012 Christoph Sommer <christoph.sommer@uibk.ac.at>
+// Copyright (C) 2021 Mario Franke <research@m-franke.net>
+// Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+//
+// Adaptation of SGP4Mobility class.
+//
+// SPDX-License-Identifier: GPL-2.0-or-later
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+
 #include "space_veins/modules/mobility/CircularMobility/CircularMobility.h"
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <math.h>
-#include <proj.h>
 #include <string>
 #include <tuple>
-#include <vector>
-#include "inet/common/geometry/common/Coord.h"
-#include "space_veins/modules/mobility/CircularMobility/CirclePlane.h"
-#include "space_veins/modules/mobility/SGP4Mobility/SGP4.h"
-#include "space_veins/modules/utility/WGS84Coord.h"
 
 #include "space_veins/modules/mobility/SGP4Mobility/TEME2ITRF.h"
-#include "veins/base/utils/Coord.h"
 #include "space_veins/modules/mobility/CircularMobility/PolarCoordinates.h"
 
 using namespace space_veins;
@@ -171,6 +187,7 @@ void CircularMobility::initialize(int stage)
         
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // CIRCLE SETUP
+        // documentation in section 4.2 of thesis, i.e. repo_root/thesis.pdf
 
         // parse mean motion from TLE and convert to required unit
         std::string meanMotionStr = tle.get_tle_line2().substr(52, 11);

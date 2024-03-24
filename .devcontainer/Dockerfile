@@ -1,6 +1,7 @@
 
 #
 # Copyright (C) 2023 Christoph Sommer <sommer@cms-labs.org>
+# Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
 #
 # Documentation for these modules is at http://veins.car2x.org/
 #
@@ -32,6 +33,7 @@
 #            install snakemake
 
 FROM mcr.microsoft.com/devcontainers/base:jammy
+# use when default sources seem to be unavailable atm
 # COPY sources.list /etc/apt/
 
 RUN \
@@ -42,14 +44,8 @@ RUN \
 WORKDIR /opt
 
 ARG OPP_VERSION=5.7
-#COPY install-omnetpp.sh .
-#RUN ./install-omnetpp.sh && rm ./install-omnetpp.sh
-
-COPY install-omnetpp-part1.sh .
-RUN ./install-omnetpp-part1.sh && rm ./install-omnetpp-part1.sh
-
-COPY install-omnetpp-part2.sh .
-RUN ./install-omnetpp-part2.sh && rm ./install-omnetpp-part2.sh
+COPY install-omnetpp.sh .
+RUN ./install-omnetpp.sh && rm ./install-omnetpp.sh
 
 ARG SUMO_VERSION=1.18.0
 COPY install-sumo.sh .

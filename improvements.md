@@ -1,6 +1,15 @@
 # General
 - The whole code assumes simulation time steps / satellite update intervals of 1 second and requires changes for flexibility w.r.t. the time steps.
 
+# Docker (devcontainer) and Singularity setup
+- implement use of a pip-requirements.txt similar to the conda-requirements.txt file for setting up packages which can be installed exlusively with pip; instead of direct specification of tle-tools package in use-pip-in-conda-env.sh and Snakefile
+- => enables modular use of further pip-exclusive packages if required 
+- => needs to happen activated conda environment !
+- (maybe: find solution to implement conda installation and pip installation via Dockerfile instead of postCreateCommand in devcontainer.json, so it actually is part of the Docker container, and not Docker container as VSCode devcontainer)
+
+# examples/space_veins/Snakefile
+- implement creation of superconstellation data by combining subconstellation data everywhere; currently only exists for merging of coordinate CSVs
+
 # scripts/
 
 ## scripts/keplertraces/create_traces.py
@@ -16,10 +25,18 @@
 ## scripts/keplertraces/tletimes.py and subsequent uses of examples/space_veins/tles/*_times.json files
 - replace "offset_to_start" with clearer "seconds to epoch", requires adaptation of scripts using the *_times.json files
 
+## scripts/keplertraces/updateomnetini.py, Snakemake workflow and road network files 
+- create road network files for all locations
+- create configurations for all locations in omnetpp.ini, which avoids rerunning the whole Snakemake workflow when changing the location and consequently the omnetpp.ini 
+- => scripts/utility/update_nod_xml.py, examples/space_veins/two-nodes.nod.xml.template and Snakemake rules update_nod_xml, update_net_xml not required anymore 
+
 ## scripts/utility/compose_pos_csv.py
 - reduce buffer memory by individually reading and immediately writing csv lines
 
 # src/
+
+## src/space_veins/modules/mobility/{Circular,Kepler}Mobility and [...]/SatelliteInserter
+- there might be uneccesary includes in the files of those directories
 
 ## src/space_veins/modules/mobility/CircularMobility and Snakemake workflow
  - ensure that SGP4 simulation of orbits of TLEs file is always run before circular simulation, and average radii are calculated, so that SGP4 can be fully removed from CircularMobility classes - currently provides radii if no average radius is given

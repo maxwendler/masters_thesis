@@ -89,7 +89,7 @@ rule install_conda_pip_deps:
         "../../singularity/singularity-space_veins.sif"
     shell:
         """
-        bash -i -c "pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tle-tools"
+        bash -i -c "pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir tle-tools==0.2.3"
         touch examples/space_veins/{output}
         """
 
