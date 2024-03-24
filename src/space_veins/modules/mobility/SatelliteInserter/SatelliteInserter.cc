@@ -59,8 +59,8 @@ void SatelliteInserter::initialize(int stage)
             if (mobilityType == "Kepler") pathToTracesDir = par("pathToTracesDir").stringValue();
             if (mobilityType == "Circular") 
             {
-                avgSGP4AltitudesPath = par("avgSGP4AltitudesPath").stringValue();
-                useAvgSGP4Alts = par("useAvgSGP4Alts").boolValue();
+                avgSGP4RadiiPath = par("avgSGP4RadiiPath").stringValue();
+                useAvgSGP4Radii = par("useAvgSGP4Radii").boolValue();
             }
             satelliteModuleType = par("satelliteModuleType").stringValue();
             satelliteModuleDefaultName = par("satelliteModuleDefaultName").stringValue();
@@ -68,17 +68,15 @@ void SatelliteInserter::initialize(int stage)
             ignoreUnknownSatellites = par("ignoreUnknownSatellites").boolValue();
 
             // load map of module name (used in create_satellite) to  
-            if (mobilityType == "Circular" && useAvgSGP4Alts)
+            if (mobilityType == "Circular" && useAvgSGP4Radii)
             {
-                avgSGP4Altitudes = std::map<std::string,double>();
-                std::fstream file (avgSGP4AltitudesPath, std::ios::in);
+                avgSGP4Radii = std::map<std::string,double>();
+                std::fstream file (avgSGP4RadiiPath, std::ios::in);
                 if(file.is_open())
                 {
                     std::string word;
                     std::string line="header";
-                    //std::string moduleName;
                     std::vector<std::string> row;
-                    //double avgAltitude;
                     // skip header
                     getline(file, line);
                     while(getline(file, line))
@@ -90,7 +88,7 @@ void SatelliteInserter::initialize(int stage)
                         while(getline(str, word, ','))
                             row.push_back(word);
                         
-                        avgSGP4Altitudes[row[0]] = std::stod(row[1]);
+                        avgSGP4Radii[row[0]] = std::stod(row[1]);
                     }
                 }
                 else
@@ -299,13 +297,13 @@ void SatelliteInserter::createSatellite(TLE tle, unsigned int satNum, unsigned i
         }
         for (CircularMobility* sm : tleMobility){
             std::string modname = "leo" + constellation + "[" +  std::to_string(satNum) + "]";
-            if (!useAvgSGP4Alts)
+            if (!useAvgSGP4Radii)
             {
                  sm->preInitialize(tle, wall_clock_sim_start_time_utc, -1.0);
             }
             else 
             {
-                 sm->preInitialize(tle, wall_clock_sim_start_time_utc, avgSGP4Altitudes[modname]);
+                 sm->preInitialize(tle, wall_clock_sim_start_time_utc, avgSGP4Radii[modname]);
             }
            
         }

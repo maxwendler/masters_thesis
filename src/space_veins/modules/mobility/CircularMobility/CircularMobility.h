@@ -42,10 +42,8 @@ class SPACE_VEINS_API CircularMobility : public inet::MovingMobilityBase {
         };
 
     protected:
-       
-        int circlePlane2ndPointHalfOrbitTenth; 
-        double avgSGP4Altitude;
-        std::string circlePlanePointsSource;
+        
+        double avgSGP4Radius;
 
         bool isPreInitialized;
 

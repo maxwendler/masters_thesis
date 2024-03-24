@@ -33,9 +33,9 @@ simple SatelliteInserter
 
         // for SGP4 model
         string pathToTleFile = default("satellite_tle.txt");
-        // for Kepler model
+        // for Keplerian model
         string pathToTracesDir = default("./traces/");
-        // Circular Model
-        bool useAvgSGP4Alts = default(false);
-        string avgSGP4AltitudesPath = default("default");
+        // for circular Model
+        bool useAvgSGP4Radii = default(false);
+        string avgSGP4RadiiPath = default("default");
 }

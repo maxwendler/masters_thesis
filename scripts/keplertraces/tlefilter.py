@@ -1,9 +1,4 @@
 from sgp4.api import Satrec
-from astropy.time import Time
-from astropy import units as u
-from poliastro.util import time_range
-from datetime import datetime
-from math import pi
 from typing import Tuple
 import os
 from tleparse import get_avg_epoch_str
@@ -80,21 +75,16 @@ if __name__ == "__main__":
     
     tles_fnames = os.listdir(tles_dir_path)
     
-    # find cubesat and satnogs tle list to get walltime from filename
+    # find satnogs tle list to get walltime from filename
     try:
         satnogs_fname = [match for match in tles_fnames if match.startswith("satnogs_")][0]
     except: 
         IndexError("No SATNOGs constellation file starting with 'satnogs_' found.")
-    
-    try:
-        cubesat_fname = [match for match in tles_fnames if match.startswith("cubesat_")][0]
-    except:
-        IndexError("No Cubesat constellation file starting with 'cubesat_' found.")
 
     try:
         starlink_fname = [match for match in tles_fnames if match.startswith("starlink_")][0]
     except:
-        IndexError("No Cubesat constellation file starting with 'starlink_' found.")
+        IndexError("No Starlink constellation file starting with 'starlink_' found.")
 
     try:
         oneweb_fname = [match for match in tles_fnames if match.startswith("oneweb_")][0]
@@ -102,12 +92,11 @@ if __name__ == "__main__":
         IndexError("No Oneweb constellation file starting with 'oneweb_' found.")
 
     try:
-        iridiumnext_fname = [match for match in tles_fnames if match.startswith("iridium-NEXT_")][0]
+        iridiumnext_fname = [match for match in tles_fnames if match.startswith("iridiumNEXT_")][0]
     except:
-        IndexError("No Oneweb constellation file starting with 'iridum-NEXT_' found.")
+        IndexError("No IridiumNEXT constellation file starting with 'iridiumNEXT_' found.")
 
     satnogs_tles_path = tles_dir_path + satnogs_fname
-    cubesat_tles_path = tles_dir_path + cubesat_fname
     starlink_tles_path = tles_dir_path + starlink_fname
     oneweb_tles_path = tles_dir_path + oneweb_fname
     iridiumnext_tles_path = tles_dir_path + iridiumnext_fname
@@ -123,16 +112,10 @@ if __name__ == "__main__":
         if "IRIDIUM" not in satnogs_leo_lines[i] and "STARLINK" not in satnogs_leo_lines[i]:
             satnogs_leo_lines_filtered += satnogs_leo_lines[i:i+3]
 
-    # get cubesat eccentric lines, cubesat_leo_lines won't be used
-    with open(cubesat_tles_path, "r") as tles_f:
-        unique_lines = filter_doubles(tles_f.readlines())
-    cubesat_leo_lines, cubesat_eccentric_lines = filter_tles_leo_ecc(unique_lines)
-
     # don't get starlink eccentric lines, as the eccentric SHERPA-LTC2 is already contained in SATNOGs
 
     # flag old satnogs and cubesat tles list as invalid by adding "_" as name prefix
     os.rename(satnogs_tles_path, satnogs_tles_path.removesuffix(satnogs_fname) + "_" + satnogs_fname)
-    os.rename(cubesat_tles_path, cubesat_tles_path.removesuffix(cubesat_fname) + "_" + cubesat_fname)
 
     # get wall time of average TLE epoch string for remaining satnogs satellites
     satnogs_avg_walltime = get_avg_epoch_str(satnogs_leo_lines_filtered)
@@ -141,16 +124,16 @@ if __name__ == "__main__":
         tles_f.writelines(satnogs_leo_lines_filtered)
     
     print("filtered",
-          int( (len(satnogs_eccentric_lines) + len(cubesat_eccentric_lines)) / 3 ),
+          int((len(satnogs_eccentric_lines) / 3 )),
           "eccentric LEO satellites overall")
     
     # Compile eccentric TLEs into one 'constellation' of TLEs. 
-    eccentric_lines = [] + cubesat_eccentric_lines + satnogs_eccentric_lines # + starlink_eccentric_lines
+    eccentric_lines = [] + satnogs_eccentric_lines
     eccentric_avg_walltime = get_avg_epoch_str(eccentric_lines)
     with open(tles_dir_path + "eccentric_" + eccentric_avg_walltime + ".txt", "w") as tles_f:
         tles_f.writelines(eccentric_lines)
     
-    # remove doubles from starlink, oneweb, iridum next
+    # remove doubles from starlink, oneweb, iridium next
     for path in [starlink_tles_path, oneweb_tles_path, iridiumnext_tles_path]:
         with open(path, "r") as tles_f:
             unique_lines = filter_doubles(tles_f.readlines())

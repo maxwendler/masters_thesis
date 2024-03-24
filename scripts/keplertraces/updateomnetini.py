@@ -1,12 +1,36 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 
-def update(ini_path: str, tles_paths: list[str], conf_template_path: str, avg_sgp4_altitudes_paths: list[str], traces_dir_path: str, sim_time_limit: int, location: str):
+# importable function for omnetpp.ini as described at bottom of this file for direct script execution
+def update(ini_path: str, tles_paths: list[str], conf_template_path: str, avg_sgp4_radii_paths: list[str], traces_dir_path: str, sim_time_limit: int, location: str):
     
     # load config template
     template_str = None    
     with open(conf_template_path, "r") as template_f:
         template_str = template_f.read()
     
+    after_license_txt_idx = template_str.find("[Config")
+    template_str = template_str[after_license_txt_idx:]
+
     # get filenames of tles and parse constellation name and average wall time
     tles_fnames = [tle_path.split("/")[-1] for tle_path in tles_paths]
     constellations = []
@@ -76,12 +100,12 @@ def update(ini_path: str, tles_paths: list[str], conf_template_path: str, avg_sg
         circular_config_lines.pop(7)
         # insert line for parameter study about which second circle plane point to choose 
         circular_config_lines.insert(7, "*.leo*[*].mobility.circlePlane2ndPointHalfOrbitTenth = 25\n")
-        if i < len(avg_sgp4_altitudes_paths):
-            if avg_sgp4_altitudes_paths[i] != "None":
-                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = true\n")
-                circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4AltitudesPath = " + f'"{avg_sgp4_altitudes_paths[i]}"' + "\n")
+        if i < len(avg_sgp4_radii_paths):
+            if avg_sgp4_radii_paths[i] != "None":
+                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Radii = true\n")
+                circular_config_lines.insert(7, "*.satelliteInserter.avgSGP4RadiiPath = " + f'"{avg_sgp4_radii_paths[i]}"' + "\n")
             else:
-                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Alts = false\n")
+                circular_config_lines.insert(7, "*.satelliteInserter.useAvgSGP4Radii = false\n")
             new_lines += circular_config_lines
 
     input_ini_fname = ini_path.split("/")[-1] 
@@ -98,11 +122,11 @@ if __name__ == "__main__":
     parser.add_argument("conf_template")
     parser.add_argument('traces_dir', help="Path of directory containing directories of traces indiviual TLE lists (named after TLE list files by 'create_traces.py').")
     parser.add_argument('--tles_paths', "-t", metavar='tle_path', type=str, nargs='+', help='Path of a TLE list.')
-    parser.add_argument('--avg_sgp4_altitudes_paths', metavar="avg_sgp4_altitudes_path", type=str, nargs="+")
+    parser.add_argument('--avg_sgp4_radii_paths', metavar="avg_sgp4_radii_path", type=str, nargs="+")
     parser.add_argument('sim_time_limit', type=int)
     parser.add_argument('location')
 
     args = parser.parse_args()
     print(args.tles_paths)
-    print(args.avg_sgp4_altitudes_paths)
-    update(args.ini_path, args.tles_paths, args.conf_template, args.avg_sgp4_altitudes_paths, args.traces_dir, args.sim_time_limit, args.location)
+    print(args.avg_sgp4_radii_paths)
+    update(args.ini_path, args.tles_paths, args.conf_template, args.avg_sgp4_radii_paths, args.traces_dir, args.sim_time_limit, args.location)

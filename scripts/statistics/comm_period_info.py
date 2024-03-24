@@ -81,8 +81,7 @@ if __name__ == "__main__":
     tle_times = None
     with open(args.tle_times_path, "r") as times_f:
         tle_times = json.load(times_f) 
-    mod_epoch_to_start_offset_days = float(tle_times["sat_times"][args.modname]["offset_to_start"])
-    mod_epoch_to_start_offset_secs = mod_epoch_to_start_offset_days * 86400
+    simstart_to_epoch_offset = float(tle_times["sat_times"][args.modname]["offset_to_start"])
 
     angles, second_range = get_mod_row(args.angles_csv_path, args.modname)
     periods = get_communication_periods(angles, args.min_angle, second_range[0], 1)
@@ -102,7 +101,7 @@ if __name__ == "__main__":
         start_sec = p[0]
         end_sec = p[1]
         durations.append(end_sec - start_sec)
-        period_start_to_epoch_offset = start_sec - mod_epoch_to_start_offset_secs
+        period_start_to_epoch_offset = simstart_to_epoch_offset - start_sec
 
         period_angles = angles[(start_sec - second_range[0]):(end_sec + 1 - second_range[0])]
         periods_angles.append(period_angles)

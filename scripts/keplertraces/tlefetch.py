@@ -1,4 +1,5 @@
 # Adapted from https://github.com/poliastro/poliastro/blob/main/contrib/satgpio.py
+# original license
 """
 The MIT License (MIT)
 
@@ -21,6 +22,27 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+"""
+
+# license for this adaptation
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
 import httpx
@@ -118,7 +140,7 @@ def load_gp_from_celestrak(
 
 def fetch_current_default_tles():
     """
-    Fetches recent Iridium-NEXT, Starlink, Oneweb, SATNOGs and CubeSat TLEs and 
+    Fetches recent Iridium-NEXT, Starlink, Oneweb, SATNOGs TLEs and 
     writes them to a new directory named after the datetime of the first request
     in ./tles/.
     """
@@ -129,7 +151,6 @@ def fetch_current_default_tles():
     load_gp_from_celestrak(group='starlink', dirpath=dir_path)
     load_gp_from_celestrak(group='oneweb', dirpath=dir_path)
     load_gp_from_celestrak(group='satnogs', dirpath=dir_path)
-    load_gp_from_celestrak(group='cubesat', dirpath=dir_path)
 
 if __name__ == "__main__":
     fetch_current_default_tles()

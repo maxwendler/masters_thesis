@@ -112,7 +112,6 @@ subprojects/veins_testsims/opp_tests/**/work
 compile_commands.json 
 scripts/**/__pycache__
 scripts/keplertraces/tles/*
-!scripts/keplertraces/tles/examples_requested_at_2023-10-23-11-06-08
 **.trace
 examples/**/dag.svg
 examples/space_veins/csv
@@ -125,10 +124,11 @@ examples/space_veins/traces*
 examples/space_veins/benchmarks*
 examples/space_veins/two-nodes.nod.xml
 examples/space_veins/two-nodes.net.xml
+examples/space_veins/.bash_history
+examples/space_veins/allresults.tar.gz
 .conda
-**/orekit-data.zip
-scripts/plots/test_output/*
 .local
 .astropy
 singularity/conda_initialized.txt
 singularity/conda_pip_deps_done
+.bash_history

@@ -1,8 +1,0 @@
-TEME - cartesian 
-
-trace creation:
- - KeplerInputs from TLE
-    + calculate semimajoraxis & mean anomaly
- - Orbit ephem via orbinstance.ephem
-    + Orbit instance "at epoch"
- - gets sampled via ephem.sample

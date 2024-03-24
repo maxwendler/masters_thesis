@@ -1,7 +1,31 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import csv
 import re
 
 def parse_coords_csv_to_list(csv_path: str) -> tuple[list[tuple[float, float, float], int]]:
+    """
+    Parses coordinates OMNeT++ results CSV only containing one type of coordinates obtained from lib/veins_scripts/eval/opp_vec2csv.pl script 
+    to list of 3D coordinates. Also returns the start second of the simulation.  
+    """
     coords = []
     with open(csv_path, "r") as csv_f:
         
@@ -16,6 +40,7 @@ def parse_coords_csv_to_list(csv_path: str) -> tuple[list[tuple[float, float, fl
         if len(coord_field_idxs) > 3:
             raise AssertionError("No 3D coordinates - found more than three coordinate fields in this CSV.")
 
+        # read 3D coords and start second
         start_second = None
         for row in row_reader:
             if not start_second:

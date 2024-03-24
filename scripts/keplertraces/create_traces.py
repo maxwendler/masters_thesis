@@ -1,3 +1,23 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 from parseomnetini import parseomnetini
 from tleparse import parse_orbits
@@ -12,8 +32,6 @@ import sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.satname_to_modname import satname_to_modname
 import json
-from pathlib import Path
-from astropy.time import Time
 from parseomnetini import parseomnetini
 
 start_t = timer()
@@ -80,6 +98,7 @@ named_orbits = parse_orbits(args.tlespath)
 orbits_t = timer()
 print(f"Time for creating poliastro orbits: {orbits_t - omnetparse_t} seconds")
 
+# function to transform degree values in 0 to 2pi range to -pi to pi range
 two_pi_to_negpos_pi_range = lambda deg_val: (-360 << u.deg) + deg_val if deg_val > (180 << u.deg) else deg_val
 
 modname_to_satname_dict = {}
@@ -120,6 +139,7 @@ for name_orbit_tuple in named_orbits:
     else:
         itrf_trace = grcs_trace.transform_to(coords.ITRS)
 
+    # to spherical WGS84
     if not args.itrf:
         if args.orekit:
             x_array = [ (coord.getX() << (u.km)) for coord in itrf_trace]
