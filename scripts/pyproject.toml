@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "space_Veins-scripts"
+version = "0.3-alpha4"
+description = "Helper scripts for space_Veins"
+authors = ["Mario Franke <research@m-franke.net>"]
+license = "GPL-2.0-or-later"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+skyfield = "^1.46"
+pandas = "^2.0.3"
+tqdm = "^4.65.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

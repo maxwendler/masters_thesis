@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2021 Mario Franke <research@m-franke.net>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+#
+# Use the new message compiler introduced in OMNeT++ 5.3
+#
+MSGC:=$(MSGC) --msg6
+
+# dump out the actual compiler and linker command line for easier debugging
+ifneq ($(MAKECMDGOALS),clean)
+$(info *** COMPILING with:)
+$(info $(CXX) -c $(CXXFLAGS) $(COPTS))
+$(info *** LINKING with:)
+$(info $(SHLIB_LD) -o $O/$(TARGET) $(AS_NEEDED_OFF) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS) $(LDFLAGS))
+$(info Building...)
+endif

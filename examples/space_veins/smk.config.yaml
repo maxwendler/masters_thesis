@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2024 Max Wendler <max.wendler@gmail.com>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# all constellations that are processed, corresponding to TLEs files prefixes
+constellations: ["iridiumNEXThigh", "iridiumNEXTlow", 
+                  "eccentric", 
+                  "satnogs", "satnogs1", "satnogs2", "satnogs3", "satnogs4",
+                  "onewebHigh", "onewebHigh1", "onewebHigh2", "onewebHigh3", "onewebMiddle", "onewebLow", 
+                  "starlinkShort", "starlinkShortHighest", "starlinkShortHigh", "starlinkShortLowest",
+                  "starlinkShortLow", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3" 
+                ]
+
+# subconstellations and constellations without subconstellations
+low_level_constellations: ["iridiumNEXTlow", "iridiumNEXThigh", "eccentric", "onewebHigh", "onewebMiddle", "onewebLow", "starlinkShortLowest", "starlinkShortLow", "starlinkShortHigh", "starlinkShortHighest", "satnogs"]
+
+# includes components themselves to allow plotting / statistic calculation for them, not just main constellation
+constellation_compositions: { "starlinkShort": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3", "starlinkShortLowest"],
+                              "starlinkShortLow": ["starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3"],
+                              "starlinkShortHighest": ["starlinkShortHighest"],
+                              "starlinkShortHigh": ["starlinkShortHigh"],
+                              "starlinkShortLowest": ["starlinkShortLowest"],
+                              "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
+                              "iridiumNEXTlow": ["iridiumNEXTlow"],
+                              "iridiumNEXThigh": ["iridiumNEXThigh"],
+                              "eccentric": ["eccentric"],
+                              "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh1", "onewebHigh2","onewebHigh3"],
+                              "onewebLow": ["onewebLow"],
+                              "onewebMiddle": ["onewebMiddle"],
+                              "onewebHigh": ["onewebHigh1", "onewebHigh2", "onewebHigh3"],
+                              "satnogs": ["satnogs1", "satnogs2", "satnogs3", "satnogs4"]
+                            }
+
+# memory limits for coord csv creation, not up to date anymore
+mem_mb_limits: { "starlinkShortHighest": 1400,
+                  "starlinkShortHigh": 3500,
+                  "starlinkShortLow1": 5700, # split in three
+                  "starlinkShortLow2": 5700,
+                  "starlinkShortLow3": 5700,
+                  "starlinkShortLowest": 6500,
+                  "iridiumNEXThigh": 2000,
+                  "iridiumNEXTlow": 500,
+                  "eccentric": 500,
+                  "onewebLow": 500,
+                  "onewebMiddle": 1000,
+                  "onewebHigh1": 5400,
+                  "onewebHigh2": 5400,
+                  "onewebHigh3": 5400, # split in three
+                  "satnogs1": 6000,
+                  "satnogs2": 6000,
+                  "satnogs3": 6000,
+                  "satnogs4": 6000  } # split in four
+
+# determines if debug configs from omnetpp.ini are used
+debug_mode: false
+# determines coordinate frames for which sat. pos. csvs will be created
+# teme only supported by sgp4 and circular model, as input for kepler model are itrf traces
+coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
+
+# omnetpp.ini parameters
+sim-time-limit: 43220
+
+# if false, circular orbit model uses SGP4 radius at simulation start
+use_avg_sgp4_radii: true
+
+location: "kunlun"
+locations_xml: {"quito": '    <node id="n0_0" x="-78.449996" y="0.000127" type="priority"/>\n    <node id="n1_0" x="-78.2" y="0" type="priority"/>',
+                "sofia": '    <node id="n0_0" x="23.319892" y="42.698156" type="priority"/>\n    <node id="n1_0" x="23.4" y="42.5" type="priority"/>',
+                "kunlun": '    <node id="n0_0" x="77.11611" y="-80" type="priority"/>\n    <node id="n1_0" x="78" y="-80" type="priority"/>'}
+
+min_elev_angle: 31.73
