@@ -95,9 +95,11 @@ rule buildContainer:
         "../../singularity/singularity-space_veins.sif"
     threads:
         workflow.cores
+    # required to run in singularity directory to be able to find files to copy into container
     shell:
         """
-        singularity build --fakeroot {output} {input}
+        cd ../../singularity
+        singularity build --fakeroot singularity-space_veins.sif singularity-space_veins.def
         """
 
 rule shell:

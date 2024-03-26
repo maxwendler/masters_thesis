@@ -28,7 +28,7 @@ OSVersion: jammy
 MirrorURL:  http://archive.ubuntu.com/ubuntu
 
 %labels
-    Author sommer@cms-labs.org research@m-franke.net
+    Author sommer@cms-labs.org research@m-franke.net max.wendler@gmail.com
     Version v0.0.2
 
 %help
