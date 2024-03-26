@@ -2,6 +2,7 @@
 examples/space_veins/scenarios/
 
 **.pdf
+!thesis.pdf
 **.eps
 **.RData
 **/*_runs.txt
