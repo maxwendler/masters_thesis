@@ -24,6 +24,7 @@ sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.parse_csvs import parse_coords_csv_to_dict
 import numpy as np
 
+# Has no according Snakefile rule anymore.
 parser = argparse.ArgumentParser()
 parser.add_argument("sgp4_teme_positions_csv")
 parser.add_argument("circular_teme_positions_csv")

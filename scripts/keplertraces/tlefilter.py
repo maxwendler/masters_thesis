@@ -70,7 +70,7 @@ def filter_doubles(tle_lines: list[str]) -> list[str]:
 if __name__ == "__main__":
     
     unique_lines = []
-    tles_dir_path = '/workspaces/ma-max-wendler/scripts/keplertraces/tles/examples_requested_at_2023-10-23-11-06-08/'
+    tles_dir_path = './tles'
     print("filtering TLE lists from ", tles_dir_path, "...\n")
     
     tles_fnames = os.listdir(tles_dir_path)

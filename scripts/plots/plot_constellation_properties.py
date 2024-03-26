@@ -29,50 +29,20 @@ from math import pi
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tles_dir")
-parser.add_argument("avg_alts_dir")
+parser.add_argument("avg_radii_dir")
 parser.add_argument("output_dir")
 args = parser.parse_args()
 
 tles_dir = args.tles_dir if args.tles_dir.endswith("/") else args.tles_dir + "/"
-avg_alts_dir = args.avg_alts_dir if args.avg_alts_dir.endswith("/") else args.avg_alts_dir + "/"
+avg_radii_dir = args.avg_radii_dir if args.avg_radii_dir.endswith("/") else args.avg_radii_dir + "/"
 output_dir = args.output_dir if args.output_dir.endswith("/") else args.output_dir + "/"
 
-"""
-tles_paths = [tles_dir + fname for fname in filter( lambda fname: not fname.endswith("_times.json") , os.listdir(tles_dir))]
-constellation_compositions = { 2"starlinkShort": ["starlinkShortHighest", "starlinkShortHigh", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3", "starlinkShortLowest"],
-                              "starlinkShortLow": ["starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3"],
-                              "starlinkShortHighest": ["starlinkShortHighest"],
-                              "starlinkShortHigh": ["starlinkShortHigh"],
-                              "starlinkShortLowest": ["starlinkShortLowest"],
-                              "iridiumNEXT": ["iridiumNEXThigh", "iridiumNEXTlow"],
-                              "iridiumNEXTlow": ["iridiumNEXTlow"],
-                              "iridiumNEXThigh": ["iridiumNEXThigh"],
-                              "eccentric": ["eccentric"],
-                              "oneweb": ["onewebLow", "onewebMiddle", "onewebHigh1", "onewebHigh2","onewebHigh3"],
-                              "onewebLow": ["onewebLow"],
-                              "onewebMiddle": ["onewebMiddle"],
-                              "onewebHigh": ["onewebHigh1", "onewebHigh2", "onewebHigh3"],
-                              "satnogs": ["satnogs1", "satnogs2", "satnogs3", "satnogs4"]
-                            }
-
-constellation_tles_paths = {}
-for constellation in constellation_compositions.keys():
-    tle_files_prefixes = constellation_compositions[constellation]
-    current_const_tles_paths = []
-    for p in tles_paths:
-        for prefix in tle_files_prefixes:
-            if prefix in p:
-                current_const_tles_paths.append(p)
-    constellation_tles_paths[constellation] = current_const_tles_paths
-
-"""
-
 constellation_tles_paths = {
-    "IridiumNEXT": "/workspaces/ma-max-wendler/examples/space_veins/tles/iridiumNEXT_2023-10-22-15-22-02.txt",
-    "Starlink": "/workspaces/ma-max-wendler/examples/space_veins/tles/avg_epoch_timestamps/undecomposed/starlink_2023-10-22-21-18-24.txt",
-    "OneWeb": "/workspaces/ma-max-wendler/examples/space_veins/tles/avg_epoch_timestamps/undecomposed/oneweb_2023-10-22-22-28-26.txt",
-    "SatNOGS": "/workspaces/ma-max-wendler/examples/space_veins/tles/satnogs_2023-10-22-20-54-21.txt",
-    "Eccentric": "/workspaces/ma-max-wendler/examples/space_veins/tles/eccentric_2023-10-22-15-30-23.txt",
+    "IridiumNEXT": "../../examples/space_veins/tles/iridiumNEXT_2023-10-22-15-22-02.txt",
+    "Starlink": "../../examples/space_veins/tles/avg_epoch_timestamps/undecomposed/starlink_2023-10-22-21-18-24.txt",
+    "OneWeb": "../../ma-max-wendler/examples/space_veins/tles/avg_epoch_timestamps/undecomposed/oneweb_2023-10-22-22-28-26.txt",
+    "SatNOGS": "../../ma-max-wendler/examples/space_veins/tles/satnogs_2023-10-22-20-54-21.txt",
+    "Eccentric": "../../ma-max-wendler/examples/space_veins/tles/eccentric_2023-10-22-15-30-23.txt",
 }
  
 all_tles_incs = []
@@ -158,69 +128,70 @@ all_const_fig.update_layout(title="all constellations")
 all_const_fig.update_yaxes(title="mean motion in rev/day")
 all_const_fig.write_image(output_dir + "all_meanmotions.svg")
 
+# can be uncommented when average radii files actually exist
 """
-# average altitudes separately as not from tles
-all_tles_avg_alts = []
-all_tles_avg_alts_categories = []
+# average radii separately as not from tles
+all_tles_avg_radii = []
+all_tles_avg_radii_categories = []
 all_tles_approx_velocities = []
 
-all_avg_alt_paths = [ avg_alts_dir + fname for fname in os.listdir(avg_alts_dir)]
+all_avg_radii_paths = [ avg_radii_dir + fname for fname in os.listdir(avg_radii_dir)]
 
 for constellation in constellation_compositions.keys():
     constellation_components = constellation_compositions[constellation]
-    const_avg_alt_paths = []
-    for p in all_avg_alt_paths:
+    const_avg_radii_paths = []
+    for p in all_avg_radii_paths:
         for comp in constellation_components:
             if comp in p:
-                const_avg_alt_paths.append(p)
+                const_avg_radii_paths.append(p)
     
-    const_avg_alts_dict = {}
-    for p in const_avg_alt_paths:
+    const_avg_radii_dict = {}
+    for p in const_avg_radii_paths:
 
         with open(p, "r") as csv_f:
 
             row_reader = csv.reader(csv_f)
             header = row_reader.__next__()
             for row in row_reader:
-                const_avg_alts_dict[row[0]] = float(row[1])
+                const_avg_radii_dict[row[0]] = float(row[1])
     
-    const_avg_alts_list = list(const_avg_alts_dict.values())
-    const_avg_alts_list.sort()
-    tles_idxs = list(range(1, len(const_avg_alts_list) + 1))
+    const_avg_radii_list = list(const_avg_radii_dict.values())
+    const_avg_radii_list.sort()
+    tles_idxs = list(range(1, len(const_avg_radii_list) + 1))
     
-    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=const_avg_alts_list, mode='markers'))
+    line_fig = go.Figure(data=go.Scatter(x=tles_idxs, y=const_avg_radii_list, mode='markers'))
     line_fig.update_layout(title=constellation)
-    line_fig.update_yaxes(title="avg. altitude in km")
-    line_fig.write_image(output_dir + constellation + "/" + "avg_alts_line.svg")
+    line_fig.update_yaxes(title="avg. radius in km")
+    line_fig.write_image(output_dir + constellation + "/" + "avg_radii_line.svg")
 
-    tles_categories = [1] * len(const_avg_alts_list)
+    tles_categories = [1] * len(const_avg_radii_list)
     
-    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=const_avg_alts_list, mode='markers'))
+    vertical_fig = go.Figure(data=go.Scatter(x=tles_categories, y=const_avg_radii_list, mode='markers'))
     vertical_fig.update_layout(title=constellation)
-    vertical_fig.update_yaxes(title="avg. altitude in km")
-    vertical_fig.write_image(output_dir + constellation + "/" + "avg_alts_vertical.svg")
+    vertical_fig.update_yaxes(title="avg. radius in km")
+    vertical_fig.write_image(output_dir + constellation + "/" + "avg_radii_vertical.svg")
     
-    ## plot mean motions at avg. altitudes
-    # create satname, avg. altitude, mean motion tuples
+    ## plot mean motions at avg. radiuss
+    # create satname, avg. radius, mean motion tuples
     meanmotions_dict = const_meanmotion_dicts[constellation]
     data_tuples = []
 
     for satname in meanmotions_dict.keys():
         meanmotion = meanmotions_dict[satname]
         modname = satname_to_modname(satname)
-        avg_alt = const_avg_alts_dict[modname]
-        data_tuples.append(tuple([satname, avg_alt, meanmotion]))
+        avg_radius = const_avg_radii_dict[modname]
+        data_tuples.append(tuple([satname, avg_radius, meanmotion]))
     
-    # sort by average altitude
+    # sort by average radius
     data_tuples.sort(key=lambda tuple: tuple[1])
-    avg_alts = [tup[1] for tup in data_tuples]
+    avg_radii = [tup[1] for tup in data_tuples]
     meanmotions = [tup[2] for tup in data_tuples]
 
-    meanmotion_at_alt_fig = go.Figure(data=go.Scatter(x=avg_alts, y=meanmotions, mode="markers"))
-    meanmotion_at_alt_fig.update_layout(title=constellation)
-    meanmotion_at_alt_fig.update_xaxes(title="avg. altitude in km")
-    meanmotion_at_alt_fig.update_yaxes(title="mean motion in rev/day")
-    meanmotion_at_alt_fig.write_image(output_dir + constellation + "/" + "meanmotion_at_avg_alt.svg")
+    meanmotion_at_radius_fig = go.Figure(data=go.Scatter(x=avg_radii, y=meanmotions, mode="markers"))
+    meanmotion_at_radius_fig.update_layout(title=constellation)
+    meanmotion_at_radius_fig.update_xaxes(title="avg. radius in km")
+    meanmotion_at_radius_fig.update_yaxes(title="mean motion in rev/day")
+    meanmotion_at_radius_fig.write_image(output_dir + constellation + "/" + "meanmotion_at_avg_radius.svg")
 
     # plot approximate velocities
     velocities = []
@@ -235,15 +206,15 @@ for constellation in constellation_compositions.keys():
     velocities_fig.write_image(output_dir + constellation + "/" + "approx_velocities.svg")
 
     all_tles_approx_velocities += velocities
-    all_tles_avg_alts += const_avg_alts_list
-    all_tles_avg_alts_categories += [constellation] * len(const_avg_alts_list)
+    all_tles_avg_radii += const_avg_radii_list
+    all_tles_avg_radii_categories += [constellation] * len(const_avg_radii_list)
 
-all_avg_alts_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_categories, y=all_tles_avg_alts, mode='markers'))
-all_avg_alts_fig.update_layout(title="all constellations")
-all_avg_alts_fig.update_yaxes(title="avg. altitude in km")
-all_avg_alts_fig.write_image(output_dir + "all_avg_alts.svg")
+all_avg_radii_fig = go.Figure(data=go.Scatter(x=all_tles_avg_radii_categories, y=all_tles_avg_radii, mode='markers'))
+all_avg_radii_fig.update_layout(title="all constellations")
+all_avg_radii_fig.update_yaxes(title="avg. radius in km")
+all_avg_radii_fig.write_image(output_dir + "all_avg_radii.svg")
 
-all_approx_velocities_fig = go.Figure(data=go.Scatter(x=all_tles_avg_alts_categories, y=all_tles_approx_velocities, mode='markers'))
+all_approx_velocities_fig = go.Figure(data=go.Scatter(x=all_tles_avg_radii_categories, y=all_tles_approx_velocities, mode='markers'))
 all_approx_velocities_fig.update_layout(title=constellation)
 all_approx_velocities_fig.update_yaxes(title="approx. velocity in km/day")
 all_approx_velocities_fig.write_image(output_dir + "all_approx_velocities.svg")

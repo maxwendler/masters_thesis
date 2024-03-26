@@ -24,7 +24,8 @@ sys.path.append(os.path.join(sys.path[0],"..",".."))
 from scripts.utility.parse_csvs import parse_coords_csv_to_dict
 from math import dist
 
-parser = argparse.ArgumentParser()
+# Has no according Snakefile rule anymore.
+parser = argparse.ArgumentParser(description="Outputs radii of orbits in given csv. Intended for validating how circular the circular model's actually are.")
 parser.add_argument("teme_coords_csv")
 parser.add_argument("output_path")
 args = parser.parse_args()
