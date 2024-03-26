@@ -1,3 +1,23 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import json
 import plotly.graph_objects as go
@@ -40,7 +60,7 @@ data.sort(key=lambda data_tuple: data_tuple[0])
 offsets = [ data_tuple[0] for data_tuple in data]
 values = [data_tuple [1] for data_tuple in data]
 
-fig = go.Figure(data=go.Scatter(x=offsets, y=values, mode='lines+markers'))
+fig = go.Figure(data=go.Scatter(x=offsets, y=values, mode='markers'))
 
 fig.update_layout(title_text=f'{ref_mobility}-{new_mobility} {args.stat} differences relative to TLE epoch at second 0')
 fig.update_xaxes(title_text='seconds to epoch')
@@ -52,6 +72,7 @@ padding = 0
 yshift_sign = 1
 
 # modname annotations
+"""
 for data_tuple in data:
 
     modname = data_tuple[2]
@@ -66,5 +87,6 @@ for data_tuple in data:
         textangle=90,
         yshift=yshift
     )
+"""
 
 fig.write_image(args.svg_output_path, width=1920, height=1080)

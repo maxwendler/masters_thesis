@@ -1,24 +1,48 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import csv
 import plotly.express as px
 import json
 
 def parse_difference_csv(csv_path):
+    """
+    Parses each line of pos difference / distance in CSV into (1) list of module names and
+    (2) list of list of distance values. 
+    """
     with open(csv_path, "r") as csv_f:
         row_reader = csv.reader(csv_f)
         header = row_reader.__next__()
 
-        satnames = []
+        modnames = []
         sat_distances = []
 
         for row in row_reader:
             # filter dimensional distances
             if not "_vector" in row[0]:
-                satnames.append(row[0])
+                modnames.append(row[0])
                 distances = [ float(d) for d in row[1:] ]
                 sat_distances.append(distances)
                 
-    return satnames, sat_distances
+    return modnames, sat_distances
 
 if __name__ == "__main__":
 
@@ -42,6 +66,7 @@ if __name__ == "__main__":
     fig.write_image(args.output_basepath + "sum-histogram.svg")
     fig.write_html(args.output_basepath + "sum-histogram.html")
     
+    # JSON output
     out_dict = {}
     out_dict["avg_diff_sum"] = avg_distsum
     out_dict["avg_diff"] = avg_dist

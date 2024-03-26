@@ -1,3 +1,23 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import os, sys
 sys.path.append(os.path.join(sys.path[0],"..",".."))
@@ -60,7 +80,11 @@ for satname in sat_coord_dict.keys():
         # up coord is 0
         vec_in_plane = ( sat_coord[0] - sop_coord[0], sat_coord[1] - sop_coord[1], 0 )
         dot_product = sat_coord[0] * vec_in_plane[0] + sat_coord[1] * vec_in_plane[1] + sat_coord[2] * vec_in_plane[2]
-        angle_to_plane_rad = Angle(acos( (dot_product) / (dist(vec_in_plane, sop_coord) * dist(sat_coord, sop_coord)) ), u.rad)
+        cos_val = (dot_product) / (dist(vec_in_plane, sop_coord) * dist(sat_coord, sop_coord))
+        # floating point calculation can lead to values surpassing one, which are not compatible with acos
+        if cos_val > 1:
+            cos_val = 1
+        angle_to_plane_rad = Angle(acos( cos_val ), u.rad)
         angle_to_plane_deg = angle_to_plane_rad.degree
 
         # if 'up' coordinate is negative, angle will be negative

@@ -1,3 +1,23 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
@@ -89,6 +109,7 @@ if csv_paths:
         ys = [c[1] for c in coords]
         zs = [c[2] for c in coords]
 
+        # for plotting polar axis
         orb_max_z = max(zs)
         orb_min_z = min(zs)
         if orb_max_z > max_z:
@@ -99,12 +120,14 @@ if csv_paths:
         leo_modname = re.search(modname_re, csv_p).group()
 
         color = color_cycle[color_idx % len(color_cycle)]
-
+        
+        # orbit
         orb_line = go.Scatter3d(x=xs, y=ys, z=zs, mode='lines', name=f"{leo_modname} - {mobility}", line=dict(
                 color=color
             )
         )
         
+        # marker for position at simulation start
         orb_start = go.Scatter3d(x=xs[:1], y=ys[:1], z=zs[:1], mode='markers', name=f"{leo_modname} - {mobility} - start", line=dict(
                 color=color
             )
@@ -112,6 +135,7 @@ if csv_paths:
 
         mod_epoch_sec = int(float(tle_times["sat_times"][leo_modname]["offset_to_start"]))
 
+        # marker for position at TLE epoch
         orb_epoch = go.Scatter3d(x=xs[mod_epoch_sec:mod_epoch_sec+1], y=ys[mod_epoch_sec:mod_epoch_sec+1], z=zs[mod_epoch_sec:mod_epoch_sec+1], mode='markers', name=f"{leo_modname} - {mobility} - epoch", line=dict(
                 color=color
             )
@@ -127,10 +151,9 @@ if csv_paths:
 if not start_second:
     start_second = 1
 
+# plot polar axis
 max_z += 500
 min_z -= 500
-
-# plot polar axis
 z_0 = go.Scatter3d(x=[0, 0], y=[0, 0], z=[min_z, max_z], mode='lines', showlegend=False, line=dict(
             color="black", dash="dash"
         )

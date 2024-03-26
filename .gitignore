@@ -125,7 +125,10 @@ examples/space_veins/benchmarks*
 examples/space_veins/two-nodes.nod.xml
 examples/space_veins/two-nodes.net.xml
 examples/space_veins/.bash_history
+# can be removed later
 examples/space_veins/allresults.tar.gz
+
+examples/space_veins/orekit-data.zip
 .conda
 .local
 .astropy

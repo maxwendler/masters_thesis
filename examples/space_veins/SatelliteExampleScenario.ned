@@ -1,6 +1,7 @@
 //
 // Copyright (C) 2017 Christoph Sommer <sommer@ccs-labs.org>
-// Copyright (C) 2021 Mario Franke <research@m-franke.net>
+// Copyright (C) 2021-2023 Mario Franke <research@m-franke.net>
+// Copyright (C) 2024 Max Wendler <max.wendler@gmai.com>
 //
 // Documentation for these modules is at http://sat.car2x.org/
 //

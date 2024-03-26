@@ -106,30 +106,13 @@ void KeplerMobility::initialize(int stage)
 
 void KeplerMobility::updateSatellitePosition()
 {   
-    /* old code for reading wgs84 traces
-    // read next trace line
-    std::string sat_pos_wgs84_str; 
-    std::getline(traceFile, sat_pos_wgs84_str);
-    char* sat_pos_wgs84_c_str = new char[sat_pos_wgs84_str.length() + 1];
-    strcpy(sat_pos_wgs84_c_str, sat_pos_wgs84_str.c_str());
-    
-    // parse WGS84 coordinate from trace line
-    std::string coord = std::strtok(sat_pos_wgs84_c_str, ",");        
-    double wgs84lat = std::stod(coord, NULL);
-    coord = std::strtok(NULL, ","); 
-    double wgs84lon = std::stod(coord, NULL);
-    coord = std::strtok(NULL, ",");
-    double wgs84alt =  std::stod(coord, NULL);
-
-    delete[] sat_pos_wgs84_c_str;
-    */
 
     std::string itrfPosStr; 
     std::getline(traceFile, itrfPosStr);
     char* itrfPosCStr = new char[itrfPosStr.length() + 1];
     strcpy(itrfPosCStr, itrfPosStr.c_str());
     
-    // parse WGS84 coordinate from trace line
+    // parse ITRF coordinate from trace line
     std::string coord = std::strtok(itrfPosCStr, ",");        
     double itrfX = std::stod(coord, NULL);
     coord = std::strtok(NULL, ","); 

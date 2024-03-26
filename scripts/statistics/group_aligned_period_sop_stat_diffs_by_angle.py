@@ -1,8 +1,29 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import os
 import json
 from math import floor
 
+# refer to Snakefile rule group_const_aligned_local_sop_stat_diffs for more details on inputs.
 parser = argparse.ArgumentParser(prog="group_aligned_period_sop_stat_diffs_by_angle.py")
 parser.add_argument("ref_comm_period_jsons_dir")
 parser.add_argument("aligned_stat_diffs_dir")
@@ -15,6 +36,7 @@ ref_comm_period_jsons_dir = args.ref_comm_period_jsons_dir if args.ref_comm_peri
 aligned_stat_diffs_dir = args.aligned_stat_diffs_dir if args.aligned_stat_diffs_dir.endswith("/") else args.aligned_stat_diffs_dir + "/"
 
 # groups of (modname,period_idx) pairs
+# grouping of communication periods by maximum occuring elevation angle
 grouped_periods = {}
 for comm_period_json_fname in os.listdir(ref_comm_period_jsons_dir):
     
@@ -33,6 +55,7 @@ for comm_period_json_fname in os.listdir(ref_comm_period_jsons_dir):
         else:
             grouped_periods[group].append( {"modname": modname, "period_idx": period_idx} )
 
+# assign differences of desired stat to grouped periods
 for aligned_stat_diffs_fname in filter(lambda fname: fname.endswith("aligned_differences.json") and args.new_mobility in fname, os.listdir(aligned_stat_diffs_dir)):
 
     json_path = aligned_stat_diffs_dir + aligned_stat_diffs_fname
@@ -58,9 +81,7 @@ for aligned_stat_diffs_fname in filter(lambda fname: fname.endswith("aligned_dif
             if period_found:
                 break
 
-# print(grouped_periods)
-
-# remove periods that have no period group
+# remove periods that have no period group, i.e. lost or new periods
 for group in grouped_periods.keys():
     
     group_periods = grouped_periods[group]

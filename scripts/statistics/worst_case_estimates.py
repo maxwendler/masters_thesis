@@ -1,7 +1,26 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import json
 import csv
-from math import floor, inf
 
 parser = argparse.ArgumentParser()
 parser.add_argument("pos_diff_csv")
@@ -14,6 +33,9 @@ with open(args.tle_times, "r") as times_json:
 
 satnum = len(tle_times["sat_times"])
 
+# only consider periods of roughly 6 hours of backward/forward propagatio
+# as shows below, not existance of this time in both directions is required; 
+# as it is half of the time, only one direction per module will be evaluated
 fit_period_len_limit = int(43205 * 4 / 8)
 
 # get mod pos_diffs
@@ -26,7 +48,6 @@ after_max_modnames_list = []
 sat_counter = 0
 diff_csv_fname = args.pos_diff_csv.split("/")[-1]
 
-
 with open(args.pos_diff_csv, "r") as diff_csv:
     row_reader = csv.reader(diff_csv)
     header = row_reader.__next__()
@@ -36,9 +57,6 @@ with open(args.pos_diff_csv, "r") as diff_csv:
         modname = row[0]
         mod_diffs = [float(diff) for diff in row[1:]]
         epoch_sec = int(float(tle_times["sat_times"][modname]["offset_to_start"])) 
-
-        before_avg_diff = None
-        after_avg_diff = None
 
         mod_secs_after_epoch = 0
         mod_secs_before_epoch = 0
@@ -54,6 +72,7 @@ with open(args.pos_diff_csv, "r") as diff_csv:
             mod_secs_after_epoch = 43205
 
         # backward max
+        # second part of condition ensures that epoch is actually touched
         if mod_secs_before_epoch >= fit_period_len_limit and mod_secs_before_epoch < 43205:
             before_diffs = list(reversed(mod_diffs[:(mod_secs_before_epoch+1)]))[:fit_period_len_limit + 1]
             max_diff = max(before_diffs)
@@ -61,8 +80,8 @@ with open(args.pos_diff_csv, "r") as diff_csv:
                 before_max_modnames_list.insert(0, modname)
                 before_max_diff = max_diff
 
-
         # forward max
+        # second part of condition ensures that epoch is actually touched
         if mod_secs_after_epoch >= fit_period_len_limit and mod_secs_after_epoch < 43205:
             
             diff_idx_offset = 0

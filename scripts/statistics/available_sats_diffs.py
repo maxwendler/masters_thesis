@@ -1,10 +1,35 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import json
 from math import inf
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog="available_sats_diffs.py",
+                                 description="""Calculates between-model differences of absolute times and ratios of these times w.r.t. total simulation time 
+                                                of availability of (1) specific numbers of available satellites, and (2) availability of >=1, >=2, >=3 satellites,
+                                                for specified location, constellation and mobility model.""")
+# see Snakemake rule available_sats_diffs to understand inputs
 parser.add_argument("ref_mobility_availables_json")
 parser.add_argument("new_mobility_availables_json")
+# calculating this data was too computationally expensive for the thesis
 # parser.add_argument("all_interval_changes_json")
 parser.add_argument("ref_comm_periods_dir")
 parser.add_argument("new_comm_periods_dir")
@@ -28,6 +53,8 @@ measurement_start_time = ref_availability_stats["available_sats"][0]["sim_time"]
 available_sat_diffs = []
 abs_diff_sum = 0
 times_with_num_diff = 0
+
+# calculate availability differences per simulation second
 for sim_time_idx in range(len(ref_availability_stats["available_sats"])):
     sim_time = measurement_start_time + sim_time_idx
     
@@ -78,6 +105,7 @@ for availability_num in new_availability_stats["availability_num_times"].keys():
     if availability_num not in availability_num_time_diffs.keys():
         availability_num_time_diffs[availability_num] = new_availability_stats["availability_num_times"][availability_num]
 
+# calculate ratios
 availability_num_ratio_diffs = {}
 for availability_num in ref_availability_stats["availability_num_ratios"].keys():
     ref_availability_num_ratio = ref_availability_stats["availability_num_ratios"][availability_num]
@@ -94,6 +122,7 @@ for availability_num in new_availability_stats["availability_num_ratios"].keys()
     if availability_num not in availability_num_ratio_diffs.keys():
         availability_num_ratio_diffs[availability_num] = new_availability_stats["availability_num_ratios"][availability_num]
 
+# the following would require results from all_interval_changes
 # lost period effects
 """
 lost_period_effects = []

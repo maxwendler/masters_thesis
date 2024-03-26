@@ -1,4 +1,8 @@
-# constellations that are processed
+# SPDX-FileCopyrightText: 2024 Max Wendler <max.wendler@gmail.com>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# all constellations that are processed, corresponding to TLEs files prefixes
 constellations: ["iridiumNEXThigh", "iridiumNEXTlow", 
                   "eccentric", 
                   "satnogs", "satnogs1", "satnogs2", "satnogs3", "satnogs4",
@@ -7,6 +11,7 @@ constellations: ["iridiumNEXThigh", "iridiumNEXTlow",
                   "starlinkShortLow", "starlinkShortLow1", "starlinkShortLow2", "starlinkShortLow3" 
                 ]
 
+# subconstellations and constellations without subconstellations
 low_level_constellations: ["iridiumNEXTlow", "iridiumNEXThigh", "eccentric", "onewebHigh", "onewebMiddle", "onewebLow", "starlinkShortLowest", "starlinkShortLow", "starlinkShortHigh", "starlinkShortHighest", "satnogs"]
 
 # includes components themselves to allow plotting / statistic calculation for them, not just main constellation
@@ -26,6 +31,7 @@ constellation_compositions: { "starlinkShort": ["starlinkShortHighest", "starlin
                               "satnogs": ["satnogs1", "satnogs2", "satnogs3", "satnogs4"]
                             }
 
+# memory limits for coord csv creation, not up to date anymore
 mem_mb_limits: { "starlinkShortHighest": 1400,
                   "starlinkShortHigh": 3500,
                   "starlinkShortLow1": 5700, # split in three
@@ -54,6 +60,7 @@ coord_frames: [ "teme" , "itrf", "omnet"] # "wgs84"]
 # omnetpp.ini parameters
 sim-time-limit: 43220
 
+# if false, circular orbit model uses SGP4 radius at simulation start
 use_avg_sgp4_radii: true
 
 location: "kunlun"

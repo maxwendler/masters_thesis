@@ -1,19 +1,42 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import argparse
 import json
 import plotly.graph_objects as go
 from numpy.polynomial import Polynomial
 
+# for info on script inputs and purpose, refer to Snakefile rules plot_sat_comm_period_zenith_interval_changes
+# and plot_const_comm_period_zenith_interval_changes_at_offset_diff
 parser = argparse.ArgumentParser(prog="plot_zenith_interval_diff_at_offset_diff")
-parser.add_argument("all_interval_changes_json")
+parser.add_argument("all_mod_interval_changes_json")
 parser.add_argument("output_path")
 args = parser.parse_args()
 
-with open(args.all_interval_changes_json, "r") as json_f:
-    all_interval_changes = json.load(json_f)
+with open(args.all_mod_interval_changes_json, "r") as json_f:
+    all_mod_interval_changes = json.load(json_f)
 
+# gather between-model differences of communication period zenith intervals and according offset differences
 abs_interval_differences = []
 abs_offset_differences = []
-for sat_relation_changes in all_interval_changes["same_periods_changes"].values():
+for sat_relation_changes in all_mod_interval_changes["same_periods_changes"].values():
     
     for overlap_relation in sat_relation_changes["overlap_changes"]:
         abs_interval_differences.append(abs(overlap_relation["zenith_interval_difference"]))

@@ -1,3 +1,23 @@
+"""
+Copyright (C) 2024 Max Wendler <max.wendler@gmail.com>
+
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
+
 import csv
 from datetime import datetime
 from numpy import datetime64
@@ -10,7 +30,12 @@ from scripts.utility.satname_to_modname import satname_to_modname
 import argparse
 import plotly.graph_objects as go
 
-
+"""
+Refer to Snakefile rule "plot_extrema_zs"
+Orbital periods are applied by looking for a rising part opposite to backward/forward propagation direction.
+Only one maximum and minimum in these periods is identified, i.e. the script is unable to deal with the smaller
+extrema occuring for the Keplerian model.
+"""
 parser = argparse.ArgumentParser()
 parser.add_argument("constellation")
 parser.add_argument("tles_path")
@@ -20,7 +45,7 @@ parser.add_argument("mob1")
 parser.add_argument("mob2_pos_csv_path")
 parser.add_argument("mob2")
 parser.add_argument("output_basepath")
-parser.add_argument("--only_mod")
+parser.add_argument("--only_mod", help="If only extrema for one satellite module should be plotted. Currently not supported by a Snakemake rule.")
 args = parser.parse_args()
 
 start_datetime = datetime.strptime(args.tles_path.split("_")[-1].removesuffix(".txt"), '%Y-%m-%d-%H-%M-%S')
@@ -44,6 +69,7 @@ for tle in tles:
     meanmotion = tle.n
     orbital_period = 86400 / meanmotion
     
+    # get time limits in which to get extrema excluding 2000 second area around TLE epoch, because here difference period changes
     mod_epoch = tle.epoch
     mod_epoch.format = "datetime64"
     start_to_epoch_sec = mod_epoch - TimeDelta(2000, format="sec") - start
@@ -51,6 +77,7 @@ for tle in tles:
     epoch_to_end_sec = end - (mod_epoch + TimeDelta(2000, format="sec"))
     epoch_to_end_sec.format = "sec"
 
+    # read differences
     mod_diffs = None
     with open(args.diff_csv_path, "r") as csv_f:
         row_reader = csv.reader(csv_f)
@@ -88,7 +115,7 @@ for tle in tles:
         max_times.append(start_sec + period_diffs.index(max(period_diffs)))
         min_times.append(start_sec + period_diffs.index(min(period_diffs)))
     
-    # periods from right analogously
+    # periods from right analogously - opposite direction to simulation time
     prev = None
     incline_idx = 0
     for i in reversed(list(range(len(mod_diffs)))):
@@ -117,6 +144,7 @@ for tle in tles:
     max_times += reversed(max_times_to_append)
     min_times += reversed(min_times_to_append)
 
+    # load positions in both mobilities 
     mod_pos_mob1 = []
     with open(args.mob1_pos_csv_path, "r") as csv_f:
         row_reader = csv.reader(csv_f, delimiter="\t")
@@ -141,6 +169,7 @@ for tle in tles:
             if modname not in row[2] and was_reading:
                 break
     
+    # compile results to .txt output lines and unifying lists for plot
     max_times_zs_mob1 = []
     min_times_zs_mob1 = []
     max_times_zs_mob2 = []
@@ -166,6 +195,7 @@ for tle in tles:
     sat_counter += 1
     print(f"{args.constellation} {sat_counter}/{len(tles)} satellites")
 
+# create plot
 fig = go.Figure(data=go.Scatter(x=categories, y=values, mode='markers'))
 fig.update_yaxes(title_text="ITRF z coord. in km")
 
